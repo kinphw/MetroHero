@@ -3,5 +3,5 @@
     <Platform Name="x64" />
     <Platform Name="x86" />
   </Configurations>
-  <Project Path="MetroHero/MetroHero.vcxproj" />
+  <Project Path="MetroHero/MetroHero.vcxproj" Id="21008054-5e6b-4612-ac15-af837adb3a03" />
 </Solution>

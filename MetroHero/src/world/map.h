@@ -9,7 +9,7 @@ typedef struct {
 } Map;
 
 void map_init(Map* m);
-void map_draw(const Map* m, const void* player); // player ±¸Á¶Ã¼´Â ÀÌÈÄ Á¤ÀÇÇÒ °Í
+void map_draw(const Map* m, const void* player); // player êµ¬ì¡°ì²´ëŠ” ì´í›„ ì •ì˜í•  ê²ƒ
 int map_is_walkable(const Map* m, int x, int y);
 
 #endif

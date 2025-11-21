@@ -20,12 +20,14 @@
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="src\core\game.c" />
+    <ClCompile Include="src\core\ui.c" />
     <ClCompile Include="src\main.c" />
     <ClCompile Include="src\world\map.c" />
     <ClCompile Include="src\entity\player.c" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="src\core\game.h" />
+    <ClInclude Include="src\core\ui.h" />
     <ClInclude Include="src\world\map.h" />
     <ClInclude Include="src\entity\player.h" />
   </ItemGroup>
@@ -54,7 +56,7 @@
     <ConfigurationType>Application</ConfigurationType>
     <UseDebugLibraries>true</UseDebugLibraries>
     <PlatformToolset>v145</PlatformToolset>
-    <CharacterSet>Unicode</CharacterSet>
+    <CharacterSet>MultiByte</CharacterSet>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'" Label="Configuration">
     <ConfigurationType>Application</ConfigurationType>
@@ -116,6 +118,7 @@
       <PreprocessorDefinitions>_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
       <LanguageStandard>stdcpp20</LanguageStandard>
+      <AdditionalOptions>/utf-8 %(AdditionalOptions)</AdditionalOptions>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>

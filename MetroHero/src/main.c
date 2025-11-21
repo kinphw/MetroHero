@@ -1,3 +1,4 @@
+#include <windows.h>
 #include "core/game.h"
 
 int main(void) {

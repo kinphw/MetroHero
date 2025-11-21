@@ -1,7 +1,11 @@
+/* â–  UTF-8 FORCE â–  */
 #define _CRT_SECURE_NO_WARNINGS
 #include <stdio.h>
 #include <stdlib.h>
+#include <conio.h>   // _getch
+#include <ctype.h>   // tolower
 #include "game.h"
+#include "ui.h"
 #include "../world/map.h"
 #include "../entity/player.h"
 
@@ -11,16 +15,18 @@ void game_run(void) {
 
     map_init(&map);
     player_init(&player);
+    ui_init();
 
     while (1) {
-        system("cls");  // ÄÜ¼Ö È­¸é ÃÊ±âÈ­
+        console_clear_fast();      // â˜… system("cls") ëŒ€ì‹  ì´ê±°
+        // system("cls");
         map_draw(&map, &player);
 
         printf("\n");
-        printf("[w,a,s,d] ÀÌµ¿ | [q] Á¾·á\n");
+        printf("[w,a,s,d] ì´ë™ | [q] ì¢…ë£Œ\n");
 
-        int cmd = getchar();
-        getchar(); // °³Çà Á¦°Å
+        int cmd = _getch();        // ì—”í„° ì—†ì´ ì¦‰ì‹œ ì…ë ¥
+        cmd = tolower(cmd);        // ëŒ€ë¬¸ìë„ í—ˆìš©
 
         if (cmd == 'q') break;
 

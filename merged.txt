@@ -1,0 +1,155 @@
+===== FILE START: C:\projects\MetroHero\MetroHero\src\core\game.c =====
+
+#define _CRT_SECURE_NO_WARNINGS
+#include <stdio.h>
+#include <stdlib.h>
+#include "game.h"
+#include "../world/map.h"
+#include "../entity/player.h"
+
+void game_run(void) {
+    Map map;
+    Player player;
+
+    map_init(&map);
+    player_init(&player);
+
+    while (1) {
+        system("cls");  // 콘솔 화면 초기화
+        map_draw(&map, &player);
+
+        printf("\n");
+        printf("[w,a,s,d] 이동 | [q] 종료\n");
+
+        // int cmd = getchar();
+        int cmd = _getch();
+        // getchar(); // 개행 제거
+		cmd = tolower(cmd);
+
+        if (cmd == 'q') break;
+
+        player_move(&player, &map, cmd);
+    }
+}
+
+===== FILE END: C:\projects\MetroHero\MetroHero\src\core\game.c =====
+
+===== FILE START: C:\projects\MetroHero\MetroHero\src\core\game.h =====
+
+#ifndef GAME_H
+#define GAME_H
+
+void game_run(void);
+
+#endif
+
+===== FILE END: C:\projects\MetroHero\MetroHero\src\core\game.h =====
+
+===== FILE START: C:\projects\MetroHero\MetroHero\src\entity\player.c =====
+
+#include "player.h"
+
+void player_init(Player* p) {
+    p->x = MAP_W / 2;
+    p->y = MAP_H / 2;
+}
+
+void player_move(Player* p, const Map* m, int cmd) {
+    int nx = p->x;
+    int ny = p->y;
+
+    switch (cmd) {
+    case 'w': ny--; break;
+    case 's': ny++; break;
+    case 'a': nx--; break;
+    case 'd': nx++; break;
+    }
+
+    if (map_is_walkable(m, nx, ny)) {
+        p->x = nx;
+        p->y = ny;
+    }
+}
+
+===== FILE END: C:\projects\MetroHero\MetroHero\src\entity\player.c =====
+
+===== FILE START: C:\projects\MetroHero\MetroHero\src\entity\player.h =====
+
+#ifndef PLAYER_H
+#define PLAYER_H
+
+#include "../world/map.h"
+
+typedef struct {
+    int x, y;
+} Player;
+
+void player_init(Player* p);
+void player_move(Player* p, const Map* m, int cmd);
+
+#endif
+
+===== FILE END: C:\projects\MetroHero\MetroHero\src\entity\player.h =====
+
+===== FILE START: C:\projects\MetroHero\MetroHero\src\world\map.c =====
+
+#include <stdio.h>
+#include "map.h"
+#include "../entity/player.h"
+
+void map_init(Map* m) {
+    for (int y = 0; y < MAP_H; y++)
+        for (int x = 0; x < MAP_W; x++)
+            m->tiles[y][x] = '.';
+}
+
+void map_draw(const Map* m, const Player* p) {
+    for (int y = 0; y < MAP_H; y++) {
+        for (int x = 0; x < MAP_W; x++) {
+            if (p->x == x && p->y == y)
+                putchar('@');
+            else
+                putchar(m->tiles[y][x]);
+        }
+        putchar('\n');
+    }
+}
+
+int map_is_walkable(const Map* m, int x, int y) {
+    if (x < 0 || x >= MAP_W || y < 0 || y >= MAP_H) return 0;
+    return (m->tiles[y][x] == '.');
+}
+
+===== FILE END: C:\projects\MetroHero\MetroHero\src\world\map.c =====
+
+===== FILE START: C:\projects\MetroHero\MetroHero\src\world\map.h =====
+
+#ifndef MAP_H
+#define MAP_H
+
+#define MAP_W 40
+#define MAP_H 15
+
+typedef struct {
+    char tiles[MAP_H][MAP_W];
+} Map;
+
+void map_init(Map* m);
+void map_draw(const Map* m, const void* player); // player 구조체는 이후 정의할 것
+int map_is_walkable(const Map* m, int x, int y);
+
+#endif
+
+===== FILE END: C:\projects\MetroHero\MetroHero\src\world\map.h =====
+
+===== FILE START: C:\projects\MetroHero\MetroHero\src\main.c =====
+
+#include "core/game.h"
+
+int main(void) {
+    game_run();
+    return 0;
+}
+
+===== FILE END: C:\projects\MetroHero\MetroHero\src\main.c =====
+
