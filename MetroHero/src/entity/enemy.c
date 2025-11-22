@@ -17,8 +17,8 @@ void enemy_init(Enemy* e, char type, int x, int y) {
         e->defense = 0;
         break;
 
-    case 'b':  // 오크 (나중에 추가)
-        e->name = "오크";
+    case 'b':  // 검은괴물
+        e->name = "B-370";
         e->maxHp = 10;
         e->hp = 10;
         e->attack = 3;

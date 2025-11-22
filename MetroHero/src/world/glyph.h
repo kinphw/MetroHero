@@ -38,12 +38,18 @@
 #define BG_CYAN    "\033[46m"
 #define BG_WHITE   "\033[47m"
 
-
+// 전투 메시지용 색상
+#define COMBAT_ATTACK    COLOR_BRIGHT_RED      // 공격 (밝은 빨강)
+#define COMBAT_DAMAGE    COLOR_BRIGHT_YELLOW   // 데미지 (밝은 노랑)
+#define COMBAT_DEATH     COLOR_BRIGHT_MAGENTA  // 처치 (밝은 보라)
+#define COMBAT_ENEMY     COLOR_RED             // 적 반격 (빨강)
+#define COMBAT_DETECT    COLOR_CYAN            // 적 발견 (청록)
 
 // 맵 타일
 #define GLYPH_FLOOR    "  "    // 바닥
 //#define GLYPH_WALL     COLOR_YELLOW "██" COLOR_RESET    // ★ 노란색 벽
-#define GLYPH_WALL     "\033[48;5;220m  \033[0m"  // 노란 배경만
+//#define GLYPH_WALL     "\033[48;5;220m  \033[0m"  // 노란 배경만
+#define GLYPH_WALL     "\033[48;5;220m\033[38;5;234m˅ \033[0m"
 #define GLYPH_RAIL     "=="    // 철도 레일
 #define GLYPH_EMPTY    "  "    // 빈 공간
 #define GLYPH_DOOR     "++"    // 문
@@ -52,7 +58,7 @@
 // 엔티티
 #define GLYPH_PLAYER   COLOR_BRIGHT_GREEN "🙎‍" COLOR_RESET    // 밝은 녹색
 #define GLYPH_DOG      "🐈‍"    // ★ 고블린 추가
-#define GLYPH_ORC      "오"    // 나중에 사용
+#define GLYPH_ORC      "옷"    // 나중에 사용
 #define GLYPH_NPC      "민"    // NPC
 #define GLYPH_ITEM     "물"    // 아이템
 

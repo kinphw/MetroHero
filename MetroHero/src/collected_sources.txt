@@ -24,10 +24,14 @@ int main(void) {
 ------------------------------------------------------------
 
 // core/combat.c
+#include <stdio.h>
+#include <windows.h>  // Sleep 사용
+
 #include "combat.h"
 #include "ui.h"
 #include "../world/map.h"
-#include <stdio.h>
+#include "../world/glyph.h"  // ★ 추가
+
 
 // ★ 인접 적 체크 및 메시지 자동 생성 (체력 포함)
 void combat_check_nearby_enemy(Map* m, Player* p) {
@@ -35,8 +39,10 @@ void combat_check_nearby_enemy(Map* m, Player* p) {
 
     if (nearEnemy != NULL) {
         const char* direction = map_get_enemy_direction(m, p->x, p->y, nearEnemy);
-        char logMsg[128];
-        snprintf(logMsg, sizeof(logMsg), "%s에 %s이(가) 서있다! (HP: %d/%d)",
+        char logMsg[256];
+        // ★ 청록색으로 강조
+        snprintf(logMsg, sizeof(logMsg),
+            COMBAT_DETECT "%s에 %s이(가) 서있다! (HP: %d/%d)" COLOR_RESET,
             direction, nearEnemy->name, nearEnemy->hp, nearEnemy->maxHp);
         ui_add_log(logMsg);
     }
@@ -46,23 +52,47 @@ void combat_check_nearby_enemy(Map* m, Player* p) {
 void combat_attack_enemy(Player* p, Enemy* e, Map* m) {
     char logMsg[128];
 
+    // ★ 전투 이펙트 표시
+    ui_draw_combat_effect(107, 2);  // 상태창 오른쪽
+
     // 플레이어 공격
     int playerDamage = p->attack - e->defense;
     if (playerDamage < 1) playerDamage = 1;  // 최소 1 데미지
 
     e->hp -= playerDamage;
 
-    snprintf(logMsg, sizeof(logMsg), "%s를 공격! %d 데미지! (HP: %d/%d)",
+    // ★ 밝은 빨간색으로 강조
+    snprintf(logMsg, sizeof(logMsg),
+        COMBAT_ATTACK "⚔ %s를 공격! " COMBAT_DAMAGE "%d 데미지!" COLOR_RESET " (HP: %d/%d)",
         e->name, playerDamage, e->hp > 0 ? e->hp : 0, e->maxHp);
     ui_add_log(logMsg);
+
+    // ★ 잠깐 대기 (타격감)
+    Sleep(100);
 
     // 적 사망 체크
     if (e->hp <= 0) {
         e->isAlive = 0;
-        snprintf(logMsg, sizeof(logMsg), "%s를 처치했다!", e->name);
+        // ★ 보라색으로 강조
+        snprintf(logMsg, sizeof(logMsg),
+            COMBAT_DEATH "★ %s를 처치했다! ★" COLOR_RESET, e->name);
         ui_add_log(logMsg);
-        return;  // 적이 죽으면 반격 없음
+
+        // ★ 이펙트 제거
+        ui_clear_combat_effect(102, 2);
+        return;
     }
+
+    // ★ 적 반격 전 이펙트 변경
+    ui_clear_combat_effect(107, 2);
+
+    // 적 반격 이펙트 (방패)
+    console_goto(107, 2);
+    printf(COLOR_BRIGHT_BLUE "  🛡" COLOR_RESET);
+    console_goto(107, 3);
+    printf(COLOR_BRIGHT_BLUE " 🛡🛡🛡" COLOR_RESET);
+    console_goto(107, 4);
+    printf(COLOR_BRIGHT_BLUE "🛡🛡🛡🛡🛡" COLOR_RESET);
 
     // 적 반격
     int enemyDamage = e->attack - p->defense;
@@ -70,9 +100,16 @@ void combat_attack_enemy(Player* p, Enemy* e, Map* m) {
 
     p->hp -= enemyDamage;
 
-    snprintf(logMsg, sizeof(logMsg), "%s의 반격! %d 데미지! (플레이어 HP: %d/%d)",
+    // ★ 빨간색으로 강조
+    snprintf(logMsg, sizeof(logMsg),
+        COMBAT_ENEMY "☠ %s의 반격! " COMBAT_DAMAGE "%d 데미지!" COLOR_RESET " (플레이어 HP: %d/%d)",
         e->name, enemyDamage, p->hp > 0 ? p->hp : 0, p->maxHp);
     ui_add_log(logMsg);
+
+    Sleep(100);
+
+    // ★ 이펙트 제거
+    ui_clear_combat_effect(107, 2);
 
     // 플레이어 사망 체크
     if (p->hp <= 0) {
@@ -249,6 +286,7 @@ void game_run(void);
 #include <stdio.h>
 #include "ui.h"
 #include "../entity/player.h"
+#include "../world/glyph.h"
 
 void ui_init(void) {
 
@@ -257,6 +295,12 @@ void ui_init(void) {
     // 콘솔을 UTF-8로 설정
     SetConsoleOutputCP(CP_UTF8);
     SetConsoleCP(CP_UTF8);
+
+    // ★★★ ANSI 색상 활성화 (이 부분이 꼭 필요!) ★★★
+    DWORD dwMode = 0;
+    GetConsoleMode(hOut, &dwMode);
+    dwMode |= ENABLE_VIRTUAL_TERMINAL_PROCESSING;
+    SetConsoleMode(hOut, dwMode);
 
     // ★ 순서 중요: 먼저 윈도우 크기를 최소로 줄임
     //SMALL_RECT minWindow = { 0, 0, 1, 1 };
@@ -311,11 +355,25 @@ void console_goto(int x, int y) {
 
 
 // 화면에 표시되는 실제 폭 계산 (한글 = 2칸, 영문 = 1칸)
-int display_width(const char* str) { // public으로 수정
+int display_width(const char* str) {
     int width = 0;
     const unsigned char* s = (const unsigned char*)str;
 
     while (*s) {
+        // ★ ANSI 이스케이프 시퀀스 건너뛰기
+        if (*s == '\033' || *s == 0x1B) {  // ESC 문자
+            s++;
+            if (*s == '[') {  // CSI 시퀀스 시작
+                s++;
+                // 'm'을 만날 때까지 건너뛰기
+                while (*s && *s != 'm') {
+                    s++;
+                }
+                if (*s == 'm') s++;
+            }
+            continue;
+        }
+
         if (*s < 128) {
             // ASCII (1바이트) = 1칸
             width += 1;
@@ -430,6 +488,51 @@ void ui_add_log(const char* msg) {
     log_index = (log_index + 1) % LOG_LINES;
 }
 
+//void ui_draw_log(int x, int y, int w, int h) {
+//    // 상단 테두리
+//    console_goto(x, y);
+//    printf("┌─ 대화  ");
+//    for (int i = 8; i < w - 2; i++) printf("─");
+//    printf("┐");
+//
+//    int start = (log_index - (h - 2) + LOG_LINES) % LOG_LINES;
+//
+//    // 로그 내용
+//    for (int i = 0; i < h - 2; i++) {
+//        console_goto(x, y + 1 + i);
+//        printf("│ ");
+//
+//        const char* logText = log_buf[(start + i) % LOG_LINES];
+//        printf("%s", logText);
+//
+//        // ★ 오른쪽 │ 제거 - 공백으로 남은 줄 전부 덮기
+//        int displayLen = display_width(logText);
+//        int remaining = w - 2 - displayLen;  // "│ " = 2칸만 고려
+//
+//        for (int j = 0; j < remaining; j++) {
+//            printf(" ");
+//        }
+//
+//        //// ★ 화면 표시 폭 정확히 계산
+//        //int displayLen = display_width(logText);
+//        //int contentWidth = w - 4;  // "│ " + " │" = 4칸
+//        //int remaining = contentWidth - displayLen;
+//
+//        //// ★ 남은 공간을 공백으로 채우기
+//        //for (int j = 0; j < remaining; j++) {
+//        //    printf(" ");
+//        //}
+//
+//        //printf(" │");
+//    }
+//
+//    // 하단 테두리
+//    console_goto(x, y + h - 1);
+//    printf("└");
+//    for (int i = 1; i < w - 1; i++) printf("─");
+//    printf("┘");
+//}
+
 void ui_draw_log(int x, int y, int w, int h) {
     // 상단 테두리
     console_goto(x, y);
@@ -447,16 +550,8 @@ void ui_draw_log(int x, int y, int w, int h) {
         const char* logText = log_buf[(start + i) % LOG_LINES];
         printf("%s", logText);
 
-        // ★ 화면 표시 폭 정확히 계산
-        int displayLen = display_width(logText);
-        int contentWidth = w - 4;  // "│ " + " │" = 4칸
-        int remaining = contentWidth - displayLen;
-
-        // ★ 남은 공간을 공백으로 채우기
-        for (int j = 0; j < remaining; j++) {
-            printf(" ");
-        }
-
+        // ★ 오른쪽 │ 위치로 이동해서 그리기
+        console_goto(x + w - 2, y + 1 + i);
         printf(" │");
     }
 
@@ -465,6 +560,29 @@ void ui_draw_log(int x, int y, int w, int h) {
     printf("└");
     for (int i = 1; i < w - 1; i++) printf("─");
     printf("┘");
+}
+
+// ui.c에 추가
+void ui_draw_combat_effect(int x, int y) {
+    // 상태창 옆에 큰 칼 표시
+    console_goto(x, y);
+    printf(COLOR_BRIGHT_RED "  ⚔" COLOR_RESET);
+    console_goto(x, y + 1);
+    printf(COLOR_BRIGHT_RED " ⚔⚔⚔" COLOR_RESET);
+    console_goto(x, y + 2);
+    printf(COLOR_BRIGHT_RED "⚔⚔⚔⚔⚔" COLOR_RESET);
+    console_goto(x, y + 3);
+    printf(COLOR_BRIGHT_RED " ⚔⚔⚔" COLOR_RESET);
+    console_goto(x, y + 4);
+    printf(COLOR_BRIGHT_RED "  ⚔" COLOR_RESET);
+}
+
+void ui_clear_combat_effect(int x, int y) {
+    // 이펙트 지우기
+    for (int i = 0; i < 5; i++) {
+        console_goto(x, y + i);
+        printf("       ");  // 7칸 지우기
+    }
 }
 
 
@@ -514,6 +632,9 @@ void ui_add_log(const char* msg);
 void ui_draw_log(int x , int y , int w , int h);
 
 void console_clear_fast(void);
+
+void ui_draw_combat_effect(int x , int y);  // 전투 이펙트
+void ui_clear_combat_effect(int x , int y); // 이펙트 제거
 
 #endif
 
@@ -600,8 +721,8 @@ void enemy_init(Enemy* e, char type, int x, int y) {
         e->defense = 0;
         break;
 
-    case 'b':  // 오크 (나중에 추가)
-        e->name = "오크";
+    case 'b':  // 검은괴물
+        e->name = "B-370";
         e->maxHp = 10;
         e->hp = 10;
         e->attack = 3;
@@ -782,12 +903,18 @@ void player_move(Player* p , struct Map* m , int cmd);  // ★ const 제거
 #define BG_CYAN    "\033[46m"
 #define BG_WHITE   "\033[47m"
 
-
+// 전투 메시지용 색상
+#define COMBAT_ATTACK    COLOR_BRIGHT_RED      // 공격 (밝은 빨강)
+#define COMBAT_DAMAGE    COLOR_BRIGHT_YELLOW   // 데미지 (밝은 노랑)
+#define COMBAT_DEATH     COLOR_BRIGHT_MAGENTA  // 처치 (밝은 보라)
+#define COMBAT_ENEMY     COLOR_RED             // 적 반격 (빨강)
+#define COMBAT_DETECT    COLOR_CYAN            // 적 발견 (청록)
 
 // 맵 타일
 #define GLYPH_FLOOR    "  "    // 바닥
 //#define GLYPH_WALL     COLOR_YELLOW "██" COLOR_RESET    // ★ 노란색 벽
-#define GLYPH_WALL     "\033[48;5;220m\033[38;5;234m▼▼\033[0m"
+//#define GLYPH_WALL     "\033[48;5;220m  \033[0m"  // 노란 배경만
+#define GLYPH_WALL     "\033[48;5;220m\033[38;5;234m˅ \033[0m"
 #define GLYPH_RAIL     "=="    // 철도 레일
 #define GLYPH_EMPTY    "  "    // 빈 공간
 #define GLYPH_DOOR     "++"    // 문
@@ -796,7 +923,7 @@ void player_move(Player* p , struct Map* m , int cmd);  // ★ const 제거
 // 엔티티
 #define GLYPH_PLAYER   COLOR_BRIGHT_GREEN "🙎‍" COLOR_RESET    // 밝은 녹색
 #define GLYPH_DOG      "🐈‍"    // ★ 고블린 추가
-#define GLYPH_ORC      "오"    // 나중에 사용
+#define GLYPH_ORC      "옷"    // 나중에 사용
 #define GLYPH_NPC      "민"    // NPC
 #define GLYPH_ITEM     "물"    // 아이템
 
@@ -838,8 +965,10 @@ const char* tile_to_glyph(char t) {
     switch (t) {
     case '.':
         return GLYPH_FLOOR;
+    //case '#':
+    //    return GLYPH_WALL;
     case '#':
-        return GLYPH_WALL;
+        return GLYPH_WALL;  // 단일 패턴
     case '=':
         return GLYPH_RAIL;
     case '+':
@@ -1084,7 +1213,7 @@ static const char* MAP_STAGE_1[] = {
     "#.......#..#############.......#.......#",
     "#.......#..................#####.......#",
     "#########..................#...........#",
-    "#.........................##...........#",
+    "#.........................##......b....#",
     "#.......#####..........#####...........#",
     "#.......#...#..........#...............#",
     "#.......#...############...............#",

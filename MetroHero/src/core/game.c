@@ -73,6 +73,9 @@ void game_run(void) {
 
         if (cmd == 'q') break;
 
+        // ★ 행동 전에 이펙트 지우기
+        ui_clear_combat_effect(107, 2);
+
         // ★ 이동 전에 목표 위치의 적 확인
         int targetX = player.x;
         int targetY = player.y;

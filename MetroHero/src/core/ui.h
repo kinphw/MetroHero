@@ -39,4 +39,7 @@ void ui_draw_log(int x , int y , int w , int h);
 
 void console_clear_fast(void);
 
+void ui_draw_combat_effect(int x , int y);  // 전투 이펙트
+void ui_clear_combat_effect(int x , int y); // 이펙트 제거
+
 #endif
