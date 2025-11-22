@@ -68,7 +68,7 @@ void combat_attack_enemy(Player* p, Enemy* e, Map* m) {
     ui_add_log(logMsg);
 
     // ★ 잠깐 대기 (타격감)
-    Sleep(100);
+    //Sleep(100);
 
     // 적 사망 체크
     if (e->hp <= 0) {
@@ -79,20 +79,20 @@ void combat_attack_enemy(Player* p, Enemy* e, Map* m) {
         ui_add_log(logMsg);
 
         // ★ 이펙트 제거
-        ui_clear_combat_effect(102, 2);
+        ui_clear_combat_effect(107, 2);
         return;
     }
 
     // ★ 적 반격 전 이펙트 변경
-    ui_clear_combat_effect(107, 2);
+    //ui_clear_combat_effect(107, 2);
 
     // 적 반격 이펙트 (방패)
-    console_goto(107, 2);
-    printf(COLOR_BRIGHT_BLUE "  🛡" COLOR_RESET);
-    console_goto(107, 3);
-    printf(COLOR_BRIGHT_BLUE " 🛡🛡🛡" COLOR_RESET);
-    console_goto(107, 4);
-    printf(COLOR_BRIGHT_BLUE "🛡🛡🛡🛡🛡" COLOR_RESET);
+    //console_goto(107, 2);
+    //printf(COLOR_BRIGHT_BLUE "  🛡" COLOR_RESET);
+    //console_goto(107, 3);
+    //printf(COLOR_BRIGHT_BLUE " 🛡🛡🛡" COLOR_RESET);
+    //console_goto(107, 4);
+    //printf(COLOR_BRIGHT_BLUE "🛡🛡🛡🛡🛡" COLOR_RESET);
 
     // 적 반격
     int enemyDamage = e->attack - p->defense;
@@ -106,10 +106,10 @@ void combat_attack_enemy(Player* p, Enemy* e, Map* m) {
         e->name, enemyDamage, p->hp > 0 ? p->hp : 0, p->maxHp);
     ui_add_log(logMsg);
 
-    Sleep(100);
+    //Sleep(100);
 
     // ★ 이펙트 제거
-    ui_clear_combat_effect(107, 2);
+    //ui_clear_combat_effect(107, 2);
 
     // 플레이어 사망 체크
     if (p->hp <= 0) {
@@ -217,6 +217,9 @@ void game_run(void) {
         cmd = tolower(cmd);
 
         if (cmd == 'q') break;
+
+        // ★ 행동 전에 이펙트 지우기
+        ui_clear_combat_effect(107, 2);
 
         // ★ 이동 전에 목표 위치의 적 확인
         int targetX = player.x;
@@ -913,8 +916,8 @@ void player_move(Player* p , struct Map* m , int cmd);  // ★ const 제거
 // 맵 타일
 #define GLYPH_FLOOR    "  "    // 바닥
 //#define GLYPH_WALL     COLOR_YELLOW "██" COLOR_RESET    // ★ 노란색 벽
-//#define GLYPH_WALL     "\033[48;5;220m  \033[0m"  // 노란 배경만
-#define GLYPH_WALL     "\033[48;5;220m\033[38;5;234m˅ \033[0m"
+#define GLYPH_WALL     "\033[48;5;220m  \033[0m"  // 노란 배경만
+//#define GLYPH_WALL     "\033[48;5;220m\033[38;5;234m˅ \033[0m"
 #define GLYPH_RAIL     "=="    // 철도 레일
 #define GLYPH_EMPTY    "  "    // 빈 공간
 #define GLYPH_DOOR     "++"    // 문

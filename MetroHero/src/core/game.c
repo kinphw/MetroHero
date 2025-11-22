@@ -98,9 +98,19 @@ void game_run(void) {
         }
 
         if (prevX != player.x || prevY != player.y) {
+            // ★ 이전 위치에 적이 있었는지 확인
+            Enemy* prevEnemy = map_get_enemy_at(&map, prevX, prevY);
+
             // 이전 위치 복원
             console_goto(prevX * 2, prevY);
-            printf("%s", tile_to_glyph(map.tiles[prevY][prevX]));
+            if (prevEnemy != NULL) {
+                // 적이 있으면 적을 다시 그림
+                printf("%s", enemy_to_glyph(prevEnemy->type));
+            }
+            else {
+                // 바닥 타일 복원
+                printf("%s", tile_to_glyph(map.tiles[prevY][prevX]));
+            }
 
             // 새 위치 그리기
             console_goto(player.x * 2, player.y);

@@ -59,15 +59,15 @@ void combat_attack_enemy(Player* p, Enemy* e, Map* m) {
     }
 
     // ★ 적 반격 전 이펙트 변경
-    ui_clear_combat_effect(107, 2);
+    //ui_clear_combat_effect(107, 2);
 
     // 적 반격 이펙트 (방패)
-    console_goto(107, 2);
-    printf(COLOR_BRIGHT_BLUE "  🛡" COLOR_RESET);
-    console_goto(107, 3);
-    printf(COLOR_BRIGHT_BLUE " 🛡🛡🛡" COLOR_RESET);
-    console_goto(107, 4);
-    printf(COLOR_BRIGHT_BLUE "🛡🛡🛡🛡🛡" COLOR_RESET);
+    //console_goto(107, 2);
+    //printf(COLOR_BRIGHT_BLUE "  🛡" COLOR_RESET);
+    //console_goto(107, 3);
+    //printf(COLOR_BRIGHT_BLUE " 🛡🛡🛡" COLOR_RESET);
+    //console_goto(107, 4);
+    //printf(COLOR_BRIGHT_BLUE "🛡🛡🛡🛡🛡" COLOR_RESET);
 
     // 적 반격
     int enemyDamage = e->attack - p->defense;

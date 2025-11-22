@@ -36,6 +36,7 @@ void map_load_enemies(Map* m);  // ★ 추가
 Enemy* map_get_enemy_at(Map* m , int x , int y);  // ★ 추가
 Enemy* map_get_adjacent_enemy(Map* m , int px , int py);  // ★ 추가
 const char* map_get_enemy_direction(Map* m , int px , int py , Enemy* enemy);  // ★ 추가
+const char* enemy_to_glyph(char type);
 
 
 #endif
