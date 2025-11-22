@@ -151,12 +151,8 @@ int map_is_walkable(const Map* m, int x, int y) {
     if (x < 0 || x >= m->width || y < 0 || y >= m->height)
         return 0;
 
-    // ★ 적이 있으면 이동 불가 (나중에 전투로 변경)
-    Enemy* enemy = map_get_enemy_at((Map*)m, x, y);
-    if (enemy != NULL) {
-        return 0;  // 일단 이동 불가
-    }
-
+    // ★ 적 체크 제거 (player_move에서 처리)
+    // 타일만 체크
     return (m->tiles[y][x] == '.');
 }
 

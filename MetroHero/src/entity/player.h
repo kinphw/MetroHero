@@ -1,16 +1,15 @@
 #ifndef PLAYER_H
 #define PLAYER_H
 
-struct Map; // Map 구조체의 전방 선언
+struct Map;
 
 typedef struct {
-	int x, y;
+	int x , y;
 
-	// ★ 스탯
-	int hp;           // 현재 체력
-	int maxHp;        // 최대 체력
-	int attack;       // 공격력
-	int defense;      // 방어력
+	int hp;
+	int maxHp;
+	int attack;
+	int defense;
 
 	const char* weaponName;
 	const char* armorName;
@@ -18,6 +17,6 @@ typedef struct {
 } Player;
 
 void player_init(Player* p);
-void player_move(Player* p, const struct Map* m, int cmd); // struct Map*로 명확히 선언
+void player_move(Player* p , struct Map* m , int cmd);  // ★ const 제거
 
 #endif

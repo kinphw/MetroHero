@@ -1,4 +1,3 @@
-#pragma once
 // core/combat.h
 #ifndef COMBAT_H
 #define COMBAT_H
@@ -10,7 +9,7 @@
 // 인접 적 체크 및 메시지 생성
 void combat_check_nearby_enemy(Map* m , Player* p);
 
-// 전투 시작 (나중에 구현)
-void combat_attack_enemy(Player* p , Enemy* e);
+// 전투 시작
+void combat_attack_enemy(Player* p , Enemy* e , Map* m);
 
 #endif

@@ -44,6 +44,17 @@ void game_run(void) {
     prevY = player.y;
 
     while (1) {
+
+        // ★ 플레이어 사망 체크
+        if (player.hp <= 0) {
+            ui_add_log("게임 오버!");
+            ui_draw_log(0, LOG_Y, LOG_W, LOG_H);
+            console_goto(0, SCREEN_H - 1);
+            printf("아무 키나 누르면 종료...");
+            _getch();
+            break;
+        }
+
         int cmd = _getch();
 
         // ★ 화살표 키 처리 (2바이트 입력)
@@ -62,32 +73,47 @@ void game_run(void) {
 
         if (cmd == 'q') break;
 
+        // ★ 이동 전에 목표 위치의 적 확인
+        int targetX = player.x;
+        int targetY = player.y;
+
+        switch (cmd) {
+        case 'w': targetY--; break;
+        case 's': targetY++; break;
+        case 'a': targetX--; break;
+        case 'd': targetX++; break;
+        }
+
+        Enemy* targetEnemy = map_get_enemy_at(&map, targetX, targetY);
+
         player_move(&player, &map, cmd);
 
-        if (prevX != player.x || prevY != player.y) {
-            // 이전 위치를 원래 타일로 복원
-            console_goto(prevX * 2, prevY);
+        // ★ 전투가 발생했고 적이 죽었으면 화면에서 지우기
+        if (targetEnemy != NULL && !targetEnemy->isAlive) {
+            console_goto(targetEnemy->x * 2, targetEnemy->y);
+            printf("%s", tile_to_glyph(map.tiles[targetEnemy->y][targetEnemy->x]));
+        }
 
-            // ★ map.c의 tile_to_glyph를 public으로 만들고 재사용
-            extern const char* tile_to_glyph(char t);  // map.h에 선언 추가
+        if (prevX != player.x || prevY != player.y) {
+            // 이전 위치 복원
+            console_goto(prevX * 2, prevY);
             printf("%s", tile_to_glyph(map.tiles[prevY][prevX]));
 
             // 새 위치 그리기
             console_goto(player.x * 2, player.y);
             printf(GLYPH_PLAYER);
 
-            // ★ 간단하게 한 줄로!
-            combat_check_nearby_enemy(&map, &player);
-
-            // ★ 로그창 갱신 추가
-            ui_draw_log(0, LOG_Y, LOG_W, LOG_H);
-
-            // ★ 입력 안내 다시 출력 (로그가 덮어쓸 수 있으므로)
-            //console_goto(0, SCREEN_H - 1);
-            //printf("[w,a,s,d] 이동 | [q] 종료");
-
             prevX = player.x;
             prevY = player.y;
         }
+
+        // ★ 인접 적 체크
+        combat_check_nearby_enemy(&map, &player);
+
+        // ★ 상태창 갱신 (HP 변경 반영)
+        ui_draw_stats(&player, EQ_X, 0, EQ_W, 10);
+
+        // ★ 로그창 갱신
+        ui_draw_log(0, LOG_Y, LOG_W, LOG_H);
     }
 }

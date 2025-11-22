@@ -29,44 +29,54 @@ int main(void) {
 #include "../world/map.h"
 #include <stdio.h>
 
-// ★ 인접 적 체크 및 메시지 자동 생성
+// ★ 인접 적 체크 및 메시지 자동 생성 (체력 포함)
 void combat_check_nearby_enemy(Map* m, Player* p) {
     Enemy* nearEnemy = map_get_adjacent_enemy(m, p->x, p->y);
 
     if (nearEnemy != NULL) {
         const char* direction = map_get_enemy_direction(m, p->x, p->y, nearEnemy);
         char logMsg[128];
-        snprintf(logMsg, sizeof(logMsg), "%s에 %s이(가) 서있다!", direction, nearEnemy->name);
+        snprintf(logMsg, sizeof(logMsg), "%s에 %s이(가) 서있다! (HP: %d/%d)",
+            direction, nearEnemy->name, nearEnemy->hp, nearEnemy->maxHp);
         ui_add_log(logMsg);
     }
 }
 
-// ★ 나중에 전투 시스템 추가
-void combat_attack_enemy(Player* p, Enemy* e) {
-    // 데미지 계산
-    int damage = p->attack - e->defense;
-    if (damage < 0) damage = 0;
-
-    e->hp -= damage;
-
-    // 전투 로그
+// ★ 전투 시스템
+void combat_attack_enemy(Player* p, Enemy* e, Map* m) {
     char logMsg[128];
-    snprintf(logMsg, sizeof(logMsg), "%s를 공격! %d 데미지!", e->name, damage);
+
+    // 플레이어 공격
+    int playerDamage = p->attack - e->defense;
+    if (playerDamage < 1) playerDamage = 1;  // 최소 1 데미지
+
+    e->hp -= playerDamage;
+
+    snprintf(logMsg, sizeof(logMsg), "%s를 공격! %d 데미지! (HP: %d/%d)",
+        e->name, playerDamage, e->hp > 0 ? e->hp : 0, e->maxHp);
     ui_add_log(logMsg);
 
+    // 적 사망 체크
     if (e->hp <= 0) {
         e->isAlive = 0;
         snprintf(logMsg, sizeof(logMsg), "%s를 처치했다!", e->name);
         ui_add_log(logMsg);
+        return;  // 적이 죽으면 반격 없음
     }
-    else {
-        // 적 반격
-        int enemyDamage = e->attack - p->defense;
-        if (enemyDamage < 0) enemyDamage = 0;
 
-        p->hp -= enemyDamage;
-        snprintf(logMsg, sizeof(logMsg), "%s의 반격! %d 데미지!", e->name, enemyDamage);
-        ui_add_log(logMsg);
+    // 적 반격
+    int enemyDamage = e->attack - p->defense;
+    if (enemyDamage < 1) enemyDamage = 1;  // 최소 1 데미지
+
+    p->hp -= enemyDamage;
+
+    snprintf(logMsg, sizeof(logMsg), "%s의 반격! %d 데미지! (플레이어 HP: %d/%d)",
+        e->name, enemyDamage, p->hp > 0 ? p->hp : 0, p->maxHp);
+    ui_add_log(logMsg);
+
+    // 플레이어 사망 체크
+    if (p->hp <= 0) {
+        ui_add_log("당신은 쓰러졌습니다...");
     }
 }
 
@@ -75,7 +85,6 @@ void combat_attack_enemy(Player* p, Enemy* e) {
 [FILE NAME] combat.h
 ------------------------------------------------------------
 
-#pragma once
 // core/combat.h
 #ifndef COMBAT_H
 #define COMBAT_H
@@ -87,8 +96,8 @@ void combat_attack_enemy(Player* p, Enemy* e) {
 // 인접 적 체크 및 메시지 생성
 void combat_check_nearby_enemy(Map* m , Player* p);
 
-// 전투 시작 (나중에 구현)
-void combat_attack_enemy(Player* p , Enemy* e);
+// 전투 시작
+void combat_attack_enemy(Player* p , Enemy* e , Map* m);
 
 #endif
 
@@ -143,6 +152,17 @@ void game_run(void) {
     prevY = player.y;
 
     while (1) {
+
+        // ★ 플레이어 사망 체크
+        if (player.hp <= 0) {
+            ui_add_log("게임 오버!");
+            ui_draw_log(0, LOG_Y, LOG_W, LOG_H);
+            console_goto(0, SCREEN_H - 1);
+            printf("아무 키나 누르면 종료...");
+            _getch();
+            break;
+        }
+
         int cmd = _getch();
 
         // ★ 화살표 키 처리 (2바이트 입력)
@@ -161,33 +181,48 @@ void game_run(void) {
 
         if (cmd == 'q') break;
 
+        // ★ 이동 전에 목표 위치의 적 확인
+        int targetX = player.x;
+        int targetY = player.y;
+
+        switch (cmd) {
+        case 'w': targetY--; break;
+        case 's': targetY++; break;
+        case 'a': targetX--; break;
+        case 'd': targetX++; break;
+        }
+
+        Enemy* targetEnemy = map_get_enemy_at(&map, targetX, targetY);
+
         player_move(&player, &map, cmd);
 
-        if (prevX != player.x || prevY != player.y) {
-            // 이전 위치를 원래 타일로 복원
-            console_goto(prevX * 2, prevY);
+        // ★ 전투가 발생했고 적이 죽었으면 화면에서 지우기
+        if (targetEnemy != NULL && !targetEnemy->isAlive) {
+            console_goto(targetEnemy->x * 2, targetEnemy->y);
+            printf("%s", tile_to_glyph(map.tiles[targetEnemy->y][targetEnemy->x]));
+        }
 
-            // ★ map.c의 tile_to_glyph를 public으로 만들고 재사용
-            extern const char* tile_to_glyph(char t);  // map.h에 선언 추가
+        if (prevX != player.x || prevY != player.y) {
+            // 이전 위치 복원
+            console_goto(prevX * 2, prevY);
             printf("%s", tile_to_glyph(map.tiles[prevY][prevX]));
 
             // 새 위치 그리기
             console_goto(player.x * 2, player.y);
             printf(GLYPH_PLAYER);
 
-            // ★ 간단하게 한 줄로!
-            combat_check_nearby_enemy(&map, &player);
-
-            // ★ 로그창 갱신 추가
-            ui_draw_log(0, LOG_Y, LOG_W, LOG_H);
-
-            // ★ 입력 안내 다시 출력 (로그가 덮어쓸 수 있으므로)
-            //console_goto(0, SCREEN_H - 1);
-            //printf("[w,a,s,d] 이동 | [q] 종료");
-
             prevX = player.x;
             prevY = player.y;
         }
+
+        // ★ 인접 적 체크
+        combat_check_nearby_enemy(&map, &player);
+
+        // ★ 상태창 갱신 (HP 변경 반영)
+        ui_draw_stats(&player, EQ_X, 0, EQ_W, 10);
+
+        // ★ 로그창 갱신
+        ui_draw_log(0, LOG_Y, LOG_W, LOG_H);
     }
 }
 
@@ -558,7 +593,7 @@ void enemy_init(Enemy* e, char type, int x, int y) {
     // 타입별 스탯 설정
     switch (type) {
     case 'a':  // 고블린
-        e->name = "고블린";
+        e->name = "맹혹한고양이";
         e->maxHp = 5;
         e->hp = 5;
         e->attack = 2;
@@ -627,6 +662,7 @@ int enemy_is_at(const Enemy* e , int x , int y);
 #include "../world/map.h"
 #include "player.h"
 #include "../core/ui.h"  // ★ ui_add_log 사용을 위해 추가
+#include "../core/combat.h"  // ★ 추가
 
 void player_init(Player* p) {
     // ★ 맵 크기를 알 수 없으므로 기본값 설정
@@ -636,7 +672,7 @@ void player_init(Player* p) {
     // ★ 초기 스탯
     p->maxHp = 10;
     p->hp = 10;
-    p->attack = 1;
+    p->attack = 3;
     p->defense = 0;
 
     p->weaponName = "";
@@ -656,14 +692,19 @@ void player_move(Player* p, const Map* m, int cmd) {
     case 'd': nx++; break;
     }
 
+    // ★ 목표 위치에 적이 있는지 확인
+    Enemy* targetEnemy = map_get_enemy_at((Map*)m, nx, ny);
+
+    if (targetEnemy != NULL) {
+        // ★ 적이 있으면 전투!
+        combat_attack_enemy(p, targetEnemy, (Map*)m);
+        return;  // 이동하지 않음
+    }
+
+    // 일반 이동
     if (map_is_walkable(m, nx, ny)) {
         p->x = nx;
         p->y = ny;
-
-        // 이동 성공 로그 찍기
-        //char logMsg[128];
-        //snprintf(logMsg, sizeof(logMsg), "이동: (%d, %d)", p->x, p->y);
-		//ui_add_log(logMsg);
     }
 }
 
@@ -676,16 +717,15 @@ void player_move(Player* p, const Map* m, int cmd) {
 #ifndef PLAYER_H
 #define PLAYER_H
 
-struct Map; // Map 구조체의 전방 선언
+struct Map;
 
 typedef struct {
-	int x, y;
+	int x , y;
 
-	// ★ 스탯
-	int hp;           // 현재 체력
-	int maxHp;        // 최대 체력
-	int attack;       // 공격력
-	int defense;      // 방어력
+	int hp;
+	int maxHp;
+	int attack;
+	int defense;
 
 	const char* weaponName;
 	const char* armorName;
@@ -693,10 +733,9 @@ typedef struct {
 } Player;
 
 void player_init(Player* p);
-void player_move(Player* p, const struct Map* m, int cmd); // struct Map*로 명확히 선언
+void player_move(Player* p , struct Map* m , int cmd);  // ★ const 제거
 
 #endif
-
 
 ------------------------------------------------------------
 [FILE PATH] C:\projects\MetroHero\MetroHero\src\world\glyph.h
@@ -902,12 +941,8 @@ int map_is_walkable(const Map* m, int x, int y) {
     if (x < 0 || x >= m->width || y < 0 || y >= m->height)
         return 0;
 
-    // ★ 적이 있으면 이동 불가 (나중에 전투로 변경)
-    Enemy* enemy = map_get_enemy_at((Map*)m, x, y);
-    if (enemy != NULL) {
-        return 0;  // 일단 이동 불가
-    }
-
+    // ★ 적 체크 제거 (player_move에서 처리)
+    // 타일만 체크
     return (m->tiles[y][x] == '.');
 }
 

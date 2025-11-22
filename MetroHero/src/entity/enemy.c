@@ -10,7 +10,7 @@ void enemy_init(Enemy* e, char type, int x, int y) {
     // 타입별 스탯 설정
     switch (type) {
     case 'a':  // 고블린
-        e->name = "고블린";
+        e->name = "맹혹한고양이";
         e->maxHp = 5;
         e->hp = 5;
         e->attack = 2;
