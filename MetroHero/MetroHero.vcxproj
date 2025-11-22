@@ -19,6 +19,8 @@
     </ProjectConfiguration>
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="src\world\map_data.c" />
+    <ClCompile Include="src\debug\debug.c" />
     <ClCompile Include="src\core\game.c" />
     <ClCompile Include="src\core\ui.c" />
     <ClCompile Include="src\main.c" />
@@ -26,6 +28,8 @@
     <ClCompile Include="src\entity\player.c" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="src\world\map_data.h" />
+    <ClInclude Include="src\debug\debug.h" />
     <ClInclude Include="src\core\game.h" />
     <ClInclude Include="src\core\ui.h" />
     <ClInclude Include="src\world\map.h" />

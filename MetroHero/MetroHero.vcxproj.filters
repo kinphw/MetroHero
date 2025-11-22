@@ -13,6 +13,9 @@
     <Filter Include="src\entity">
       <UniqueIdentifier>{d1c960b6-a6d6-440f-8ac0-dc9d18a204b3}</UniqueIdentifier>
     </Filter>
+    <Filter Include="src\debug">
+      <UniqueIdentifier>{243265fd-63c3-4761-9a12-ca51fe20b1a0}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="src\main.c">
@@ -30,6 +33,12 @@
     <ClCompile Include="src\core\ui.c">
       <Filter>src\core</Filter>
     </ClCompile>
+    <ClCompile Include="src\debug\debug.c">
+      <Filter>src\debug</Filter>
+    </ClCompile>
+    <ClCompile Include="src\world\map_data.c">
+      <Filter>src\world</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="src\core\game.h">
@@ -43,6 +52,12 @@
     </ClInclude>
     <ClInclude Include="src\core\ui.h">
       <Filter>src\core</Filter>
+    </ClInclude>
+    <ClInclude Include="src\debug\debug.h">
+      <Filter>src\debug</Filter>
+    </ClInclude>
+    <ClInclude Include="src\world\map_data.h">
+      <Filter>src\world</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>

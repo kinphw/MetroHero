@@ -1,0 +1,619 @@
+=== Source Collection Start ===
+
+------------------------------------------------------------
+[FILE PATH] C:\projects\MetroHero\MetroHero\src\main.c
+[FILE NAME] main.c
+------------------------------------------------------------
+
+#include <windows.h>
+#include "core/game.h"
+#include "debug/debug.h"  // ★ 추가
+
+int main(void) {
+
+    // debug_console_info();
+
+    game_run();
+    return 0;
+}
+
+
+------------------------------------------------------------
+[FILE PATH] C:\projects\MetroHero\MetroHero\src\core\game.c
+[FILE NAME] game.c
+------------------------------------------------------------
+
+#define _CRT_SECURE_NO_WARNINGS
+#include <stdio.h>
+#include <stdlib.h>
+#include <conio.h>   // _getch
+#include <ctype.h>   // tolower
+#include "game.h"
+#include "ui.h"
+#include "../world/map.h"
+#include "../entity/player.h"
+
+void game_run(void) {
+    Map map;
+    Player player;
+    int prevX, prevY;  // ★ 이전 위치 저장
+
+    map_init(&map);
+    player_init(&player);
+    ui_init();
+
+
+    // ★ 초기 화면은 한 번만 그리기
+    console_clear_fast();
+    map_draw_at(&map, &player, 0, 0);
+    ui_draw_equipment(&player, EQ_X, 0, EQ_W, TOP_H);
+    ui_draw_log(0, LOG_Y, LOG_W, LOG_H);
+    console_goto(0, SCREEN_H - 1);
+    printf("[w,a,s,d] 이동 | [q] 종료");
+
+    prevX = player.x;
+    prevY = player.y;
+
+    while (1) {
+        int cmd = _getch();
+        cmd = tolower(cmd);
+
+        if (cmd == 'q') break;
+
+        player_move(&player, &map, cmd);
+
+        // ★ 플레이어가 실제로 움직였을 때만 화면 갱신
+        if (prevX != player.x || prevY != player.y) {
+            // 이전 위치 지우기
+            console_goto(prevX * 2, prevY);
+            printf("..");
+
+            // 새 위치 그리기
+            console_goto(player.x * 2, player.y);
+            printf(">>");
+
+            prevX = player.x;
+            prevY = player.y;
+        }
+    }
+}
+
+
+------------------------------------------------------------
+[FILE PATH] C:\projects\MetroHero\MetroHero\src\core\game.h
+[FILE NAME] game.h
+------------------------------------------------------------
+
+#ifndef GAME_H
+#define GAME_H
+
+void game_run(void);
+
+#endif
+
+
+------------------------------------------------------------
+[FILE PATH] C:\projects\MetroHero\MetroHero\src\core\ui.c
+[FILE NAME] ui.c
+------------------------------------------------------------
+
+#include <windows.h>
+#include <stdio.h>
+#include "ui.h"
+#include "../entity/player.h"
+
+void ui_init(void) {
+
+    HANDLE hOut = GetStdHandle(STD_OUTPUT_HANDLE);
+
+    // 콘솔을 UTF-8로 설정
+    SetConsoleOutputCP(CP_UTF8);
+    SetConsoleCP(CP_UTF8);
+
+    // ★ 순서 중요: 먼저 윈도우 크기를 최소로 줄임
+    //SMALL_RECT minWindow = { 0, 0, 1, 1 };
+    //SetConsoleWindowInfo(hOut, TRUE, &minWindow);
+
+    //// ★ 그 다음 버퍼 크기 설정
+    //COORD bufferSize = { SCREEN_W, SCREEN_H };
+    //SetConsoleScreenBufferSize(hOut, bufferSize);
+
+    //// ★ 마지막으로 윈도우 크기를 원하는 크기로 설정
+    //SMALL_RECT windowSize = { 0, 0, SCREEN_W - 1, SCREEN_H - 1 };
+    //SetConsoleWindowInfo(hOut, TRUE, &windowSize);
+
+    // 커서 숨기기(선택)
+    CONSOLE_CURSOR_INFO info;
+    info.dwSize = 1;
+    info.bVisible = FALSE;
+    SetConsoleCursorInfo(GetStdHandle(STD_OUTPUT_HANDLE), &info);
+}
+
+//void console_clear_fast(void) {
+//    HANDLE hOut = GetStdHandle(STD_OUTPUT_HANDLE);
+//    COORD pos = { 0, 0 };
+//    SetConsoleCursorPosition(hOut, pos);
+//}
+
+void console_clear_fast(void) {
+    HANDLE hOut = GetStdHandle(STD_OUTPUT_HANDLE);
+
+    CONSOLE_SCREEN_BUFFER_INFO csbi;
+    GetConsoleScreenBufferInfo(hOut, &csbi);
+
+    DWORD cellCount = csbi.dwSize.X * csbi.dwSize.Y;
+    DWORD count;
+    COORD homeCoords = { 0, 0 };
+
+    // 화면 전체를 공백으로 채우기
+    FillConsoleOutputCharacter(hOut, ' ', cellCount, homeCoords, &count);
+
+    // 화면 속성 리셋
+    FillConsoleOutputAttribute(hOut, csbi.wAttributes, cellCount, homeCoords, &count);
+
+    // 커서 위치 리셋
+    SetConsoleCursorPosition(hOut, homeCoords);
+}
+
+
+void console_goto(int x, int y) {
+    COORD pos = { x, y };
+    SetConsoleCursorPosition(GetStdHandle(STD_OUTPUT_HANDLE), pos);
+}
+
+
+// 화면에 표시되는 실제 폭 계산 (한글 = 2칸, 영문 = 1칸)
+static int display_width(const char* str) {
+    int width = 0;
+    const unsigned char* s = (const unsigned char*)str;
+
+    while (*s) {
+        if (*s < 128) {
+            // ASCII (1바이트) = 1칸
+            width += 1;
+            s += 1;
+        }
+        else if ((*s & 0xE0) == 0xC0) {
+            // UTF-8 2바이트 문자 = 2칸
+            width += 2;
+            s += 2;
+        }
+        else if ((*s & 0xF0) == 0xE0) {
+            // UTF-8 3바이트 문자 (한글 등) = 2칸
+            width += 2;
+            s += 3;
+        }
+        else if ((*s & 0xF8) == 0xF0) {
+            // UTF-8 4바이트 문자 = 2칸
+            width += 2;
+            s += 4;
+        }
+        else {
+            s += 1;
+        }
+    }
+    return width;
+}
+
+void ui_draw_equipment(const Player* p, int x, int y, int w, int h) {
+    console_goto(x, y);
+    printf("┌─ EQUIPMENT ──────────┐");
+
+    console_goto(x, y + 1);
+    printf("│                      │");
+
+    console_goto(x, y + 2);
+    printf("│ 무기:    %s", p->weaponName);
+    int len = display_width(p->weaponName);
+    for (int i = 0; i < 11 - len; i++) putchar(' ');
+    printf(" │");
+
+    console_goto(x, y + 3);
+    printf("│ 방어구:  %s", p->armorName);
+    len = display_width(p->armorName);
+    for (int i = 0; i < 11 - len; i++) putchar(' ');
+    printf(" │");
+
+    console_goto(x, y + 4);
+    printf("│ 아이템1: %s", p->item1);
+    len = display_width(p->item1);
+    for (int i = 0; i < 11 - len; i++) putchar(' ');
+    printf(" │");
+
+    for (int i = 5; i < h - 1; i++) {
+        console_goto(x, y + i);
+        printf("│                      │");
+    }
+
+    console_goto(x, y + h - 1);
+    printf("└──────────────────────┘");
+}
+
+#define LOG_LINES 200
+char log_buf[LOG_LINES][128];
+int log_index = 0;
+
+void ui_add_log(const char* msg) {
+    snprintf(log_buf[log_index], 128, "%s", msg);
+    log_index = (log_index + 1) % LOG_LINES;
+}
+
+void ui_draw_log(int x, int y, int w, int h) {
+    int start = (log_index - h + LOG_LINES) % LOG_LINES;
+
+    for (int i = 0; i < h; i++) {
+        console_goto(x, y + i);
+
+        // ★ 정확한 너비만큼 출력 (넘치지 않게)
+        char line[256] = { 0 };
+        snprintf(line, sizeof(line), "%-*s", w - 1, log_buf[(start + i) % LOG_LINES]);
+        line[w - 1] = '\0';  // 안전하게 종료
+        printf("%s", line);
+    }
+}
+
+
+
+------------------------------------------------------------
+[FILE PATH] C:\projects\MetroHero\MetroHero\src\core\ui.h
+[FILE NAME] ui.h
+------------------------------------------------------------
+
+#include "../entity/player.h"
+
+#define SCREEN_W 120
+#define SCREEN_H 30
+
+// 상단 전체 높이
+#define TOP_H 20
+
+// 맵 설정
+//#define MAP_W 40                // 논리적 가로 칸 수
+//#define MAP_H 20                // 맵 세로 수
+#define MAP_RENDER_W (MAP_W*2)  // 실제 출력되는 문자 폭 80
+
+// 장비창(오른쪽)
+#define EQ_X MAP_RENDER_W      // 80
+#define EQ_W (SCREEN_W - EQ_X) // 40
+#define EQ_H TOP_H
+
+// 로그창(하단)
+#define LOG_Y TOP_H            // 25
+#define LOG_W SCREEN_W
+#define LOG_H (SCREEN_H - TOP_H)   // 15
+
+
+void console_goto(int x , int y);
+
+void ui_draw_equipment(const Player* p , int x , int y , int w , int h);  // ★ 이 줄 확인
+
+void ui_add_log(const char* msg);
+void ui_draw_log(int x , int y , int w , int h);
+
+void console_clear_fast(void);
+
+
+
+------------------------------------------------------------
+[FILE PATH] C:\projects\MetroHero\MetroHero\src\debug\debug.c
+[FILE NAME] debug.c
+------------------------------------------------------------
+
+#include <windows.h>
+#include <stdio.h>
+#include <conio.h>
+#include "debug.h"
+
+void debug_console_info(void) {
+    HANDLE hOut = GetStdHandle(STD_OUTPUT_HANDLE);
+
+    // ★ UTF-8 설정 먼저!
+    SetConsoleOutputCP(CP_UTF8);
+    SetConsoleCP(CP_UTF8);
+
+    CONSOLE_SCREEN_BUFFER_INFO csbi;
+    GetConsoleScreenBufferInfo(hOut, &csbi);
+
+    printf("╔════════════════════════════════════╗\n");
+    printf("║     콘솔 상태 디버깅 정보          ║\n");
+    printf("╚════════════════════════════════════╝\n\n");
+
+    printf("버퍼 크기:   %d x %d\n", csbi.dwSize.X, csbi.dwSize.Y);
+    printf("윈도우 크기: %d x %d\n",
+        csbi.srWindow.Right - csbi.srWindow.Left + 1,
+        csbi.srWindow.Bottom - csbi.srWindow.Top + 1);
+    printf("커서 위치:   (%d, %d)\n",
+        csbi.dwCursorPosition.X, csbi.dwCursorPosition.Y);
+    printf("\n윈도우 좌표:\n");
+    printf("  Left=%d, Top=%d\n", csbi.srWindow.Left, csbi.srWindow.Top);
+    printf("  Right=%d, Bottom=%d\n", csbi.srWindow.Right, csbi.srWindow.Bottom);
+
+    printf("\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n");
+    printf("아무 키나 누르면 계속...");
+    _getch();
+    printf("\n");
+}
+
+------------------------------------------------------------
+[FILE PATH] C:\projects\MetroHero\MetroHero\src\debug\debug.h
+[FILE NAME] debug.h
+------------------------------------------------------------
+
+#pragma once
+#ifndef DEBUG_H
+#define DEBUG_H
+
+// 콘솔 상태 정보 출력
+void debug_console_info(void);
+
+// 게임 상태 정보 출력 (나중에 추가 가능)
+// void debug_game_state(void);
+// void debug_player_info(const Player* p);
+
+#endif
+
+------------------------------------------------------------
+[FILE PATH] C:\projects\MetroHero\MetroHero\src\entity\player.c
+[FILE NAME] player.c
+------------------------------------------------------------
+
+#include "../world/map.h"
+#include "player.h"
+
+
+void player_init(Player* p) {
+    p->x = MAP_W / 2;
+    p->y = MAP_H / 2;
+
+    p->weaponName = "목검";
+    p->armorName = "천 갑옷";
+    p->item1 = "HP 포션";
+}
+
+
+void player_move(Player* p, const Map* m, int cmd) {
+    int nx = p->x;
+    int ny = p->y;
+
+    switch (cmd) {
+    case 'w': ny--; break;
+    case 's': ny++; break;
+    case 'a': nx--; break;
+    case 'd': nx++; break;
+    }
+
+    if (map_is_walkable(m, nx, ny)) {
+        p->x = nx;
+        p->y = ny;
+    }
+}
+
+
+------------------------------------------------------------
+[FILE PATH] C:\projects\MetroHero\MetroHero\src\entity\player.h
+[FILE NAME] player.h
+------------------------------------------------------------
+
+#ifndef PLAYER_H
+#define PLAYER_H
+
+struct Map; // Map 구조체의 전방 선언
+
+typedef struct {
+	int x, y;
+	const char* weaponName;
+	const char* armorName;
+	const char* item1;
+} Player;
+
+void player_init(Player* p);
+void player_move(Player* p, const struct Map* m, int cmd); // struct Map*로 명확히 선언
+
+#endif
+
+
+------------------------------------------------------------
+[FILE PATH] C:\projects\MetroHero\MetroHero\src\world\map.c
+[FILE NAME] map.c
+------------------------------------------------------------
+
+#include <stdio.h>
+#include <windows.h>
+#include "map.h"
+#include "../entity/player.h"
+#include "../core/ui.h"   // ★ 반드시 필요
+#include "map_data.h"  // ★ 추가
+
+// -------------------------------
+// 전각(2바이트) 문자 설정
+// -------------------------------
+static const char* tile_to_glyph(char t) {
+    switch (t) {
+    case '.':  // 바닥
+        return "..";        // 전각 느낌의 가벼운 점
+    case '#':  // 벽
+        return ".";        // 전각 블록
+    case '=':  // 철도 레일
+        return ".";        // 전각 라인
+    default:
+        return ".";        // 빈칸
+    }
+}
+
+// -------------------------------
+// 맵 초기화
+// -------------------------------
+void map_init(Map* m) {
+
+    load_map_station1(m);
+
+    /*for (int y = 0; y < MAP_H; y++) {
+        for (int x = 0; x < MAP_W; x++) {
+            m->tiles[y][x] = '.';
+        }
+    }*/
+}
+
+// -------------------------------
+// 맵 렌더링
+// -------------------------------
+//void map_draw(const Map* m, const Player* p) {
+//    for (int y = 0; y < MAP_H; y++) {
+//        for (int x = 0; x < MAP_W; x++) {
+//
+//            if (p->x == x && p->y == y) {
+//                // 플레이어 위치
+//                printf(">>");   // 전각 플레이어 아이콘
+//            }
+//            else {
+//                printf("%s", tile_to_glyph(m->tiles[y][x]));
+//            }
+//
+//        }
+//        putchar('\n');
+//    }
+//}
+
+void map_draw_at(const Map* m, const Player* p, int startX, int startY) {
+    for (int y = 0; y < MAP_H; y++) {
+        console_goto(startX, startY + y);
+
+        for (int x = 0; x < MAP_W; x++) {
+            if (x == p->x && y == p->y)
+                printf(">>");
+            else
+                printf("%s", tile_to_glyph(m->tiles[y][x]));
+        }
+    }
+}
+
+
+
+
+
+// -------------------------------
+// 이동 가능 여부 검사
+// -------------------------------
+int map_is_walkable(const Map* m, int x, int y) {
+    if (x < 0 || x >= MAP_W || y < 0 || y >= MAP_H)
+        return 0;
+
+    return (m->tiles[y][x] == '.');
+}
+
+
+------------------------------------------------------------
+[FILE PATH] C:\projects\MetroHero\MetroHero\src\world\map.h
+[FILE NAME] map.h
+------------------------------------------------------------
+
+#include "../entity/player.h"
+
+#ifndef MAP_HEADER
+#define MAP_HEADER
+
+#define MAP_W 40
+#define MAP_H 20
+
+typedef struct {
+    char tiles[MAP_H][MAP_W];
+} Map;
+
+void map_init(Map* m);
+void map_draw_at(const Map* m , const Player* p , int startX , int startY);
+int map_is_walkable(const Map* m, int x, int y);
+
+#endif
+
+
+------------------------------------------------------------
+[FILE PATH] C:\projects\MetroHero\MetroHero\src\world\map_data.c
+[FILE NAME] map_data.c
+------------------------------------------------------------
+
+#include "map_data.h"
+#include <string.h>
+
+// 역 1번 맵
+void load_map_station1(Map* m) {
+    const char* mapData[] = {
+        "########################################",
+        "#......................................#",
+        "#......................................#",
+        "#......................................#",
+        "#...........##############.............#",
+        "#...........#............#.............#",
+        "#...........#............#.............#",
+        "#...........#............#.............#",
+        "#...........#............#.............#",
+        "#...........#............#.............#",
+        "#...........#............#.............#",
+        "#...........#............#.............#",
+        "#...........#............#.............#",
+        "#...........##############.............#",
+        "#......................................#",
+        "#......................................#",
+        "#......................................#",
+        "#......................................#",
+        "#......................................#",
+        "########################################"
+    };
+
+    for (int y = 0; y < MAP_H; y++) {
+        for (int x = 0; x < MAP_W; x++) {
+            m->tiles[y][x] = mapData[y][x];
+        }
+    }
+}
+
+// 역 2번 맵
+void load_map_station2(Map* m) {
+    const char* mapData[] = {
+        "########################################",
+        "#====================================..#",
+        "#====================================..#",
+        "#......................................#",
+        "#......................................#",
+        "#......................................#",
+        "#......................................#",
+        "#......................................#",
+        "#......................................#",
+        "#......................................#",
+        "#......................................#",
+        "#......................................#",
+        "#......................................#",
+        "#......................................#",
+        "#......................................#",
+        "#......................................#",
+        "#......................................#",
+        "#......................................#",
+        "#......................................#",
+        "########################################"
+    };
+
+    for (int y = 0; y < MAP_H; y++) {
+        for (int x = 0; x < MAP_W; x++) {
+            m->tiles[y][x] = mapData[y][x];
+        }
+    }
+}
+
+------------------------------------------------------------
+[FILE PATH] C:\projects\MetroHero\MetroHero\src\world\map_data.h
+[FILE NAME] map_data.h
+------------------------------------------------------------
+
+#pragma once
+#ifndef MAP_DATA_H
+#define MAP_DATA_H
+
+#include "map.h"
+
+// 맵 데이터 로드 함수
+void load_map_station1(Map* m);
+void load_map_station2(Map* m);
+// ... 필요한 맵들 추가
+
+#endif
+
+=== Source Collection End ===
