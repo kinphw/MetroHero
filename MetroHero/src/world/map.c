@@ -95,28 +95,42 @@ Enemy* map_get_enemy_at(Map* m, int x, int y) {
     return NULL;
 }
 
-// ★ 맵에서 상자 찾기
 void map_load_chests(Map* m) {
     m->chestCount = 0;
 
+    int cfgCount = 0;
+    const ChestConfig* cfg = get_chest_config(m->stageNumber, &cfgCount);
+
+    if (cfg == NULL) return;
+
     for (int y = 0; y < m->height; y++) {
         for (int x = 0; x < m->width; x++) {
-            if (m->tiles[y][x] == 'c') {  // ★ 상자 타일
-                if (m->chestCount < MAX_CHESTS) {
-                    // 기본적으로 무기 상자를 넣자
+
+            char tile = m->tiles[y][x];
+
+            // 상자 타일이 아닌 경우 skip
+            if (tile < 'A' || tile > 'Z') continue;
+
+            // 해당 tile의 config 찾기
+            for (int i = 0; i < cfgCount; i++) {
+                if (cfg[i].tile == tile) {
+
                     chest_init(
                         &m->chests[m->chestCount],
                         x, y,
-                        "weapon",
-                        "빨간 검"
+                        cfg[i].itemType,
+                        cfg[i].itemName
                     );
                     m->chestCount++;
-                    m->tiles[y][x] = '.'; // 상자 자리는 바닥으로 바꿔두기
+
+                    //m->tiles[y][x] = '.'; // 상자 타일을 바닥으로 변경
+                    break;
                 }
             }
         }
     }
 }
+
 
 
 
@@ -174,17 +188,17 @@ void map_draw_at(const Map* m, const Player* p, int startX, int startY) {
     }
 }
 
-
-
-
-
 int map_is_walkable(const Map* m, int x, int y) {
     if (x < 0 || x >= m->width || y < 0 || y >= m->height)
         return 0;
 
-    // ★ 적 체크 제거 (player_move에서 처리)
-    // 타일만 체크
-    return (m->tiles[y][x] == '.');
+    char t = m->tiles[y][x];
+
+    // ★ 상자(A~Z)는 이동 불가
+    if (t >= 'A' && t <= 'Z')
+        return 0;
+
+    return (t == '.');
 }
 
 

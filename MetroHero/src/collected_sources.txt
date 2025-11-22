@@ -281,8 +281,39 @@ void game_run(void) {
             prevY = player.y;
         }
 
+        // ★★★★★ 상자 열기 처리 (E 키) ★★★★★
+        if (cmd == 'e') {
+            Chest* chest = map_get_adjacent_chest(&map, player.x, player.y);
+            if (chest != NULL && !chest->isOpened) {
+
+                chest->isOpened = 1;
+
+                // 아이템 적용
+                player.weaponName = chest->itemName;
+
+                char msg[128];
+                snprintf(msg, sizeof(msg),
+                    COLOR_BRIGHT_YELLOW "📦 상자를 열었다! → %s 획득!" COLOR_RESET,
+                    chest->itemName);
+
+                ui_add_log(msg);
+
+                console_goto(chest->x * 2, chest->y);
+                printf("%s", tile_to_glyph(map.tiles[chest->y][chest->x]));
+
+                // UI 갱신
+                ui_draw_equipment(&player, EQ_X, 10, EQ_W, 6);
+            }
+        }
+
         // ★ 인접 적 체크
         combat_check_nearby_enemy(&map, &player);
+
+        // ★ 인접 상자 체크 추가 (여기!)
+        Chest* nearChest = map_get_adjacent_chest(&map, player.x, player.y);
+        if (nearChest != NULL && !nearChest->isOpened) {
+            ui_add_log("가까운 곳에 상자가 있다. [E] 키로 열 수 있다.");
+        }
 
         // ★ 상태창 갱신 (HP 변경 반영)
         ui_draw_stats(&player, EQ_X, 0, EQ_W, 10);
@@ -746,6 +777,44 @@ void debug_console_info(void);
 #endif
 
 ------------------------------------------------------------
+[FILE PATH] C:\projects\MetroHero\MetroHero\src\entity\chest.c
+[FILE NAME] chest.c
+------------------------------------------------------------
+
+#include "chest.h"
+
+void chest_init(Chest* c, int x, int y, const char* itemType, const char* itemName) {
+    c->x = x;
+    c->y = y;
+    c->isOpened = 0;
+    c->itemType = itemType;
+    c->itemName = itemName;
+}
+
+
+------------------------------------------------------------
+[FILE PATH] C:\projects\MetroHero\MetroHero\src\entity\chest.h
+[FILE NAME] chest.h
+------------------------------------------------------------
+
+#pragma once
+#ifndef CHEST_H
+#define CHEST_H
+
+typedef struct {
+	int x , y;
+	int isOpened;          // 0 = 닫힘, 1 = 이미 열린 상자
+
+	const char* itemType;  // "weapon", "armor", "item"
+	const char* itemName;  // 획득할 아이템 이름
+} Chest;
+
+void chest_init(Chest* c , int x , int y , const char* itemType , const char* itemName);
+
+#endif
+
+
+------------------------------------------------------------
 [FILE PATH] C:\projects\MetroHero\MetroHero\src\entity\enemy.c
 [FILE NAME] enemy.c
 ------------------------------------------------------------
@@ -1048,6 +1117,8 @@ void player_move(Player* p , struct Map* m , int cmd);  // ★ const 제거
 #define GLYPH_NPC      "민"    // NPC
 #define GLYPH_ITEM     "물"    // 아이템
 
+#define GLYPH_CHEST  "📦"
+
 // 기타
 #define GLYPH_TREE     "♣♣"    // 나무
 #define GLYPH_WATER    "≈≈"    // 물
@@ -1133,6 +1204,10 @@ void map_find_spawn(Map* m) {
     }
 }
 
+int is_enemy_tile(char t) {
+    return (t == 'a' || t == 'b');   // 몬스터 목록 지정
+}
+
 // ★ 맵에서 적 찾아서 초기화
 void map_load_enemies(Map* m) {
     m->enemyCount = 0;
@@ -1142,7 +1217,7 @@ void map_load_enemies(Map* m) {
             char tile = m->tiles[y][x];
 
             // a~z 범위의 적 타일 찾기
-            if (tile >= 'a' && tile <= 'z') {
+            if (is_enemy_tile(tile)) {
                 if (m->enemyCount < MAX_ENEMIES) {
                     enemy_init(&m->enemies[m->enemyCount], tile, x, y);
                     m->enemyCount++;
@@ -1165,16 +1240,32 @@ Enemy* map_get_enemy_at(Map* m, int x, int y) {
     return NULL;
 }
 
+// ★ 맵에서 상자 찾기
+void map_load_chests(Map* m) {
+    m->chestCount = 0;
 
-// -------------------------------
-// 맵 초기화
-// -------------------------------
-void map_init(Map* m, int stageNumber) {
-    m->stageNumber = stageNumber;  // ★ 선택사항
-    load_map(m, stageNumber);
-    map_find_spawn(m);  // ★ 이 줄 추가!
-    map_load_enemies(m);  // ★ 이 줄 추가!
+    for (int y = 0; y < m->height; y++) {
+        for (int x = 0; x < m->width; x++) {
+            if (m->tiles[y][x] == 'c') {  // ★ 상자 타일
+                if (m->chestCount < MAX_CHESTS) {
+                    // 기본적으로 무기 상자를 넣자
+                    chest_init(
+                        &m->chests[m->chestCount],
+                        x, y,
+                        "weapon",
+                        "빨간 검"
+                    );
+                    m->chestCount++;
+                    m->tiles[y][x] = '.'; // 상자 자리는 바닥으로 바꿔두기
+                }
+            }
+        }
+    }
 }
+
+
+
+
 
 // -------------------------------
 // 맵 렌더링
@@ -1201,20 +1292,29 @@ void map_draw_at(const Map* m, const Player* p, int startX, int startY) {
         console_goto(startX, startY + y);
 
         for (int x = 0; x < m->width; x++) {
+
+            // 1) 플레이어
             if (x == p->x && y == p->y) {
-                // 플레이어
                 printf(GLYPH_PLAYER);
+                continue;
             }
-            else {
-                // ★ 적이 있는지 확인
-                Enemy* enemy = map_get_enemy_at((Map*)m, x, y);
-                if (enemy != NULL) {
-                    printf("%s", enemy_to_glyph(enemy->type));
-                }
-                else {
-                    printf("%s", tile_to_glyph(m->tiles[y][x]));
-                }
+
+            // 2) 적
+            Enemy* enemy = map_get_enemy_at((Map*)m, x, y);
+            if (enemy != NULL) {
+                printf("%s", enemy_to_glyph(enemy->type));
+                continue;
             }
+
+            // 3) ★★★ 상자(Chest) 체크 — 여기 새로 추가하는 부분 ★★★
+            Chest* chest = map_get_chest_at((Map*)m, x, y);
+            if (chest != NULL && !chest->isOpened) {
+                printf(GLYPH_CHEST);   // 예: 📦
+                continue;
+            }
+
+            // 4) 기본 타일
+            printf("%s", tile_to_glyph(m->tiles[y][x]));
         }
     }
 }
@@ -1265,6 +1365,49 @@ const char* map_get_enemy_direction(Map* m, int px, int py, Enemy* enemy) {
     return "여기";
 }
 
+Chest* map_get_chest_at(Map* m, int x, int y) {
+    for (int i = 0; i < m->chestCount; i++) {
+        if (!m->chests[i].isOpened &&
+            m->chests[i].x == x && m->chests[i].y == y) {
+
+            return &m->chests[i];
+        }
+    }
+    return NULL;
+}
+
+Chest* map_get_adjacent_chest(Map* m, int px, int py) {
+    int dirs[4][2] = {
+        {0,-1}, {0,1}, {-1,0}, {1,0}
+    };
+
+    for (int i = 0; i < 4; i++) {
+        int nx = px + dirs[i][0];
+        int ny = py + dirs[i][1];
+
+        Chest* chest = map_get_chest_at(m, nx, ny);
+        if (chest != NULL) return chest;
+    }
+
+    return NULL;
+}
+
+
+// -------------------------------
+// 맵 초기화
+// -------------------------------
+void map_init(Map* m, int stageNumber) {
+    m->stageNumber = stageNumber;  // ★ 선택사항
+    load_map(m, stageNumber);
+
+    map_find_spawn(m);  // ★ 이 줄 추가!
+    //map_load_enemies(m);  // ★ 이 줄 추가!
+
+    map_load_enemies(m);
+    map_load_chests(m);
+}
+
+
 ------------------------------------------------------------
 [FILE PATH] C:\projects\MetroHero\MetroHero\src\world\map.h
 [FILE NAME] map.h
@@ -1275,6 +1418,7 @@ const char* map_get_enemy_direction(Map* m, int px, int py, Enemy* enemy) {
 
 #include "../entity/player.h"
 #include "../entity/enemy.h"  // ★ 추가
+#include "../entity/chest.h"
 
 #define MAX_MAP_W 100  // 최대 크기만 정의
 #define MAX_MAP_H 50
@@ -1285,6 +1429,8 @@ const char* map_get_enemy_direction(Map* m, int px, int py, Enemy* enemy) {
 //typedef struct {
 //    char tiles[MAP_H][MAP_W];
 //} Map;
+
+#define MAX_CHESTS 50
 
 typedef struct {
 	int width;
@@ -1297,6 +1443,9 @@ typedef struct {
 	// ★ 적 관리
 	Enemy enemies[ MAX_ENEMIES ];
 	int enemyCount;
+
+	Chest chests[ MAX_CHESTS ];
+	int chestCount;
 } Map;
 
 void map_init(Map* m , int stageNumber);  // ★ 인자 추가
@@ -1310,6 +1459,8 @@ Enemy* map_get_adjacent_enemy(Map* m , int px , int py);  // ★ 추가
 const char* map_get_enemy_direction(Map* m , int px , int py , Enemy* enemy);  // ★ 추가
 const char* enemy_to_glyph(char type);
 
+Chest* map_get_chest_at(Map* m , int x , int y);
+Chest* map_get_adjacent_chest(Map* m , int px , int py);
 
 #endif
 
@@ -1333,7 +1484,7 @@ static const char* MAP_STAGE_1[] = {
     "#.....#.####...........#########.......#",
     "#.....#a#..#...........#.......#.......#",
     "#.......#..#############.......#.......#",
-    "#.......#..................#####.......#",
+    "#c......#..................#####.......#",
     "#########..................#...........#",
     "#.........................##......b....#",
     "#.......#####..........#####...........#",

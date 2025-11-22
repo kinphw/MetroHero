@@ -2,6 +2,41 @@
 #include <string.h>
 
 // ========================
+// 스테이지별 상자 설정
+// ========================
+
+// Stage 1 : A~E 상자 내용
+static const ChestConfig STAGE1_CHESTS[] = {
+    {'A', "weapon", "초보자 검"},
+    {'B', "armor",  "가죽 갑옷"},
+    {'C', "item",   "HP 포션"},
+    {'D', "item",   "민첩의 물약"},
+    {'E', "item",   "힘의 물약"},
+};
+static const int STAGE1_CHEST_COUNT = sizeof(STAGE1_CHESTS) / sizeof(STAGE1_CHESTS[0]);
+
+// Stage 2
+static const ChestConfig STAGE2_CHESTS[] = {
+    {'A', "weapon", "강철 검"},
+    {'B', "armor",  "철 갑옷"},
+    {'C', "item",   "대형 HP 포션"},
+    {'D', "item",   "스태미너 물약"},
+    {'E', "item",   "신비한 원석"},
+};
+static const int STAGE2_CHEST_COUNT = sizeof(STAGE2_CHESTS) / sizeof(STAGE2_CHESTS[0]);
+
+// Stage 3
+static const ChestConfig STAGE3_CHESTS[] = {
+    {'A', "weapon", "마력의 검"},
+    {'B', "armor",  "마나 갑옷"},
+    {'C', "item",   "최대 HP +5"},
+    {'D', "item",   "공격력 +2"},
+    {'E', "item",   "방어력 +2"},
+};
+static const int STAGE3_CHEST_COUNT = sizeof(STAGE3_CHESTS) / sizeof(STAGE3_CHESTS[0]);
+
+
+// ========================
 // 맵 데이터 정의 (상단에 모아두기)
 // ========================
 
@@ -12,7 +47,7 @@ static const char* MAP_STAGE_1[] = {
     "#.....#.####...........#########.......#",
     "#.....#a#..#...........#.......#.......#",
     "#.......#..#############.......#.......#",
-    "#c......#..................#####.......#",
+    "#A......#..................#####.......#",
     "#########..................#...........#",
     "#.........................##......b....#",
     "#.......#####..........#####...........#",
@@ -109,4 +144,23 @@ void load_map(Map* m, int stageNumber) {
         load_map_from_data(m, MAP_DEFAULT, sizeof(MAP_DEFAULT) / sizeof(MAP_DEFAULT[0]));
         break;
     }
+}
+
+const ChestConfig* get_chest_config(int stage, int* outCount) {
+    switch (stage) {
+    case 1:
+        *outCount = STAGE1_CHEST_COUNT;
+        return STAGE1_CHESTS;
+
+    case 2:
+        *outCount = STAGE2_CHEST_COUNT;
+        return STAGE2_CHESTS;
+
+    case 3:
+        *outCount = STAGE3_CHEST_COUNT;
+        return STAGE3_CHESTS;
+    }
+
+    *outCount = 0;
+    return NULL;
 }
