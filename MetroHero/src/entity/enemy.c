@@ -13,7 +13,11 @@ void enemy_init(Enemy* e, char type, int x, int y) {
         e->name = "맹혹한고양이";
         e->maxHp = 5;
         e->hp = 5;
-        e->attack = 2;
+        //e->attack = 2;
+
+        e->attackMin = 1;  // ★ 1~3 데미지
+        e->attackMax = 3;
+
         e->defense = 0;
         break;
 
@@ -21,7 +25,11 @@ void enemy_init(Enemy* e, char type, int x, int y) {
         e->name = "B-370";
         e->maxHp = 10;
         e->hp = 10;
-        e->attack = 3;
+        //e->attack = 3;
+
+        e->attackMin = 2;  // ★ 2~4 데미지
+        e->attackMax = 4;
+
         e->defense = 1;
         break;
 
@@ -29,7 +37,11 @@ void enemy_init(Enemy* e, char type, int x, int y) {
         e->name = "몬스터";
         e->maxHp = 3;
         e->hp = 3;
-        e->attack = 1;
+        //e->attack = 1;
+
+        e->attackMin = 1;
+        e->attackMax = 2;
+
         e->defense = 0;
         break;
     }

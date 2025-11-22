@@ -126,11 +126,9 @@ void ui_draw_stats(const Player* p, int x, int y, int w, int h) {
     console_goto(x, y + 1);
     printf("│                      │");
 
-    // HP 바 그리기 - 정확하게 맞추기
+    // HP 바 그리기
     console_goto(x, y + 2);
-    printf("│ HP:");  // 'HP:' 까지 출력
-
-    // HP 바 (10칸)
+    printf("│ HP:");
     int hpBars = (p->hp * 10) / p->maxHp;
     for (int i = 0; i < 10; i++) {
         if (i < hpBars)
@@ -138,7 +136,7 @@ void ui_draw_stats(const Player* p, int x, int y, int w, int h) {
         else
             printf("░");
     }
-    printf("        │");  // ★ 공백 7개
+    printf("        │");
 
     // HP 수치
     console_goto(x, y + 3);
@@ -147,9 +145,9 @@ void ui_draw_stats(const Player* p, int x, int y, int w, int h) {
     console_goto(x, y + 4);
     printf("│                      │");
 
-    // 공격력
+    // ★ 공격력 범위 표시
     console_goto(x, y + 5);
-    printf("│ 공격력:  %3d         │", p->attack);
+    printf("│ 공격력: %2d~%2d        │", p->attackMin, p->attackMax);
 
     // 방어력
     console_goto(x, y + 6);
@@ -266,9 +264,16 @@ void ui_draw_log(int x, int y, int w, int h) {
         const char* logText = log_buf[(start + i) % LOG_LINES];
         printf("%s", logText);
 
-        // ★ 오른쪽 │ 위치로 이동해서 그리기
-        console_goto(x + w - 2, y + 1 + i);
-        printf(" │");
+        // ★ 남은 공간을 공백으로 채우기
+        int displayLen = display_width(logText);
+        int contentWidth = w - 4;  // "│ " + " │" = 4칸
+        int remaining = contentWidth - displayLen;
+
+        for (int j = 0; j < remaining + 1; j++) {
+            printf(" ");
+        }
+
+        printf("│");
     }
 
     // 하단 테두리

@@ -30,9 +30,10 @@ void combat_attack_enemy(Player* p, Enemy* e, Map* m) {
     // ★ 전투 이펙트 표시
     ui_draw_combat_effect(107, 2);  // 상태창 오른쪽
 
-    // 플레이어 공격
-    int playerDamage = p->attack - e->defense;
-    if (playerDamage < 1) playerDamage = 1;  // 최소 1 데미지
+    // ★★★ 플레이어 공격 - 랜덤 데미지 ★★★
+    int playerAttack = p->attackMin + rand() % (p->attackMax - p->attackMin + 1);
+    int playerDamage = playerAttack - e->defense;
+    if (playerDamage < 1) playerDamage = 1;
 
     e->hp -= playerDamage;
 
@@ -69,9 +70,10 @@ void combat_attack_enemy(Player* p, Enemy* e, Map* m) {
     //console_goto(107, 4);
     //printf(COLOR_BRIGHT_BLUE "🛡🛡🛡🛡🛡" COLOR_RESET);
 
-    // 적 반격
-    int enemyDamage = e->attack - p->defense;
-    if (enemyDamage < 1) enemyDamage = 1;  // 최소 1 데미지
+    // ★★★ 적 반격 - 랜덤 데미지 ★★★
+    int enemyAttack = e->attackMin + rand() % (e->attackMax - e->attackMin + 1);
+    int enemyDamage = enemyAttack - p->defense;
+    if (enemyDamage < 1) enemyDamage = 1;
 
     p->hp -= enemyDamage;
 

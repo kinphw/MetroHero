@@ -56,7 +56,7 @@
 #define GLYPH_STAIRS   "▼▼"    // 계단
 
 // 엔티티
-#define GLYPH_PLAYER   COLOR_BRIGHT_GREEN "🙎‍" COLOR_RESET    // 밝은 녹색
+#define GLYPH_PLAYER   COLOR_BRIGHT_GREEN "옷" COLOR_RESET    // 밝은 녹색
 #define GLYPH_DOG      "🐈‍"    // ★ 고블린 추가
 #define GLYPH_ORC      "옷"    // 나중에 사용
 #define GLYPH_NPC      "민"    // NPC

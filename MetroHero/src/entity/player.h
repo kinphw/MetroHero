@@ -8,7 +8,12 @@ typedef struct {
 
 	int hp;
 	int maxHp;
-	int attack;
+	//int attack;
+
+	// ★ 공격력을 범위로 변경
+	int attackMin;
+	int attackMax;
+
 	int defense;
 
 	const char* weaponName;

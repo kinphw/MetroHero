@@ -1,4 +1,6 @@
 #include <stdio.h>
+#include <stdlib.h>  // ★ rand() 사용
+#include <time.h>    // ★ time() 사용
 
 #include "../world/map.h"
 #include "player.h"
@@ -13,7 +15,12 @@ void player_init(Player* p) {
     // ★ 초기 스탯
     p->maxHp = 10;
     p->hp = 10;
-    p->attack = 3;
+    //p->attack = 3;
+
+    // ★ 공격력 범위 설정
+    p->attackMin = 2;
+    p->attackMax = 5;
+
     p->defense = 0;
 
     p->weaponName = "";

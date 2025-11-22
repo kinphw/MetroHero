@@ -8,7 +8,12 @@ typedef struct {
 	char type;          // 'a' = 고블린, 'b' = 오크 등
 	int hp;
 	int maxHp;
-	int attack;
+	//int attack;
+
+	// ★ 공격력을 범위로 변경
+	int attackMin;
+	int attackMax;
+
 	int defense;
 	int isAlive;        // 1 = 살아있음, 0 = 죽음
 	const char* name;   // "고블린", "오크" 등
