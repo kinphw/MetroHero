@@ -39,6 +39,12 @@
     <ClCompile Include="src\world\map_data.c">
       <Filter>src\world</Filter>
     </ClCompile>
+    <ClCompile Include="src\entity\enemy.c">
+      <Filter>src\entity</Filter>
+    </ClCompile>
+    <ClCompile Include="src\core\combat.c">
+      <Filter>src\core</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="src\core\game.h">
@@ -61,6 +67,12 @@
     </ClInclude>
     <ClInclude Include="src\world\glyph.h">
       <Filter>src\world</Filter>
+    </ClInclude>
+    <ClInclude Include="src\entity\enemy.h">
+      <Filter>src\entity</Filter>
+    </ClInclude>
+    <ClInclude Include="src\core\combat.h">
+      <Filter>src\core</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>

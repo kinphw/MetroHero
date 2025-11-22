@@ -19,6 +19,80 @@ int main(void) {
 
 
 ------------------------------------------------------------
+[FILE PATH] C:\projects\MetroHero\MetroHero\src\core\combat.c
+[FILE NAME] combat.c
+------------------------------------------------------------
+
+// core/combat.c
+#include "combat.h"
+#include "ui.h"
+#include "../world/map.h"
+#include <stdio.h>
+
+// ★ 인접 적 체크 및 메시지 자동 생성
+void combat_check_nearby_enemy(Map* m, Player* p) {
+    Enemy* nearEnemy = map_get_adjacent_enemy(m, p->x, p->y);
+
+    if (nearEnemy != NULL) {
+        const char* direction = map_get_enemy_direction(m, p->x, p->y, nearEnemy);
+        char logMsg[128];
+        snprintf(logMsg, sizeof(logMsg), "%s에 %s이(가) 서있다!", direction, nearEnemy->name);
+        ui_add_log(logMsg);
+    }
+}
+
+// ★ 나중에 전투 시스템 추가
+void combat_attack_enemy(Player* p, Enemy* e) {
+    // 데미지 계산
+    int damage = p->attack - e->defense;
+    if (damage < 0) damage = 0;
+
+    e->hp -= damage;
+
+    // 전투 로그
+    char logMsg[128];
+    snprintf(logMsg, sizeof(logMsg), "%s를 공격! %d 데미지!", e->name, damage);
+    ui_add_log(logMsg);
+
+    if (e->hp <= 0) {
+        e->isAlive = 0;
+        snprintf(logMsg, sizeof(logMsg), "%s를 처치했다!", e->name);
+        ui_add_log(logMsg);
+    }
+    else {
+        // 적 반격
+        int enemyDamage = e->attack - p->defense;
+        if (enemyDamage < 0) enemyDamage = 0;
+
+        p->hp -= enemyDamage;
+        snprintf(logMsg, sizeof(logMsg), "%s의 반격! %d 데미지!", e->name, enemyDamage);
+        ui_add_log(logMsg);
+    }
+}
+
+------------------------------------------------------------
+[FILE PATH] C:\projects\MetroHero\MetroHero\src\core\combat.h
+[FILE NAME] combat.h
+------------------------------------------------------------
+
+#pragma once
+// core/combat.h
+#ifndef COMBAT_H
+#define COMBAT_H
+
+#include "../entity/player.h"
+#include "../entity/enemy.h"
+#include "../world/map.h"
+
+// 인접 적 체크 및 메시지 생성
+void combat_check_nearby_enemy(Map* m , Player* p);
+
+// 전투 시작 (나중에 구현)
+void combat_attack_enemy(Player* p , Enemy* e);
+
+#endif
+
+------------------------------------------------------------
 [FILE PATH] C:\projects\MetroHero\MetroHero\src\core\game.c
 [FILE NAME] game.c
 ------------------------------------------------------------
@@ -33,6 +107,7 @@ int main(void) {
 #include "../world/map.h"
 #include "../entity/player.h"
 #include "../world/glyph.h"  // ★ 추가
+#include "combat.h"  // ★ 추가
 
 void game_run(void) {
     Map map;
@@ -99,6 +174,9 @@ void game_run(void) {
             // 새 위치 그리기
             console_goto(player.x * 2, player.y);
             printf(GLYPH_PLAYER);
+
+            // ★ 간단하게 한 줄로!
+            combat_check_nearby_enemy(&map, &player);
 
             // ★ 로그창 갱신 추가
             ui_draw_log(0, LOG_Y, LOG_W, LOG_H);
@@ -198,7 +276,7 @@ void console_goto(int x, int y) {
 
 
 // 화면에 표시되는 실제 폭 계산 (한글 = 2칸, 영문 = 1칸)
-static int display_width(const char* str) {
+int display_width(const char* str) { // public으로 수정
     int width = 0;
     const unsigned char* s = (const unsigned char*)str;
 
@@ -331,10 +409,18 @@ void ui_draw_log(int x, int y, int w, int h) {
         console_goto(x, y + 1 + i);
         printf("│ ");
 
-        char line[256] = { 0 };
-        snprintf(line, sizeof(line), "%-*s", w - 4, log_buf[(start + i) % LOG_LINES]);
-        line[w - 4] = '\0';
-        printf("%s", line);
+        const char* logText = log_buf[(start + i) % LOG_LINES];
+        printf("%s", logText);
+
+        // ★ 화면 표시 폭 정확히 계산
+        int displayLen = display_width(logText);
+        int contentWidth = w - 4;  // "│ " + " │" = 4칸
+        int remaining = contentWidth - displayLen;
+
+        // ★ 남은 공간을 공백으로 채우기
+        for (int j = 0; j < remaining; j++) {
+            printf(" ");
+        }
 
         printf(" │");
     }
@@ -456,6 +542,82 @@ void debug_console_info(void);
 #endif
 
 ------------------------------------------------------------
+[FILE PATH] C:\projects\MetroHero\MetroHero\src\entity\enemy.c
+[FILE NAME] enemy.c
+------------------------------------------------------------
+
+#include "enemy.h"
+#include <stdio.h>
+
+void enemy_init(Enemy* e, char type, int x, int y) {
+    e->type = type;
+    e->x = x;
+    e->y = y;
+    e->isAlive = 1;
+
+    // 타입별 스탯 설정
+    switch (type) {
+    case 'a':  // 고블린
+        e->name = "고블린";
+        e->maxHp = 5;
+        e->hp = 5;
+        e->attack = 2;
+        e->defense = 0;
+        break;
+
+    case 'b':  // 오크 (나중에 추가)
+        e->name = "오크";
+        e->maxHp = 10;
+        e->hp = 10;
+        e->attack = 3;
+        e->defense = 1;
+        break;
+
+    default:  // 알 수 없는 타입
+        e->name = "몬스터";
+        e->maxHp = 3;
+        e->hp = 3;
+        e->attack = 1;
+        e->defense = 0;
+        break;
+    }
+}
+
+int enemy_is_at(const Enemy* e, int x, int y) {
+    return (e->isAlive && e->x == x && e->y == y);
+}
+
+------------------------------------------------------------
+[FILE PATH] C:\projects\MetroHero\MetroHero\src\entity\enemy.h
+[FILE NAME] enemy.h
+------------------------------------------------------------
+
+#ifndef ENEMY_H
+#define ENEMY_H
+
+#define MAX_ENEMIES 50  // 맵당 최대 적 수
+
+typedef struct {
+	int x , y;           // 위치
+	char type;          // 'a' = 고블린, 'b' = 오크 등
+	int hp;
+	int maxHp;
+	int attack;
+	int defense;
+	int isAlive;        // 1 = 살아있음, 0 = 죽음
+	const char* name;   // "고블린", "오크" 등
+} Enemy;
+
+// 적 초기화 (타입에 따라 스탯 설정)
+void enemy_init(Enemy* e , char type , int x , int y);
+
+// 적이 해당 위치에 있는지 확인
+int enemy_is_at(const Enemy* e , int x , int y);
+
+#endif#pragma once
+
+
+------------------------------------------------------------
 [FILE PATH] C:\projects\MetroHero\MetroHero\src\entity\player.c
 [FILE NAME] player.c
 ------------------------------------------------------------
@@ -558,7 +720,8 @@ void player_move(Player* p, const struct Map* m, int cmd); // struct Map*로 명
 
 // 엔티티
 #define GLYPH_PLAYER   "옷"    // 플레이어
-#define GLYPH_ENEMY    "적"    // 적
+#define GLYPH_DOG      "🐈‍"    // ★ 고블린 추가
+#define GLYPH_ORC      "오"    // 나중에 사용
 #define GLYPH_NPC      "민"    // NPC
 #define GLYPH_ITEM     "물"    // 아이템
 
@@ -575,6 +738,10 @@ void player_move(Player* p, const struct Map* m, int cmd); // struct Map*로 명
 #define TILE_DOOR      '+'
 #define TILE_SPAWN     '@'     // ★ 스폰 포인트
 
+// ★ 적 타일
+#define TILE_GOBLIN    'a'
+#define TILE_ORC       'b'
+
 #endif
 
 ------------------------------------------------------------
@@ -586,6 +753,7 @@ void player_move(Player* p, const struct Map* m, int cmd); // struct Map*로 명
 #include <windows.h>
 #include "map.h"
 #include "../entity/player.h"
+#include "../entity/enemy.h"  // ★ 추가
 #include "../core/ui.h"   // ★ 반드시 필요
 #include "map_data.h"  // ★ 추가
 #include "glyph.h"  // ★ 추가
@@ -605,6 +773,18 @@ const char* tile_to_glyph(char t) {
         return GLYPH_STAIRS;
     default:
         return GLYPH_EMPTY;
+    }
+}
+
+// ★ 적 타일을 렌더링 문자로 변환
+const char* enemy_to_glyph(char type) {
+    switch (type) {
+    case 'a':
+        return GLYPH_DOG;
+    case 'b':
+        return GLYPH_ORC;
+    default:
+        return "??";
     }
 }
 
@@ -628,6 +808,39 @@ void map_find_spawn(Map* m) {
     }
 }
 
+// ★ 맵에서 적 찾아서 초기화
+void map_load_enemies(Map* m) {
+    m->enemyCount = 0;
+
+    for (int y = 0; y < m->height; y++) {
+        for (int x = 0; x < m->width; x++) {
+            char tile = m->tiles[y][x];
+
+            // a~z 범위의 적 타일 찾기
+            if (tile >= 'a' && tile <= 'z') {
+                if (m->enemyCount < MAX_ENEMIES) {
+                    enemy_init(&m->enemies[m->enemyCount], tile, x, y);
+                    m->enemyCount++;
+
+                    // 적이 있던 자리는 바닥으로 변경
+                    m->tiles[y][x] = '.';
+                }
+            }
+        }
+    }
+}
+
+// ★ 특정 위치에 있는 적 반환
+Enemy* map_get_enemy_at(Map* m, int x, int y) {
+    for (int i = 0; i < m->enemyCount; i++) {
+        if (enemy_is_at(&m->enemies[i], x, y)) {
+            return &m->enemies[i];
+        }
+    }
+    return NULL;
+}
+
+
 // -------------------------------
 // 맵 초기화
 // -------------------------------
@@ -635,6 +848,7 @@ void map_init(Map* m, int stageNumber) {
     m->stageNumber = stageNumber;  // ★ 선택사항
     load_map(m, stageNumber);
     map_find_spawn(m);  // ★ 이 줄 추가!
+    map_load_enemies(m);  // ★ 이 줄 추가!
 }
 
 // -------------------------------
@@ -662,10 +876,20 @@ void map_draw_at(const Map* m, const Player* p, int startX, int startY) {
         console_goto(startX, startY + y);
 
         for (int x = 0; x < m->width; x++) {
-            if (x == p->x && y == p->y)
-                printf(GLYPH_PLAYER);  // ★ 상수 사용
-            else
-                printf("%s", tile_to_glyph(m->tiles[y][x]));
+            if (x == p->x && y == p->y) {
+                // 플레이어
+                printf(GLYPH_PLAYER);
+            }
+            else {
+                // ★ 적이 있는지 확인
+                Enemy* enemy = map_get_enemy_at((Map*)m, x, y);
+                if (enemy != NULL) {
+                    printf("%s", enemy_to_glyph(enemy->type));
+                }
+                else {
+                    printf("%s", tile_to_glyph(m->tiles[y][x]));
+                }
+            }
         }
     }
 }
@@ -674,16 +898,51 @@ void map_draw_at(const Map* m, const Player* p, int startX, int startY) {
 
 
 
-// -------------------------------
-// 이동 가능 여부 검사
-// -------------------------------
 int map_is_walkable(const Map* m, int x, int y) {
-    if (x < 0 || x >= m->width || y < 0 || y >= m->height)  // ★ 동적 크기 사용
+    if (x < 0 || x >= m->width || y < 0 || y >= m->height)
         return 0;
+
+    // ★ 적이 있으면 이동 불가 (나중에 전투로 변경)
+    Enemy* enemy = map_get_enemy_at((Map*)m, x, y);
+    if (enemy != NULL) {
+        return 0;  // 일단 이동 불가
+    }
 
     return (m->tiles[y][x] == '.');
 }
 
+
+// ★ 플레이어 주변(상하좌우)에 적이 있는지 확인
+Enemy* map_get_adjacent_enemy(Map* m, int px, int py) {
+    // 상하좌우 4방향 체크
+    int directions[4][2] = {
+        {0, -1},  // 위
+        {0, 1},   // 아래
+        {-1, 0},  // 왼쪽
+        {1, 0}    // 오른쪽
+    };
+
+    for (int i = 0; i < 4; i++) {
+        int nx = px + directions[i][0];
+        int ny = py + directions[i][1];
+
+        Enemy* enemy = map_get_enemy_at(m, nx, ny);
+        if (enemy != NULL) {
+            return enemy;
+        }
+    }
+
+    return NULL;
+}
+
+// ★ 적이 어느 방향에 있는지 반환
+const char* map_get_enemy_direction(Map* m, int px, int py, Enemy* enemy) {
+    if (enemy->x < px) return "왼쪽";
+    if (enemy->x > px) return "오른쪽";
+    if (enemy->y < py) return "위";
+    if (enemy->y > py) return "아래";
+    return "여기";
+}
 
 ------------------------------------------------------------
 [FILE PATH] C:\projects\MetroHero\MetroHero\src\world\map.h
@@ -694,6 +953,7 @@ int map_is_walkable(const Map* m, int x, int y) {
 #define MAP_HEADER
 
 #include "../entity/player.h"
+#include "../entity/enemy.h"  // ★ 추가
 
 #define MAX_MAP_W 100  // 최대 크기만 정의
 #define MAX_MAP_H 50
@@ -712,6 +972,10 @@ typedef struct {
 	int spawnX;  // ★ 스폰 위치 추가
 	int spawnY;  // ★ 스폰 위치 추가
 	char tiles[ MAX_MAP_H ][ MAX_MAP_W ];
+
+	// ★ 적 관리
+	Enemy enemies[ MAX_ENEMIES ];
+	int enemyCount;
 } Map;
 
 void map_init(Map* m , int stageNumber);  // ★ 인자 추가
@@ -719,6 +983,11 @@ void map_draw_at(const Map* m , const Player* p , int startX , int startY);
 int map_is_walkable(const Map* m, int x, int y);
 const char* tile_to_glyph(char t);  // ★ 추가
 void map_find_spawn(Map* m);  // ★ 추가
+void map_load_enemies(Map* m);  // ★ 추가
+Enemy* map_get_enemy_at(Map* m , int x , int y);  // ★ 추가
+Enemy* map_get_adjacent_enemy(Map* m , int px , int py);  // ★ 추가
+const char* map_get_enemy_direction(Map* m , int px , int py , Enemy* enemy);  // ★ 추가
+
 
 #endif
 
@@ -738,7 +1007,7 @@ void map_find_spawn(Map* m);  // ★ 추가
 static const char* MAP_STAGE_1[] = {
     "########################################",
     "#@....##################...............#",
-    "#.....#................................#",
+    "#.....#.........a......................#",
     "#.....#.####...........#########.......#",
     "#.....#.#..#...........#.......#.......#",
     "#.......#..#############.......#.......#",

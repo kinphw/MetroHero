@@ -64,7 +64,7 @@ void console_goto(int x, int y) {
 
 
 // 화면에 표시되는 실제 폭 계산 (한글 = 2칸, 영문 = 1칸)
-static int display_width(const char* str) {
+int display_width(const char* str) { // public으로 수정
     int width = 0;
     const unsigned char* s = (const unsigned char*)str;
 
@@ -197,10 +197,18 @@ void ui_draw_log(int x, int y, int w, int h) {
         console_goto(x, y + 1 + i);
         printf("│ ");
 
-        char line[256] = { 0 };
-        snprintf(line, sizeof(line), "%-*s", w - 4, log_buf[(start + i) % LOG_LINES]);
-        line[w - 4] = '\0';
-        printf("%s", line);
+        const char* logText = log_buf[(start + i) % LOG_LINES];
+        printf("%s", logText);
+
+        // ★ 화면 표시 폭 정확히 계산
+        int displayLen = display_width(logText);
+        int contentWidth = w - 4;  // "│ " + " │" = 4칸
+        int remaining = contentWidth - displayLen;
+
+        // ★ 남은 공간을 공백으로 채우기
+        for (int j = 0; j < remaining; j++) {
+            printf(" ");
+        }
 
         printf(" │");
     }

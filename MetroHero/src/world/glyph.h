@@ -15,7 +15,8 @@
 
 // 엔티티
 #define GLYPH_PLAYER   "옷"    // 플레이어
-#define GLYPH_ENEMY    "적"    // 적
+#define GLYPH_DOG      "🐈‍"    // ★ 고블린 추가
+#define GLYPH_ORC      "오"    // 나중에 사용
 #define GLYPH_NPC      "민"    // NPC
 #define GLYPH_ITEM     "물"    // 아이템
 
@@ -31,5 +32,9 @@
 #define TILE_RAIL      '='
 #define TILE_DOOR      '+'
 #define TILE_SPAWN     '@'     // ★ 스폰 포인트
+
+// ★ 적 타일
+#define TILE_GOBLIN    'a'
+#define TILE_ORC       'b'
 
 #endif

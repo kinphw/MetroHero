@@ -8,6 +8,7 @@
 #include "../world/map.h"
 #include "../entity/player.h"
 #include "../world/glyph.h"  // ★ 추가
+#include "combat.h"  // ★ 추가
 
 void game_run(void) {
     Map map;
@@ -74,6 +75,9 @@ void game_run(void) {
             // 새 위치 그리기
             console_goto(player.x * 2, player.y);
             printf(GLYPH_PLAYER);
+
+            // ★ 간단하게 한 줄로!
+            combat_check_nearby_enemy(&map, &player);
 
             // ★ 로그창 갱신 추가
             ui_draw_log(0, LOG_Y, LOG_W, LOG_H);

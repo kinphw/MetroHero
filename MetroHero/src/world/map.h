@@ -2,6 +2,7 @@
 #define MAP_HEADER
 
 #include "../entity/player.h"
+#include "../entity/enemy.h"  // ★ 추가
 
 #define MAX_MAP_W 100  // 최대 크기만 정의
 #define MAX_MAP_H 50
@@ -20,6 +21,10 @@ typedef struct {
 	int spawnX;  // ★ 스폰 위치 추가
 	int spawnY;  // ★ 스폰 위치 추가
 	char tiles[ MAX_MAP_H ][ MAX_MAP_W ];
+
+	// ★ 적 관리
+	Enemy enemies[ MAX_ENEMIES ];
+	int enemyCount;
 } Map;
 
 void map_init(Map* m , int stageNumber);  // ★ 인자 추가
@@ -27,5 +32,10 @@ void map_draw_at(const Map* m , const Player* p , int startX , int startY);
 int map_is_walkable(const Map* m, int x, int y);
 const char* tile_to_glyph(char t);  // ★ 추가
 void map_find_spawn(Map* m);  // ★ 추가
+void map_load_enemies(Map* m);  // ★ 추가
+Enemy* map_get_enemy_at(Map* m , int x , int y);  // ★ 추가
+Enemy* map_get_adjacent_enemy(Map* m , int px , int py);  // ★ 추가
+const char* map_get_enemy_direction(Map* m , int px , int py , Enemy* enemy);  // ★ 추가
+
 
 #endif
