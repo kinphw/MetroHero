@@ -32,14 +32,20 @@ int main(void) {
 #include "ui.h"
 #include "../world/map.h"
 #include "../entity/player.h"
+#include "../world/glyph.h"  // ★ 추가
 
 void game_run(void) {
     Map map;
     Player player;
     int prevX, prevY;  // ★ 이전 위치 저장
 
-    map_init(&map);
+    map_init(&map, 1);
     player_init(&player);
+
+    // ★ 맵 로드 후 플레이어를 맵 중앙에 배치
+    player.x = map.width / 2;
+    player.y = map.height / 2;
+
     ui_init();
 
 
@@ -62,15 +68,17 @@ void game_run(void) {
 
         player_move(&player, &map, cmd);
 
-        // ★ 플레이어가 실제로 움직였을 때만 화면 갱신
         if (prevX != player.x || prevY != player.y) {
-            // 이전 위치 지우기
+            // 이전 위치를 원래 타일로 복원
             console_goto(prevX * 2, prevY);
-            printf("..");
+
+            // ★ map.c의 tile_to_glyph를 public으로 만들고 재사용
+            extern const char* tile_to_glyph(char t);  // map.h에 선언 추가
+            printf("%s", tile_to_glyph(map.tiles[prevY][prevX]));
 
             // 새 위치 그리기
             console_goto(player.x * 2, player.y);
-            printf(">>");
+            printf(GLYPH_PLAYER);
 
             prevX = player.x;
             prevY = player.y;
@@ -270,17 +278,20 @@ void ui_draw_log(int x, int y, int w, int h) {
 // 맵 설정
 //#define MAP_W 40                // 논리적 가로 칸 수
 //#define MAP_H 20                // 맵 세로 수
-#define MAP_RENDER_W (MAP_W*2)  // 실제 출력되는 문자 폭 80
+//#define MAP_RENDER_W (MAP_W*2)  // 실제 출력되는 문자 폭 80
 
-// 장비창(오른쪽)
-#define EQ_X MAP_RENDER_W      // 80
-#define EQ_W (SCREEN_W - EQ_X) // 40
+// ★ 맵 렌더링 최대 너비 (동적 크기 지원)
+#define MAX_MAP_RENDER_W 100  // 최대값만 정의
+
+// 장비창(오른쪽) - 고정 위치
+#define EQ_X 80       // ★ 고정값으로 변경 (MAX_MAP_W * 2)
+#define EQ_W (SCREEN_W - EQ_X)
 #define EQ_H TOP_H
 
 // 로그창(하단)
-#define LOG_Y TOP_H            // 25
+#define LOG_Y TOP_H
 #define LOG_W SCREEN_W
-#define LOG_H (SCREEN_H - TOP_H)   // 15
+#define LOG_H (SCREEN_H - TOP_H)
 
 
 void console_goto(int x , int y);
@@ -362,8 +373,9 @@ void debug_console_info(void);
 
 
 void player_init(Player* p) {
-    p->x = MAP_W / 2;
-    p->y = MAP_H / 2;
+    // ★ 맵 크기를 알 수 없으므로 기본값 설정
+    p->x = 20;  // 또는 map_init 후에 설정
+    p->y = 10;
 
     p->weaponName = "목검";
     p->armorName = "천 갑옷";
@@ -413,6 +425,38 @@ void player_move(Player* p, const struct Map* m, int cmd); // struct Map*로 명
 
 
 ------------------------------------------------------------
+[FILE PATH] C:\projects\MetroHero\MetroHero\src\world\glyph.h
+[FILE NAME] glyph.h
+------------------------------------------------------------
+
+#ifndef GLYPH_H
+#define GLYPH_H
+
+// ========================
+// 렌더링 문자 상수 정의
+// ========================
+
+// 맵 타일
+#define GLYPH_FLOOR    ".."    // 바닥
+#define GLYPH_WALL     "██"    // 벽
+#define GLYPH_RAIL     "=="    // 철도 레일
+#define GLYPH_EMPTY    "  "    // 빈 공간
+#define GLYPH_DOOR     "++"    // 문
+#define GLYPH_STAIRS   "▼▼"    // 계단
+
+// 엔티티
+#define GLYPH_PLAYER   "옷"    // 플레이어
+#define GLYPH_ENEMY    "적"    // 적
+#define GLYPH_NPC      "민"    // NPC
+#define GLYPH_ITEM     "물"    // 아이템
+
+// 기타
+#define GLYPH_TREE     "♣♣"    // 나무
+#define GLYPH_WATER    "≈≈"    // 물
+
+#endif
+
+------------------------------------------------------------
 [FILE PATH] C:\projects\MetroHero\MetroHero\src\world\map.c
 [FILE NAME] map.c
 ------------------------------------------------------------
@@ -423,35 +467,32 @@ void player_move(Player* p, const struct Map* m, int cmd); // struct Map*로 명
 #include "../entity/player.h"
 #include "../core/ui.h"   // ★ 반드시 필요
 #include "map_data.h"  // ★ 추가
+#include "glyph.h"  // ★ 추가
 
-// -------------------------------
-// 전각(2바이트) 문자 설정
-// -------------------------------
-static const char* tile_to_glyph(char t) {
+// 타일 문자를 렌더링 문자로 변환
+const char* tile_to_glyph(char t) {
     switch (t) {
-    case '.':  // 바닥
-        return "..";        // 전각 느낌의 가벼운 점
-    case '#':  // 벽
-        return ".";        // 전각 블록
-    case '=':  // 철도 레일
-        return ".";        // 전각 라인
+    case '.':
+        return GLYPH_FLOOR;
+    case '#':
+        return GLYPH_WALL;
+    case '=':
+        return GLYPH_RAIL;
+    case '+':
+        return GLYPH_DOOR;
+    case 'S':
+        return GLYPH_STAIRS;
     default:
-        return ".";        // 빈칸
+        return GLYPH_EMPTY;
     }
 }
 
 // -------------------------------
 // 맵 초기화
 // -------------------------------
-void map_init(Map* m) {
-
-    load_map_station1(m);
-
-    /*for (int y = 0; y < MAP_H; y++) {
-        for (int x = 0; x < MAP_W; x++) {
-            m->tiles[y][x] = '.';
-        }
-    }*/
+void map_init(Map* m, int stageNumber) {
+    m->stageNumber = stageNumber;  // ★ 선택사항
+    load_map(m, stageNumber);
 }
 
 // -------------------------------
@@ -475,12 +516,12 @@ void map_init(Map* m) {
 //}
 
 void map_draw_at(const Map* m, const Player* p, int startX, int startY) {
-    for (int y = 0; y < MAP_H; y++) {
+    for (int y = 0; y < m->height; y++) {
         console_goto(startX, startY + y);
 
-        for (int x = 0; x < MAP_W; x++) {
+        for (int x = 0; x < m->width; x++) {
             if (x == p->x && y == p->y)
-                printf(">>");
+                printf(GLYPH_PLAYER);  // ★ 상수 사용
             else
                 printf("%s", tile_to_glyph(m->tiles[y][x]));
         }
@@ -495,7 +536,7 @@ void map_draw_at(const Map* m, const Player* p, int startX, int startY) {
 // 이동 가능 여부 검사
 // -------------------------------
 int map_is_walkable(const Map* m, int x, int y) {
-    if (x < 0 || x >= MAP_W || y < 0 || y >= MAP_H)
+    if (x < 0 || x >= m->width || y < 0 || y >= m->height)  // ★ 동적 크기 사용
         return 0;
 
     return (m->tiles[y][x] == '.');
@@ -507,21 +548,32 @@ int map_is_walkable(const Map* m, int x, int y) {
 [FILE NAME] map.h
 ------------------------------------------------------------
 
-#include "../entity/player.h"
-
 #ifndef MAP_HEADER
 #define MAP_HEADER
 
-#define MAP_W 40
-#define MAP_H 20
+#include "../entity/player.h"
+
+#define MAX_MAP_W 100  // 최대 크기만 정의
+#define MAX_MAP_H 50
+
+//#define MAP_W 40
+//#define MAP_H 20
+
+//typedef struct {
+//    char tiles[MAP_H][MAP_W];
+//} Map;
 
 typedef struct {
-    char tiles[MAP_H][MAP_W];
+	int width;
+	int height;
+	int stageNumber;  // ★ 현재 스테이지 번호 추가 (선택사항)
+	char tiles[ MAX_MAP_H ][ MAX_MAP_W ];
 } Map;
 
-void map_init(Map* m);
+void map_init(Map* m , int stageNumber);  // ★ 인자 추가
 void map_draw_at(const Map* m , const Player* p , int startX , int startY);
 int map_is_walkable(const Map* m, int x, int y);
+const char* tile_to_glyph(char t);  // ★ 추가
 
 #endif
 
@@ -534,67 +586,113 @@ int map_is_walkable(const Map* m, int x, int y);
 #include "map_data.h"
 #include <string.h>
 
-// 역 1번 맵
-void load_map_station1(Map* m) {
-    const char* mapData[] = {
-        "########################################",
-        "#......................................#",
-        "#......................................#",
-        "#......................................#",
-        "#...........##############.............#",
-        "#...........#............#.............#",
-        "#...........#............#.............#",
-        "#...........#............#.............#",
-        "#...........#............#.............#",
-        "#...........#............#.............#",
-        "#...........#............#.............#",
-        "#...........#............#.............#",
-        "#...........#............#.............#",
-        "#...........##############.............#",
-        "#......................................#",
-        "#......................................#",
-        "#......................................#",
-        "#......................................#",
-        "#......................................#",
-        "########################################"
-    };
+// ========================
+// 맵 데이터 정의 (상단에 모아두기)
+// ========================
 
-    for (int y = 0; y < MAP_H; y++) {
-        for (int x = 0; x < MAP_W; x++) {
+static const char* MAP_STAGE_1[] = {
+    "########################################",
+    "#......................................#",
+    "#......................................#",
+    "#......................................#",
+    "#...........##############.............#",
+    "#...........#............#.............#",
+    "#...........#............#.............#",
+    "#...........#............#.............#",
+    "#...........#............#.............#",
+    "#...........#............#.............#",
+    "#...........#............#.............#",
+    "#...........#............#.............#",
+    "#...........#............#.............#",
+    "#...........##############.............#",
+    "#......................................#",
+    "#......................................#",
+    "#......................................#",
+    "#......................................#",
+    "#......................................#",
+    "########################################"
+};
+
+static const char* MAP_STAGE_2[] = {
+    "########################################",
+    "#====================================..#",
+    "#====================================..#",
+    "#......................................#",
+    "#......................................#",
+    "#......................................#",
+    "#......................................#",
+    "#......................................#",
+    "#......................................#",
+    "#......................................#",
+    "#......................................#",
+    "#......................................#",
+    "#......................................#",
+    "#......................................#",
+    "#......................................#",
+    "#......................................#",
+    "#......................................#",
+    "#......................................#",
+    "#......................................#",
+    "########################################"
+};
+
+static const char* MAP_STAGE_3[] = {
+    "####################",
+    "#..................#",
+    "#....####..........#",
+    "#....#..#..........#",
+    "#....####..........#",
+    "#..................#",
+    "#..................#",
+    "#..................#",
+    "#..................#",
+    "####################"
+};
+
+static const char* MAP_DEFAULT[] = {
+    "####################",
+    "#..................#",
+    "#..................#",
+    "#..................#",
+    "#..................#",
+    "#..................#",
+    "#..................#",
+    "#..................#",
+    "#..................#",
+    "####################"
+};
+
+// ========================
+// 로직 함수들
+// ========================
+
+// ★ 공통 로드 함수
+static void load_map_from_data(Map* m, const char** mapData, int height) {
+    m->height = height;
+    m->width = strlen(mapData[0]);
+
+    for (int y = 0; y < m->height; y++) {
+        for (int x = 0; x < m->width && x < MAX_MAP_W; x++) {
             m->tiles[y][x] = mapData[y][x];
         }
     }
 }
 
-// 역 2번 맵
-void load_map_station2(Map* m) {
-    const char* mapData[] = {
-        "########################################",
-        "#====================================..#",
-        "#====================================..#",
-        "#......................................#",
-        "#......................................#",
-        "#......................................#",
-        "#......................................#",
-        "#......................................#",
-        "#......................................#",
-        "#......................................#",
-        "#......................................#",
-        "#......................................#",
-        "#......................................#",
-        "#......................................#",
-        "#......................................#",
-        "#......................................#",
-        "#......................................#",
-        "#......................................#",
-        "#......................................#",
-        "########################################"
-    };
-
-    for (int y = 0; y < MAP_H; y++) {
-        for (int x = 0; x < MAP_W; x++) {
-            m->tiles[y][x] = mapData[y][x];
-        }
+// ★ 스테이지 번호로 맵 로드
+void load_map(Map* m, int stageNumber) {
+    switch (stageNumber) {
+    case 1:
+        load_map_from_data(m, MAP_STAGE_1, sizeof(MAP_STAGE_1) / sizeof(MAP_STAGE_1[0]));
+        break;
+    case 2:
+        load_map_from_data(m, MAP_STAGE_2, sizeof(MAP_STAGE_2) / sizeof(MAP_STAGE_2[0]));
+        break;
+    case 3:
+        load_map_from_data(m, MAP_STAGE_3, sizeof(MAP_STAGE_3) / sizeof(MAP_STAGE_3[0]));
+        break;
+    default:
+        load_map_from_data(m, MAP_DEFAULT, sizeof(MAP_DEFAULT) / sizeof(MAP_DEFAULT[0]));
+        break;
     }
 }
 
@@ -603,16 +701,13 @@ void load_map_station2(Map* m) {
 [FILE NAME] map_data.h
 ------------------------------------------------------------
 
-#pragma once
 #ifndef MAP_DATA_H
 #define MAP_DATA_H
 
 #include "map.h"
 
-// 맵 데이터 로드 함수
-void load_map_station1(Map* m);
-void load_map_station2(Map* m);
-// ... 필요한 맵들 추가
+// ★ 단일 함수로 변경
+void load_map(Map* m , int stageNumber);
 
 #endif
 

@@ -28,6 +28,7 @@
     <ClCompile Include="src\entity\player.c" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="src\world\glyph.h" />
     <ClInclude Include="src\world\map_data.h" />
     <ClInclude Include="src\debug\debug.h" />
     <ClInclude Include="src\core\game.h" />

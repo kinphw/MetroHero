@@ -59,5 +59,8 @@
     <ClInclude Include="src\world\map_data.h">
       <Filter>src\world</Filter>
     </ClInclude>
+    <ClInclude Include="src\world\glyph.h">
+      <Filter>src\world</Filter>
+    </ClInclude>
   </ItemGroup>
 </Project>

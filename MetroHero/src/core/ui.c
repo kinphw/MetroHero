@@ -98,7 +98,7 @@ static int display_width(const char* str) {
 
 void ui_draw_equipment(const Player* p, int x, int y, int w, int h) {
     console_goto(x, y);
-    printf("┌─ EQUIPMENT ──────────┐");
+    printf("┌─ 장비      ──────────┐");
 
     console_goto(x, y + 1);
     printf("│                      │");

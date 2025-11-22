@@ -9,17 +9,20 @@
 // 맵 설정
 //#define MAP_W 40                // 논리적 가로 칸 수
 //#define MAP_H 20                // 맵 세로 수
-#define MAP_RENDER_W (MAP_W*2)  // 실제 출력되는 문자 폭 80
+//#define MAP_RENDER_W (MAP_W*2)  // 실제 출력되는 문자 폭 80
 
-// 장비창(오른쪽)
-#define EQ_X MAP_RENDER_W      // 80
-#define EQ_W (SCREEN_W - EQ_X) // 40
+// ★ 맵 렌더링 최대 너비 (동적 크기 지원)
+#define MAX_MAP_RENDER_W 100  // 최대값만 정의
+
+// 장비창(오른쪽) - 고정 위치
+#define EQ_X 80       // ★ 고정값으로 변경 (MAX_MAP_W * 2)
+#define EQ_W (SCREEN_W - EQ_X)
 #define EQ_H TOP_H
 
 // 로그창(하단)
-#define LOG_Y TOP_H            // 25
+#define LOG_Y TOP_H
 #define LOG_W SCREEN_W
-#define LOG_H (SCREEN_H - TOP_H)   // 15
+#define LOG_H (SCREEN_H - TOP_H)
 
 
 void console_goto(int x , int y);
