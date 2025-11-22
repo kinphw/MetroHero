@@ -3,6 +3,7 @@
 
 #include "../entity/player.h"
 #include "../entity/enemy.h"  // ★ 추가
+#include "../entity/chest.h"
 
 #define MAX_MAP_W 100  // 최대 크기만 정의
 #define MAX_MAP_H 50
@@ -13,6 +14,8 @@
 //typedef struct {
 //    char tiles[MAP_H][MAP_W];
 //} Map;
+
+#define MAX_CHESTS 50
 
 typedef struct {
 	int width;
@@ -25,6 +28,9 @@ typedef struct {
 	// ★ 적 관리
 	Enemy enemies[ MAX_ENEMIES ];
 	int enemyCount;
+
+	Chest chests[ MAX_CHESTS ];
+	int chestCount;
 } Map;
 
 void map_init(Map* m , int stageNumber);  // ★ 인자 추가
@@ -38,5 +44,7 @@ Enemy* map_get_adjacent_enemy(Map* m , int px , int py);  // ★ 추가
 const char* map_get_enemy_direction(Map* m , int px , int py , Enemy* enemy);  // ★ 추가
 const char* enemy_to_glyph(char type);
 
+Chest* map_get_chest_at(Map* m , int x , int y);
+Chest* map_get_adjacent_chest(Map* m , int px , int py);
 
 #endif

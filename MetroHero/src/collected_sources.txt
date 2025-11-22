@@ -33,19 +33,33 @@ int main(void) {
 #include "../world/glyph.h"  // ★ 추가
 
 
-// ★ 인접 적 체크 및 메시지 자동 생성 (체력 포함)
+// ★ 인접 적 체크 및 메시지 (체력 + 순환 대사 포함)
 void combat_check_nearby_enemy(Map* m, Player* p) {
-    Enemy* nearEnemy = map_get_adjacent_enemy(m, p->x, p->y);
+    Enemy* e = map_get_adjacent_enemy(m, p->x, p->y);
+    if (e == NULL) return;
 
-    if (nearEnemy != NULL) {
-        const char* direction = map_get_enemy_direction(m, p->x, p->y, nearEnemy);
-        char logMsg[256];
-        // ★ 청록색으로 강조
-        snprintf(logMsg, sizeof(logMsg),
-            COMBAT_DETECT "%s에 %s이(가) 서있다! (HP: %d/%d)" COLOR_RESET,
-            direction, nearEnemy->name, nearEnemy->hp, nearEnemy->maxHp);
-        ui_add_log(logMsg);
-    }
+    const char* direction = map_get_enemy_direction(m, p->x, p->y, e);
+
+    // ★ 현재 대사를 꺼낸다
+    const char* line = e->dialogues[e->dialogueIndex];
+
+    // ★ 다음 접근 시 다음 대사 출력되도록 index 증가 (순환)
+    e->dialogueIndex = (e->dialogueIndex + 1) % e->dialogueCount;
+
+    char logMsg[512];
+    snprintf(logMsg, sizeof(logMsg),
+        "%s%s에 %s이(가) 서있다! (HP: %d/%d) %s「%s」%s",
+        COMBAT_DETECT,
+        direction,
+        e->name,
+        e->hp, e->maxHp,
+
+        e->dialogueColor,   // ★ 대사 색깔
+        line,                // ★ 대사 내용
+        COLOR_RESET          // ★ 리셋을 맨 뒤에 강제 배치
+    );
+
+    ui_add_log(logMsg);
 }
 
 // ★ 전투 시스템
@@ -55,9 +69,10 @@ void combat_attack_enemy(Player* p, Enemy* e, Map* m) {
     // ★ 전투 이펙트 표시
     ui_draw_combat_effect(107, 2);  // 상태창 오른쪽
 
-    // 플레이어 공격
-    int playerDamage = p->attack - e->defense;
-    if (playerDamage < 1) playerDamage = 1;  // 최소 1 데미지
+    // ★★★ 플레이어 공격 - 랜덤 데미지 ★★★
+    int playerAttack = p->attackMin + rand() % (p->attackMax - p->attackMin + 1);
+    int playerDamage = playerAttack - e->defense;
+    if (playerDamage < 1) playerDamage = 1;
 
     e->hp -= playerDamage;
 
@@ -94,9 +109,10 @@ void combat_attack_enemy(Player* p, Enemy* e, Map* m) {
     //console_goto(107, 4);
     //printf(COLOR_BRIGHT_BLUE "🛡🛡🛡🛡🛡" COLOR_RESET);
 
-    // 적 반격
-    int enemyDamage = e->attack - p->defense;
-    if (enemyDamage < 1) enemyDamage = 1;  // 최소 1 데미지
+    // ★★★ 적 반격 - 랜덤 데미지 ★★★
+    int enemyAttack = e->attackMin + rand() % (e->attackMax - e->attackMin + 1);
+    int enemyDamage = enemyAttack - p->defense;
+    if (enemyDamage < 1) enemyDamage = 1;
 
     p->hp -= enemyDamage;
 
@@ -243,9 +259,19 @@ void game_run(void) {
         }
 
         if (prevX != player.x || prevY != player.y) {
+            // ★ 이전 위치에 적이 있었는지 확인
+            Enemy* prevEnemy = map_get_enemy_at(&map, prevX, prevY);
+
             // 이전 위치 복원
             console_goto(prevX * 2, prevY);
-            printf("%s", tile_to_glyph(map.tiles[prevY][prevX]));
+            if (prevEnemy != NULL) {
+                // 적이 있으면 적을 다시 그림
+                printf("%s", enemy_to_glyph(prevEnemy->type));
+            }
+            else {
+                // 바닥 타일 복원
+                printf("%s", tile_to_glyph(map.tiles[prevY][prevX]));
+            }
 
             // 새 위치 그리기
             console_goto(player.x * 2, player.y);
@@ -413,11 +439,9 @@ void ui_draw_stats(const Player* p, int x, int y, int w, int h) {
     console_goto(x, y + 1);
     printf("│                      │");
 
-    // HP 바 그리기 - 정확하게 맞추기
+    // HP 바 그리기
     console_goto(x, y + 2);
-    printf("│ HP:");  // 'HP:' 까지 출력
-
-    // HP 바 (10칸)
+    printf("│ HP:");
     int hpBars = (p->hp * 10) / p->maxHp;
     for (int i = 0; i < 10; i++) {
         if (i < hpBars)
@@ -425,7 +449,7 @@ void ui_draw_stats(const Player* p, int x, int y, int w, int h) {
         else
             printf("░");
     }
-    printf("        │");  // ★ 공백 7개
+    printf("        │");
 
     // HP 수치
     console_goto(x, y + 3);
@@ -434,9 +458,9 @@ void ui_draw_stats(const Player* p, int x, int y, int w, int h) {
     console_goto(x, y + 4);
     printf("│                      │");
 
-    // 공격력
+    // ★ 공격력 범위 표시
     console_goto(x, y + 5);
-    printf("│ 공격력:  %3d         │", p->attack);
+    printf("│ 공격력: %2d~%2d        │", p->attackMin, p->attackMax);
 
     // 방어력
     console_goto(x, y + 6);
@@ -483,11 +507,11 @@ void ui_draw_equipment(const Player* p, int x, int y, int w, int h) {
 }
 
 #define LOG_LINES 200
-char log_buf[LOG_LINES][128];
+char log_buf[LOG_LINES][256];
 int log_index = 0;
 
 void ui_add_log(const char* msg) {
-    snprintf(log_buf[log_index], 128, "%s", msg);
+    snprintf(log_buf[log_index], sizeof(log_buf[log_index]), "%s", msg);
     log_index = (log_index + 1) % LOG_LINES;
 }
 
@@ -553,9 +577,16 @@ void ui_draw_log(int x, int y, int w, int h) {
         const char* logText = log_buf[(start + i) % LOG_LINES];
         printf("%s", logText);
 
-        // ★ 오른쪽 │ 위치로 이동해서 그리기
-        console_goto(x + w - 2, y + 1 + i);
-        printf(" │");
+        // ★ 남은 공간을 공백으로 채우기
+        int displayLen = display_width(logText);
+        int contentWidth = w - 4;  // "│ " + " │" = 4칸
+        int remaining = contentWidth - displayLen;
+
+        for (int j = 0; j < remaining + 1; j++) {
+            printf(" ");
+        }
+
+        printf("│");
     }
 
     // 하단 테두리
@@ -567,24 +598,38 @@ void ui_draw_log(int x, int y, int w, int h) {
 
 // ui.c에 추가
 void ui_draw_combat_effect(int x, int y) {
-    // 상태창 옆에 큰 칼 표시
+
+    // ★ 전투중 텍스트 (칼 이펙트 위)
+    console_goto(x, y - 1);
+    printf(COLOR_BRIGHT_RED "전투중" COLOR_RESET);
+
+    // 기존 칼 모양
     console_goto(x, y);
     printf(COLOR_BRIGHT_RED "  ⚔" COLOR_RESET);
+
     console_goto(x, y + 1);
     printf(COLOR_BRIGHT_RED " ⚔⚔⚔" COLOR_RESET);
+
     console_goto(x, y + 2);
     printf(COLOR_BRIGHT_RED "⚔⚔⚔⚔⚔" COLOR_RESET);
+
     console_goto(x, y + 3);
     printf(COLOR_BRIGHT_RED " ⚔⚔⚔" COLOR_RESET);
+
     console_goto(x, y + 4);
     printf(COLOR_BRIGHT_RED "  ⚔" COLOR_RESET);
 }
 
 void ui_clear_combat_effect(int x, int y) {
-    // 이펙트 지우기
+
+    // ★ "전투중" 지우기
+    console_goto(x, y - 1);
+    printf("      ");   // "전투중" 3글자 = UTF-8 6칸
+
+    // 기존 칼 이펙트 지우기
     for (int i = 0; i < 5; i++) {
         console_goto(x, y + i);
-        printf("       ");  // 7칸 지우기
+        printf("       ");
     }
 }
 
@@ -705,8 +750,10 @@ void debug_console_info(void);
 [FILE NAME] enemy.c
 ------------------------------------------------------------
 
-#include "enemy.h"
 #include <stdio.h>
+#include "enemy.h"
+#include "../world/glyph.h"
+
 
 void enemy_init(Enemy* e, char type, int x, int y) {
     e->type = type;
@@ -716,29 +763,79 @@ void enemy_init(Enemy* e, char type, int x, int y) {
 
     // 타입별 스탯 설정
     switch (type) {
-    case 'a':  // 고블린
+    case 'a': { // 고블린
+
+        // ★ enemy_init 내부에 대사 정의
+        static const char* lines[] = {
+            "나는 잔인한 냥코다옹",
+            "냥코냥코 대전쟁"
+        };
+
         e->name = "맹혹한고양이";
         e->maxHp = 5;
         e->hp = 5;
-        e->attack = 2;
-        e->defense = 0;
-        break;
+        //e->attack = 2;
 
-    case 'b':  // 검은괴물
-        e->name = "B-370";
+        e->attackMin = 1;  // ★ 1~3 데미지
+        e->attackMax = 3;
+
+        e->defense = 0;
+        e->dialogues = lines;   // ★ 배열 연결
+        e->dialogueCount = sizeof(lines) / sizeof(lines[0]);
+        e->dialogueIndex = 0;   // ★ 최초 index 설정
+        e->dialogueColor = COLOR_BRIGHT_CYAN;
+        break;
+    }
+    case 'b': { // 검은괴물
+
+        static const char* lines[] = {
+            "전철역 내 침입자를 인식했습니다...",
+            "경고: 비인가 인원입니다.",
+            "돌아가라 날 건들면 후회할것이다"
+        };
+
+        e->name = "경비로봇";
         e->maxHp = 10;
         e->hp = 10;
-        e->attack = 3;
-        e->defense = 1;
+        //e->attack = 3;
+
+        e->attackMin = 100;  // ★ 2~4 데미지
+        e->attackMax = 100;
+
+        e->defense = 0;
+
+        e->dialogues = lines;
+        e->dialogueCount = sizeof(lines) / sizeof(lines[0]);
+        e->dialogueIndex = 0;
+        e->dialogueColor = COLOR_RED;
         break;
 
-    default:  // 알 수 없는 타입
+    }
+
+    default: {  // 알 수 없는 타입
+
+        static const char* lines[] = {
+            "키에에에엑!",
+            "으르르르르…",
+            "끼아아악!"
+        };
+
         e->name = "몬스터";
         e->maxHp = 3;
         e->hp = 3;
-        e->attack = 1;
+        //e->attack = 1;
+
+        e->attackMin = 1;
+        e->attackMax = 2;
+
         e->defense = 0;
+
+        e->dialogues = lines;
+        e->dialogueCount = sizeof(lines) / sizeof(lines[0]);
+        e->dialogueIndex = 0;
+        e->dialogueColor = COLOR_YELLOW;
         break;
+    }
     }
 }
 
@@ -761,10 +858,19 @@ typedef struct {
 	char type;          // 'a' = 고블린, 'b' = 오크 등
 	int hp;
 	int maxHp;
-	int attack;
+	//int attack;
+
+	// ★ 공격력을 범위로 변경
+	int attackMin;
+	int attackMax;
+
 	int defense;
 	int isAlive;        // 1 = 살아있음, 0 = 죽음
 	const char* name;   // "고블린", "오크" 등
+	const char** dialogues;  // ★ 대사 배열 (문자열 배열)
+	int dialogueCount;       // ★ 총 몇 개?
+	int dialogueIndex;       // ★ 현재 어떤 대사를 출력할지
+	const char* dialogueColor;   // ★ 추가: 대사 색깔
 } Enemy;
 
 // 적 초기화 (타입에 따라 스탯 설정)
@@ -782,6 +888,8 @@ int enemy_is_at(const Enemy* e , int x , int y);
 ------------------------------------------------------------
 
 #include <stdio.h>
+#include <stdlib.h>  // ★ rand() 사용
+#include <time.h>    // ★ time() 사용
 
 #include "../world/map.h"
 #include "player.h"
@@ -796,7 +904,12 @@ void player_init(Player* p) {
     // ★ 초기 스탯
     p->maxHp = 10;
     p->hp = 10;
-    p->attack = 3;
+    //p->attack = 3;
+
+    // ★ 공격력 범위 설정
+    p->attackMin = 2;
+    p->attackMax = 5;
+
     p->defense = 0;
 
     p->weaponName = "";
@@ -848,7 +961,12 @@ typedef struct {
 
 	int hp;
 	int maxHp;
-	int attack;
+	//int attack;
+
+	// ★ 공격력을 범위로 변경
+	int attackMin;
+	int attackMax;
+
 	int defense;
 
 	const char* weaponName;
@@ -924,7 +1042,7 @@ void player_move(Player* p , struct Map* m , int cmd);  // ★ const 제거
 #define GLYPH_STAIRS   "▼▼"    // 계단
 
 // 엔티티
-#define GLYPH_PLAYER   COLOR_BRIGHT_GREEN "🙎‍" COLOR_RESET    // 밝은 녹색
+#define GLYPH_PLAYER   COLOR_BRIGHT_GREEN "옷" COLOR_RESET    // 밝은 녹색
 #define GLYPH_DOG      "🐈‍"    // ★ 고블린 추가
 #define GLYPH_ORC      "옷"    // 나중에 사용
 #define GLYPH_NPC      "민"    // NPC
@@ -1190,6 +1308,7 @@ void map_load_enemies(Map* m);  // ★ 추가
 Enemy* map_get_enemy_at(Map* m , int x , int y);  // ★ 추가
 Enemy* map_get_adjacent_enemy(Map* m , int px , int py);  // ★ 추가
 const char* map_get_enemy_direction(Map* m , int px , int py , Enemy* enemy);  // ★ 추가
+const char* enemy_to_glyph(char type);
 
 
 #endif
@@ -1210,9 +1329,9 @@ const char* map_get_enemy_direction(Map* m , int px , int py , Enemy* enemy);  /
 static const char* MAP_STAGE_1[] = {
     "########################################",
     "#@....##################...............#",
-    "#.....#.........a......................#",
+    "#.....#................................#",
     "#.....#.####...........#########.......#",
-    "#.....#.#..#...........#.......#.......#",
+    "#.....#a#..#...........#.......#.......#",
     "#.......#..#############.......#.......#",
     "#.......#..................#####.......#",
     "#########..................#...........#",

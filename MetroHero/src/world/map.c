@@ -59,6 +59,10 @@ void map_find_spawn(Map* m) {
     }
 }
 
+int is_enemy_tile(char t) {
+    return (t == 'a' || t == 'b');   // 몬스터 목록 지정
+}
+
 // ★ 맵에서 적 찾아서 초기화
 void map_load_enemies(Map* m) {
     m->enemyCount = 0;
@@ -68,7 +72,7 @@ void map_load_enemies(Map* m) {
             char tile = m->tiles[y][x];
 
             // a~z 범위의 적 타일 찾기
-            if (tile >= 'a' && tile <= 'z') {
+            if (is_enemy_tile(tile)) {
                 if (m->enemyCount < MAX_ENEMIES) {
                     enemy_init(&m->enemies[m->enemyCount], tile, x, y);
                     m->enemyCount++;
@@ -91,16 +95,32 @@ Enemy* map_get_enemy_at(Map* m, int x, int y) {
     return NULL;
 }
 
+// ★ 맵에서 상자 찾기
+void map_load_chests(Map* m) {
+    m->chestCount = 0;
 
-// -------------------------------
-// 맵 초기화
-// -------------------------------
-void map_init(Map* m, int stageNumber) {
-    m->stageNumber = stageNumber;  // ★ 선택사항
-    load_map(m, stageNumber);
-    map_find_spawn(m);  // ★ 이 줄 추가!
-    map_load_enemies(m);  // ★ 이 줄 추가!
+    for (int y = 0; y < m->height; y++) {
+        for (int x = 0; x < m->width; x++) {
+            if (m->tiles[y][x] == 'c') {  // ★ 상자 타일
+                if (m->chestCount < MAX_CHESTS) {
+                    // 기본적으로 무기 상자를 넣자
+                    chest_init(
+                        &m->chests[m->chestCount],
+                        x, y,
+                        "weapon",
+                        "빨간 검"
+                    );
+                    m->chestCount++;
+                    m->tiles[y][x] = '.'; // 상자 자리는 바닥으로 바꿔두기
+                }
+            }
+        }
+    }
 }
+
+
+
+
 
 // -------------------------------
 // 맵 렌더링
@@ -127,20 +147,29 @@ void map_draw_at(const Map* m, const Player* p, int startX, int startY) {
         console_goto(startX, startY + y);
 
         for (int x = 0; x < m->width; x++) {
+
+            // 1) 플레이어
             if (x == p->x && y == p->y) {
-                // 플레이어
                 printf(GLYPH_PLAYER);
+                continue;
             }
-            else {
-                // ★ 적이 있는지 확인
-                Enemy* enemy = map_get_enemy_at((Map*)m, x, y);
-                if (enemy != NULL) {
-                    printf("%s", enemy_to_glyph(enemy->type));
-                }
-                else {
-                    printf("%s", tile_to_glyph(m->tiles[y][x]));
-                }
+
+            // 2) 적
+            Enemy* enemy = map_get_enemy_at((Map*)m, x, y);
+            if (enemy != NULL) {
+                printf("%s", enemy_to_glyph(enemy->type));
+                continue;
             }
+
+            // 3) ★★★ 상자(Chest) 체크 — 여기 새로 추가하는 부분 ★★★
+            Chest* chest = map_get_chest_at((Map*)m, x, y);
+            if (chest != NULL && !chest->isOpened) {
+                printf(GLYPH_CHEST);   // 예: 📦
+                continue;
+            }
+
+            // 4) 기본 타일
+            printf("%s", tile_to_glyph(m->tiles[y][x]));
         }
     }
 }
@@ -189,4 +218,46 @@ const char* map_get_enemy_direction(Map* m, int px, int py, Enemy* enemy) {
     if (enemy->y < py) return "위";
     if (enemy->y > py) return "아래";
     return "여기";
+}
+
+Chest* map_get_chest_at(Map* m, int x, int y) {
+    for (int i = 0; i < m->chestCount; i++) {
+        if (!m->chests[i].isOpened &&
+            m->chests[i].x == x && m->chests[i].y == y) {
+
+            return &m->chests[i];
+        }
+    }
+    return NULL;
+}
+
+Chest* map_get_adjacent_chest(Map* m, int px, int py) {
+    int dirs[4][2] = {
+        {0,-1}, {0,1}, {-1,0}, {1,0}
+    };
+
+    for (int i = 0; i < 4; i++) {
+        int nx = px + dirs[i][0];
+        int ny = py + dirs[i][1];
+
+        Chest* chest = map_get_chest_at(m, nx, ny);
+        if (chest != NULL) return chest;
+    }
+
+    return NULL;
+}
+
+
+// -------------------------------
+// 맵 초기화
+// -------------------------------
+void map_init(Map* m, int stageNumber) {
+    m->stageNumber = stageNumber;  // ★ 선택사항
+    load_map(m, stageNumber);
+
+    map_find_spawn(m);  // ★ 이 줄 추가!
+    //map_load_enemies(m);  // ★ 이 줄 추가!
+
+    map_load_enemies(m);
+    map_load_chests(m);
 }

@@ -194,11 +194,11 @@ void ui_draw_equipment(const Player* p, int x, int y, int w, int h) {
 }
 
 #define LOG_LINES 200
-char log_buf[LOG_LINES][128];
+char log_buf[LOG_LINES][256];
 int log_index = 0;
 
 void ui_add_log(const char* msg) {
-    snprintf(log_buf[log_index], 128, "%s", msg);
+    snprintf(log_buf[log_index], sizeof(log_buf[log_index]), "%s", msg);
     log_index = (log_index + 1) % LOG_LINES;
 }
 
@@ -285,24 +285,38 @@ void ui_draw_log(int x, int y, int w, int h) {
 
 // ui.c에 추가
 void ui_draw_combat_effect(int x, int y) {
-    // 상태창 옆에 큰 칼 표시
+
+    // ★ 전투중 텍스트 (칼 이펙트 위)
+    console_goto(x, y - 1);
+    printf(COLOR_BRIGHT_RED "전투중" COLOR_RESET);
+
+    // 기존 칼 모양
     console_goto(x, y);
     printf(COLOR_BRIGHT_RED "  ⚔" COLOR_RESET);
+
     console_goto(x, y + 1);
     printf(COLOR_BRIGHT_RED " ⚔⚔⚔" COLOR_RESET);
+
     console_goto(x, y + 2);
     printf(COLOR_BRIGHT_RED "⚔⚔⚔⚔⚔" COLOR_RESET);
+
     console_goto(x, y + 3);
     printf(COLOR_BRIGHT_RED " ⚔⚔⚔" COLOR_RESET);
+
     console_goto(x, y + 4);
     printf(COLOR_BRIGHT_RED "  ⚔" COLOR_RESET);
 }
 
 void ui_clear_combat_effect(int x, int y) {
-    // 이펙트 지우기
+
+    // ★ "전투중" 지우기
+    console_goto(x, y - 1);
+    printf("      ");   // "전투중" 3글자 = UTF-8 6칸
+
+    // 기존 칼 이펙트 지우기
     for (int i = 0; i < 5; i++) {
         console_goto(x, y + i);
-        printf("       ");  // 7칸 지우기
+        printf("       ");
     }
 }
 

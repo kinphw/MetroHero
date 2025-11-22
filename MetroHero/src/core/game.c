@@ -120,8 +120,39 @@ void game_run(void) {
             prevY = player.y;
         }
 
+        // ★★★★★ 상자 열기 처리 (E 키) ★★★★★
+        if (cmd == 'e') {
+            Chest* chest = map_get_adjacent_chest(&map, player.x, player.y);
+            if (chest != NULL && !chest->isOpened) {
+
+                chest->isOpened = 1;
+
+                // 아이템 적용
+                player.weaponName = chest->itemName;
+
+                char msg[128];
+                snprintf(msg, sizeof(msg),
+                    COLOR_BRIGHT_YELLOW "📦 상자를 열었다! → %s 획득!" COLOR_RESET,
+                    chest->itemName);
+
+                ui_add_log(msg);
+
+                console_goto(chest->x * 2, chest->y);
+                printf("%s", tile_to_glyph(map.tiles[chest->y][chest->x]));
+
+                // UI 갱신
+                ui_draw_equipment(&player, EQ_X, 10, EQ_W, 6);
+            }
+        }
+
         // ★ 인접 적 체크
         combat_check_nearby_enemy(&map, &player);
+
+        // ★ 인접 상자 체크 추가 (여기!)
+        Chest* nearChest = map_get_adjacent_chest(&map, player.x, player.y);
+        if (nearChest != NULL && !nearChest->isOpened) {
+            ui_add_log("가까운 곳에 상자가 있다. [E] 키로 열 수 있다.");
+        }
 
         // ★ 상태창 갱신 (HP 변경 반영)
         ui_draw_stats(&player, EQ_X, 0, EQ_W, 10);

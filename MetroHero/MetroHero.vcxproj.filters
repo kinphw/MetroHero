@@ -45,6 +45,9 @@
     <ClCompile Include="src\core\combat.c">
       <Filter>src\core</Filter>
     </ClCompile>
+    <ClCompile Include="src\entity\chest.c">
+      <Filter>src\entity</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="src\core\game.h">
@@ -73,6 +76,9 @@
     </ClInclude>
     <ClInclude Include="src\core\combat.h">
       <Filter>src\core</Filter>
+    </ClInclude>
+    <ClInclude Include="src\entity\chest.h">
+      <Filter>src\entity</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>

@@ -62,6 +62,8 @@
 #define GLYPH_NPC      "민"    // NPC
 #define GLYPH_ITEM     "물"    // 아이템
 
+#define GLYPH_CHEST  "📦"
+
 // 기타
 #define GLYPH_TREE     "♣♣"    // 나무
 #define GLYPH_WATER    "≈≈"    // 물

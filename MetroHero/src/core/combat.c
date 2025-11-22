@@ -8,19 +8,33 @@
 #include "../world/glyph.h"  // ★ 추가
 
 
-// ★ 인접 적 체크 및 메시지 자동 생성 (체력 포함)
+// ★ 인접 적 체크 및 메시지 (체력 + 순환 대사 포함)
 void combat_check_nearby_enemy(Map* m, Player* p) {
-    Enemy* nearEnemy = map_get_adjacent_enemy(m, p->x, p->y);
+    Enemy* e = map_get_adjacent_enemy(m, p->x, p->y);
+    if (e == NULL) return;
 
-    if (nearEnemy != NULL) {
-        const char* direction = map_get_enemy_direction(m, p->x, p->y, nearEnemy);
-        char logMsg[256];
-        // ★ 청록색으로 강조
-        snprintf(logMsg, sizeof(logMsg),
-            COMBAT_DETECT "%s에 %s이(가) 서있다! (HP: %d/%d)" COLOR_RESET,
-            direction, nearEnemy->name, nearEnemy->hp, nearEnemy->maxHp);
-        ui_add_log(logMsg);
-    }
+    const char* direction = map_get_enemy_direction(m, p->x, p->y, e);
+
+    // ★ 현재 대사를 꺼낸다
+    const char* line = e->dialogues[e->dialogueIndex];
+
+    // ★ 다음 접근 시 다음 대사 출력되도록 index 증가 (순환)
+    e->dialogueIndex = (e->dialogueIndex + 1) % e->dialogueCount;
+
+    char logMsg[512];
+    snprintf(logMsg, sizeof(logMsg),
+        "%s%s에 %s이(가) 서있다! (HP: %d/%d) %s「%s」%s",
+        COMBAT_DETECT,
+        direction,
+        e->name,
+        e->hp, e->maxHp,
+
+        e->dialogueColor,   // ★ 대사 색깔
+        line,                // ★ 대사 내용
+        COLOR_RESET          // ★ 리셋을 맨 뒤에 강제 배치
+    );
+
+    ui_add_log(logMsg);
 }
 
 // ★ 전투 시스템

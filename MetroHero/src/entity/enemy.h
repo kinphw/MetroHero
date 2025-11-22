@@ -17,6 +17,10 @@ typedef struct {
 	int defense;
 	int isAlive;        // 1 = 살아있음, 0 = 죽음
 	const char* name;   // "고블린", "오크" 등
+	const char** dialogues;  // ★ 대사 배열 (문자열 배열)
+	int dialogueCount;       // ★ 총 몇 개?
+	int dialogueIndex;       // ★ 현재 어떤 대사를 출력할지
+	const char* dialogueColor;   // ★ 추가: 대사 색깔
 } Enemy;
 
 // 적 초기화 (타입에 따라 스탯 설정)
