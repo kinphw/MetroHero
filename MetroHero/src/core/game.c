@@ -34,8 +34,10 @@ void game_run(void) {
     // ★ 장비창 (중간)
     ui_draw_equipment(&player, EQ_X, 10, EQ_W, 6);
     ui_draw_log(0, LOG_Y, LOG_W, LOG_H);
+
+    // ★ 입력 안내는 초기에 한 번만 출력 (로그창 밖)
     console_goto(0, SCREEN_H - 1);
-    printf("[화살표/WASD] 이동 | [q] 종료");
+    printf("[화살표/WASD] 이동 | [Q] 종료");
 
     prevX = player.x;
     prevY = player.y;
@@ -77,8 +79,8 @@ void game_run(void) {
             ui_draw_log(0, LOG_Y, LOG_W, LOG_H);
 
             // ★ 입력 안내 다시 출력 (로그가 덮어쓸 수 있으므로)
-            console_goto(0, SCREEN_H - 1);
-            printf("[w,a,s,d] 이동 | [q] 종료");
+            //console_goto(0, SCREEN_H - 1);
+            //printf("[w,a,s,d] 이동 | [q] 종료");
 
             prevX = player.x;
             prevY = player.y;

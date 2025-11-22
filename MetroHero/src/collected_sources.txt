@@ -52,10 +52,17 @@ void game_run(void) {
     // ★ 초기 화면은 한 번만 그리기
     console_clear_fast();
     map_draw_at(&map, &player, 0, 0);
-    ui_draw_equipment(&player, EQ_X, 0, EQ_W, TOP_H);
+
+    // ★ 상태창 (상단)
+    ui_draw_stats(&player, EQ_X, 0, EQ_W, 10);
+
+    // ★ 장비창 (중간)
+    ui_draw_equipment(&player, EQ_X, 10, EQ_W, 6);
     ui_draw_log(0, LOG_Y, LOG_W, LOG_H);
+
+    // ★ 입력 안내는 초기에 한 번만 출력 (로그창 밖)
     console_goto(0, SCREEN_H - 1);
-    printf("[화살표/WASD] 이동 | [q] 종료");
+    printf("[화살표/WASD] 이동 | [Q] 종료");
 
     prevX = player.x;
     prevY = player.y;
@@ -97,8 +104,8 @@ void game_run(void) {
             ui_draw_log(0, LOG_Y, LOG_W, LOG_H);
 
             // ★ 입력 안내 다시 출력 (로그가 덮어쓸 수 있으므로)
-            console_goto(0, SCREEN_H - 1);
-            printf("[w,a,s,d] 이동 | [q] 종료");
+            //console_goto(0, SCREEN_H - 1);
+            //printf("[w,a,s,d] 이동 | [q] 종료");
 
             prevX = player.x;
             prevY = player.y;
@@ -223,6 +230,55 @@ static int display_width(const char* str) {
     return width;
 }
 
+// ui.c에 추가
+
+void ui_draw_stats(const Player* p, int x, int y, int w, int h) {
+    console_goto(x, y);
+    printf("┌─ 상태      ──────────┐");
+
+    console_goto(x, y + 1);
+    printf("│                      │");
+
+    // HP 바 그리기 - 정확하게 맞추기
+    console_goto(x, y + 2);
+    printf("│ HP:");  // 'HP:' 까지 출력
+
+    // HP 바 (10칸)
+    int hpBars = (p->hp * 10) / p->maxHp;
+    for (int i = 0; i < 10; i++) {
+        if (i < hpBars)
+            printf("█");
+        else
+            printf("░");
+    }
+    printf("        │");  // ★ 공백 7개
+
+    // HP 수치
+    console_goto(x, y + 3);
+    printf("│     %3d / %3d        │", p->hp, p->maxHp);
+
+    console_goto(x, y + 4);
+    printf("│                      │");
+
+    // 공격력
+    console_goto(x, y + 5);
+    printf("│ 공격력:  %3d         │", p->attack);
+
+    // 방어력
+    console_goto(x, y + 6);
+    printf("│ 방어력:  %3d         │", p->defense);
+
+    // 나머지 빈 공간
+    for (int i = 7; i < h - 1; i++) {
+        console_goto(x, y + i);
+        printf("│                      │");
+    }
+
+    console_goto(x, y + h - 1);
+    printf("└──────────────────────┘");
+}
+
+// ui_draw_equipment 수정 (높이 조정)
 void ui_draw_equipment(const Player* p, int x, int y, int w, int h) {
     console_goto(x, y);
     printf("┌─ 장비      ──────────┐");
@@ -243,17 +299,12 @@ void ui_draw_equipment(const Player* p, int x, int y, int w, int h) {
     printf(" │");
 
     console_goto(x, y + 4);
-    printf("│ 아이템1: %s", p->item1);
+    printf("│ 아이템 : %s", p->item1);
     len = display_width(p->item1);
     for (int i = 0; i < 11 - len; i++) putchar(' ');
     printf(" │");
 
-    for (int i = 5; i < h - 1; i++) {
-        console_goto(x, y + i);
-        printf("│                      │");
-    }
-
-    console_goto(x, y + h - 1);
+    console_goto(x, y + 5);
     printf("└──────────────────────┘");
 }
 
@@ -267,17 +318,32 @@ void ui_add_log(const char* msg) {
 }
 
 void ui_draw_log(int x, int y, int w, int h) {
-    int start = (log_index - h + LOG_LINES) % LOG_LINES;
+    // 상단 테두리
+    console_goto(x, y);
+    printf("┌─ 대화  ");
+    for (int i = 8; i < w - 2; i++) printf("─");
+    printf("┐");
 
-    for (int i = 0; i < h; i++) {
-        console_goto(x, y + i);
+    int start = (log_index - (h - 2) + LOG_LINES) % LOG_LINES;
 
-        // ★ 정확한 너비만큼 출력 (넘치지 않게)
+    // 로그 내용
+    for (int i = 0; i < h - 2; i++) {
+        console_goto(x, y + 1 + i);
+        printf("│ ");
+
         char line[256] = { 0 };
-        snprintf(line, sizeof(line), "%-*s", w - 1, log_buf[(start + i) % LOG_LINES]);
-        line[w - 1] = '\0';  // 안전하게 종료
+        snprintf(line, sizeof(line), "%-*s", w - 4, log_buf[(start + i) % LOG_LINES]);
+        line[w - 4] = '\0';
         printf("%s", line);
+
+        printf(" │");
     }
+
+    // 하단 테두리
+    console_goto(x, y + h - 1);
+    printf("└");
+    for (int i = 1; i < w - 1; i++) printf("─");
+    printf("┘");
 }
 
 
@@ -286,6 +352,9 @@ void ui_draw_log(int x, int y, int w, int h) {
 [FILE PATH] C:\projects\MetroHero\MetroHero\src\core\ui.h
 [FILE NAME] ui.h
 ------------------------------------------------------------
+
+#ifndef UI_H
+#define UI_H
 
 #include "../entity/player.h"
 
@@ -311,18 +380,21 @@ void ui_draw_log(int x, int y, int w, int h) {
 // 로그창(하단)
 #define LOG_Y TOP_H
 #define LOG_W SCREEN_W
-#define LOG_H (SCREEN_H - TOP_H)
+#define LOG_H (SCREEN_H - TOP_H -1)
 
 
 void console_goto(int x , int y);
 
 void ui_draw_equipment(const Player* p , int x , int y , int w , int h);  // ★ 이 줄 확인
+void ui_draw_stats(const Player* p , int x , int y , int w , int h);  // ★ 추가
+
 
 void ui_add_log(const char* msg);
 void ui_draw_log(int x , int y , int w , int h);
 
 void console_clear_fast(void);
 
+#endif
 
 
 ------------------------------------------------------------
@@ -399,9 +471,15 @@ void player_init(Player* p) {
     p->x = 20;  // 또는 map_init 후에 설정
     p->y = 10;
 
-    p->weaponName = "목검";
-    p->armorName = "천 갑옷";
-    p->item1 = "HP 포션";
+    // ★ 초기 스탯
+    p->maxHp = 10;
+    p->hp = 10;
+    p->attack = 1;
+    p->defense = 0;
+
+    p->weaponName = "";
+    p->armorName = "";
+    p->item1 = "";
 }
 
 
@@ -440,6 +518,13 @@ struct Map; // Map 구조체의 전방 선언
 
 typedef struct {
 	int x, y;
+
+	// ★ 스탯
+	int hp;           // 현재 체력
+	int maxHp;        // 최대 체력
+	int attack;       // 공격력
+	int defense;      // 방어력
+
 	const char* weaponName;
 	const char* armorName;
 	const char* item1;

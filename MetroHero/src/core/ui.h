@@ -25,7 +25,7 @@
 // 로그창(하단)
 #define LOG_Y TOP_H
 #define LOG_W SCREEN_W
-#define LOG_H (SCREEN_H - TOP_H)
+#define LOG_H (SCREEN_H - TOP_H -1)
 
 
 void console_goto(int x , int y);
