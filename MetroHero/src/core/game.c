@@ -17,9 +17,9 @@ void game_run(void) {
     map_init(&map, 1);
     player_init(&player);
 
-    // ★ 맵 로드 후 플레이어를 맵 중앙에 배치
-    player.x = map.width / 2;
-    player.y = map.height / 2;
+    // ★ 스폰 포인트에 플레이어 배치
+    player.x = map.spawnX;
+    player.y = map.spawnY;
 
     ui_init();
 
@@ -27,16 +27,34 @@ void game_run(void) {
     // ★ 초기 화면은 한 번만 그리기
     console_clear_fast();
     map_draw_at(&map, &player, 0, 0);
-    ui_draw_equipment(&player, EQ_X, 0, EQ_W, TOP_H);
+
+    // ★ 상태창 (상단)
+    ui_draw_stats(&player, EQ_X, 0, EQ_W, 10);
+
+    // ★ 장비창 (중간)
+    ui_draw_equipment(&player, EQ_X, 10, EQ_W, 6);
     ui_draw_log(0, LOG_Y, LOG_W, LOG_H);
     console_goto(0, SCREEN_H - 1);
-    printf("[w,a,s,d] 이동 | [q] 종료");
+    printf("[화살표/WASD] 이동 | [q] 종료");
 
     prevX = player.x;
     prevY = player.y;
 
     while (1) {
         int cmd = _getch();
+
+        // ★ 화살표 키 처리 (2바이트 입력)
+        if (cmd == 0 || cmd == 224) {  // 특수 키 감지
+            cmd = _getch();  // 실제 키 코드 읽기
+
+            switch (cmd) {
+            case 72: cmd = 'w'; break;  // 위쪽 화살표
+            case 80: cmd = 's'; break;  // 아래쪽 화살표
+            case 75: cmd = 'a'; break;  // 왼쪽 화살표
+            case 77: cmd = 'd'; break;  // 오른쪽 화살표
+            }
+        }
+
         cmd = tolower(cmd);
 
         if (cmd == 'q') break;

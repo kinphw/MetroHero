@@ -17,6 +17,8 @@ typedef struct {
 	int width;
 	int height;
 	int stageNumber;  // ★ 현재 스테이지 번호 추가 (선택사항)
+	int spawnX;  // ★ 스폰 위치 추가
+	int spawnY;  // ★ 스폰 위치 추가
 	char tiles[ MAX_MAP_H ][ MAX_MAP_W ];
 } Map;
 
@@ -24,5 +26,6 @@ void map_init(Map* m , int stageNumber);  // ★ 인자 추가
 void map_draw_at(const Map* m , const Player* p , int startX , int startY);
 int map_is_walkable(const Map* m, int x, int y);
 const char* tile_to_glyph(char t);  // ★ 추가
+void map_find_spawn(Map* m);  // ★ 추가
 
 #endif

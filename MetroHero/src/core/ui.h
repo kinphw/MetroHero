@@ -1,3 +1,6 @@
+#ifndef UI_H
+#define UI_H
+
 #include "../entity/player.h"
 
 #define SCREEN_W 120
@@ -28,9 +31,12 @@
 void console_goto(int x , int y);
 
 void ui_draw_equipment(const Player* p , int x , int y , int w , int h);  // ★ 이 줄 확인
+void ui_draw_stats(const Player* p , int x , int y , int w , int h);  // ★ 추가
+
 
 void ui_add_log(const char* msg);
 void ui_draw_log(int x , int y , int w , int h);
 
 void console_clear_fast(void);
 
+#endif

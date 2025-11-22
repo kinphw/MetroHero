@@ -9,9 +9,15 @@ void player_init(Player* p) {
     p->x = 20;  // 또는 map_init 후에 설정
     p->y = 10;
 
-    p->weaponName = "목검";
-    p->armorName = "천 갑옷";
-    p->item1 = "HP 포션";
+    // ★ 초기 스탯
+    p->maxHp = 10;
+    p->hp = 10;
+    p->attack = 1;
+    p->defense = 0;
+
+    p->weaponName = "";
+    p->armorName = "";
+    p->item1 = "";
 }
 
 

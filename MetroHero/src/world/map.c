@@ -24,12 +24,33 @@ const char* tile_to_glyph(char t) {
     }
 }
 
+// ★ 스폰 포인트 찾기
+void map_find_spawn(Map* m) {
+    // 기본값 (중앙)
+    m->spawnX = m->width / 2;
+    m->spawnY = m->height / 2;
+
+    // @ 찾기
+    for (int y = 0; y < m->height; y++) {
+        for (int x = 0; x < m->width; x++) {
+            if (m->tiles[y][x] == '@') {
+                m->spawnX = x;
+                m->spawnY = y;
+                // @ 를 일반 바닥으로 변환
+                m->tiles[y][x] = '.';
+                return;  // 첫 번째 @ 만 사용
+            }
+        }
+    }
+}
+
 // -------------------------------
 // 맵 초기화
 // -------------------------------
 void map_init(Map* m, int stageNumber) {
     m->stageNumber = stageNumber;  // ★ 선택사항
     load_map(m, stageNumber);
+    map_find_spawn(m);  // ★ 이 줄 추가!
 }
 
 // -------------------------------

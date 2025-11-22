@@ -5,6 +5,13 @@ struct Map; // Map 구조체의 전방 선언
 
 typedef struct {
 	int x, y;
+
+	// ★ 스탯
+	int hp;           // 현재 체력
+	int maxHp;        // 최대 체력
+	int attack;       // 공격력
+	int defense;      // 방어력
+
 	const char* weaponName;
 	const char* armorName;
 	const char* item1;

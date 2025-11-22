@@ -42,9 +42,9 @@ void game_run(void) {
     map_init(&map, 1);
     player_init(&player);
 
-    // ★ 맵 로드 후 플레이어를 맵 중앙에 배치
-    player.x = map.width / 2;
-    player.y = map.height / 2;
+    // ★ 스폰 포인트에 플레이어 배치
+    player.x = map.spawnX;
+    player.y = map.spawnY;
 
     ui_init();
 
@@ -55,13 +55,26 @@ void game_run(void) {
     ui_draw_equipment(&player, EQ_X, 0, EQ_W, TOP_H);
     ui_draw_log(0, LOG_Y, LOG_W, LOG_H);
     console_goto(0, SCREEN_H - 1);
-    printf("[w,a,s,d] 이동 | [q] 종료");
+    printf("[화살표/WASD] 이동 | [q] 종료");
 
     prevX = player.x;
     prevY = player.y;
 
     while (1) {
         int cmd = _getch();
+
+        // ★ 화살표 키 처리 (2바이트 입력)
+        if (cmd == 0 || cmd == 224) {  // 특수 키 감지
+            cmd = _getch();  // 실제 키 코드 읽기
+
+            switch (cmd) {
+            case 72: cmd = 'w'; break;  // 위쪽 화살표
+            case 80: cmd = 's'; break;  // 아래쪽 화살표
+            case 75: cmd = 'a'; break;  // 왼쪽 화살표
+            case 77: cmd = 'd'; break;  // 오른쪽 화살표
+            }
+        }
+
         cmd = tolower(cmd);
 
         if (cmd == 'q') break;
@@ -79,6 +92,13 @@ void game_run(void) {
             // 새 위치 그리기
             console_goto(player.x * 2, player.y);
             printf(GLYPH_PLAYER);
+
+            // ★ 로그창 갱신 추가
+            ui_draw_log(0, LOG_Y, LOG_W, LOG_H);
+
+            // ★ 입력 안내 다시 출력 (로그가 덮어쓸 수 있으므로)
+            console_goto(0, SCREEN_H - 1);
+            printf("[w,a,s,d] 이동 | [q] 종료");
 
             prevX = player.x;
             prevY = player.y;
@@ -205,7 +225,7 @@ static int display_width(const char* str) {
 
 void ui_draw_equipment(const Player* p, int x, int y, int w, int h) {
     console_goto(x, y);
-    printf("┌─ EQUIPMENT ──────────┐");
+    printf("┌─ 장비      ──────────┐");
 
     console_goto(x, y + 1);
     printf("│                      │");
@@ -368,9 +388,11 @@ void debug_console_info(void);
 [FILE NAME] player.c
 ------------------------------------------------------------
 
+#include <stdio.h>
+
 #include "../world/map.h"
 #include "player.h"
-
+#include "../core/ui.h"  // ★ ui_add_log 사용을 위해 추가
 
 void player_init(Player* p) {
     // ★ 맵 크기를 알 수 없으므로 기본값 설정
@@ -397,6 +419,11 @@ void player_move(Player* p, const Map* m, int cmd) {
     if (map_is_walkable(m, nx, ny)) {
         p->x = nx;
         p->y = ny;
+
+        // 이동 성공 로그 찍기
+        //char logMsg[128];
+        //snprintf(logMsg, sizeof(logMsg), "이동: (%d, %d)", p->x, p->y);
+		//ui_add_log(logMsg);
     }
 }
 
@@ -437,7 +464,7 @@ void player_move(Player* p, const struct Map* m, int cmd); // struct Map*로 명
 // ========================
 
 // 맵 타일
-#define GLYPH_FLOOR    ".."    // 바닥
+#define GLYPH_FLOOR    "  "    // 바닥
 #define GLYPH_WALL     "██"    // 벽
 #define GLYPH_RAIL     "=="    // 철도 레일
 #define GLYPH_EMPTY    "  "    // 빈 공간
@@ -453,6 +480,15 @@ void player_move(Player* p, const struct Map* m, int cmd); // struct Map*로 명
 // 기타
 #define GLYPH_TREE     "♣♣"    // 나무
 #define GLYPH_WATER    "≈≈"    // 물
+
+// ========================
+// 타일 문자 (맵 데이터용)
+// ========================
+#define TILE_FLOOR     '.'
+#define TILE_WALL      '#'
+#define TILE_RAIL      '='
+#define TILE_DOOR      '+'
+#define TILE_SPAWN     '@'     // ★ 스폰 포인트
 
 #endif
 
@@ -487,12 +523,33 @@ const char* tile_to_glyph(char t) {
     }
 }
 
+// ★ 스폰 포인트 찾기
+void map_find_spawn(Map* m) {
+    // 기본값 (중앙)
+    m->spawnX = m->width / 2;
+    m->spawnY = m->height / 2;
+
+    // @ 찾기
+    for (int y = 0; y < m->height; y++) {
+        for (int x = 0; x < m->width; x++) {
+            if (m->tiles[y][x] == '@') {
+                m->spawnX = x;
+                m->spawnY = y;
+                // @ 를 일반 바닥으로 변환
+                m->tiles[y][x] = '.';
+                return;  // 첫 번째 @ 만 사용
+            }
+        }
+    }
+}
+
 // -------------------------------
 // 맵 초기화
 // -------------------------------
 void map_init(Map* m, int stageNumber) {
     m->stageNumber = stageNumber;  // ★ 선택사항
     load_map(m, stageNumber);
+    map_find_spawn(m);  // ★ 이 줄 추가!
 }
 
 // -------------------------------
@@ -567,6 +624,8 @@ typedef struct {
 	int width;
 	int height;
 	int stageNumber;  // ★ 현재 스테이지 번호 추가 (선택사항)
+	int spawnX;  // ★ 스폰 위치 추가
+	int spawnY;  // ★ 스폰 위치 추가
 	char tiles[ MAX_MAP_H ][ MAX_MAP_W ];
 } Map;
 
@@ -574,6 +633,7 @@ void map_init(Map* m , int stageNumber);  // ★ 인자 추가
 void map_draw_at(const Map* m , const Player* p , int startX , int startY);
 int map_is_walkable(const Map* m, int x, int y);
 const char* tile_to_glyph(char t);  // ★ 추가
+void map_find_spawn(Map* m);  // ★ 추가
 
 #endif
 
@@ -592,22 +652,22 @@ const char* tile_to_glyph(char t);  // ★ 추가
 
 static const char* MAP_STAGE_1[] = {
     "########################################",
-    "#......................................#",
-    "#......................................#",
-    "#......................................#",
-    "#...........##############.............#",
-    "#...........#............#.............#",
-    "#...........#............#.............#",
-    "#...........#............#.............#",
-    "#...........#............#.............#",
-    "#...........#............#.............#",
-    "#...........#............#.............#",
-    "#...........#............#.............#",
-    "#...........#............#.............#",
-    "#...........##############.............#",
-    "#......................................#",
-    "#......................................#",
-    "#......................................#",
+    "#@....##################...............#",
+    "#.....#................................#",
+    "#.....#.####...........#########.......#",
+    "#.....#.#..#...........#.......#.......#",
+    "#.......#..#############.......#.......#",
+    "#.......#..................#####.......#",
+    "#########..................#...........#",
+    "#.........................##...........#",
+    "#.......#####..........#####...........#",
+    "#.......#...#..........#...............#",
+    "#.......#...############...............#",
+    "#.......#..............................#",
+    "#.......#############..................#",
+    "#.....................#................#",
+    "#.....................#................#",
+    "#.....................##################",
     "#......................................#",
     "#......................................#",
     "########################################"

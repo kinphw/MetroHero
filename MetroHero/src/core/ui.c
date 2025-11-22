@@ -96,6 +96,55 @@ static int display_width(const char* str) {
     return width;
 }
 
+// ui.c에 추가
+
+void ui_draw_stats(const Player* p, int x, int y, int w, int h) {
+    console_goto(x, y);
+    printf("┌─ 상태      ──────────┐");
+
+    console_goto(x, y + 1);
+    printf("│                      │");
+
+    // HP 바 그리기 - 정확하게 맞추기
+    console_goto(x, y + 2);
+    printf("│ HP:");  // 'HP:' 까지 출력
+
+    // HP 바 (10칸)
+    int hpBars = (p->hp * 10) / p->maxHp;
+    for (int i = 0; i < 10; i++) {
+        if (i < hpBars)
+            printf("█");
+        else
+            printf("░");
+    }
+    printf("        │");  // ★ 공백 7개
+
+    // HP 수치
+    console_goto(x, y + 3);
+    printf("│     %3d / %3d        │", p->hp, p->maxHp);
+
+    console_goto(x, y + 4);
+    printf("│                      │");
+
+    // 공격력
+    console_goto(x, y + 5);
+    printf("│ 공격력:  %3d         │", p->attack);
+
+    // 방어력
+    console_goto(x, y + 6);
+    printf("│ 방어력:  %3d         │", p->defense);
+
+    // 나머지 빈 공간
+    for (int i = 7; i < h - 1; i++) {
+        console_goto(x, y + i);
+        printf("│                      │");
+    }
+
+    console_goto(x, y + h - 1);
+    printf("└──────────────────────┘");
+}
+
+// ui_draw_equipment 수정 (높이 조정)
 void ui_draw_equipment(const Player* p, int x, int y, int w, int h) {
     console_goto(x, y);
     printf("┌─ 장비      ──────────┐");
@@ -116,17 +165,12 @@ void ui_draw_equipment(const Player* p, int x, int y, int w, int h) {
     printf(" │");
 
     console_goto(x, y + 4);
-    printf("│ 아이템1: %s", p->item1);
+    printf("│ 아이템 : %s", p->item1);
     len = display_width(p->item1);
     for (int i = 0; i < 11 - len; i++) putchar(' ');
     printf(" │");
 
-    for (int i = 5; i < h - 1; i++) {
-        console_goto(x, y + i);
-        printf("│                      │");
-    }
-
-    console_goto(x, y + h - 1);
+    console_goto(x, y + 5);
     printf("└──────────────────────┘");
 }
 
@@ -140,16 +184,31 @@ void ui_add_log(const char* msg) {
 }
 
 void ui_draw_log(int x, int y, int w, int h) {
-    int start = (log_index - h + LOG_LINES) % LOG_LINES;
+    // 상단 테두리
+    console_goto(x, y);
+    printf("┌─ 대화  ");
+    for (int i = 8; i < w - 2; i++) printf("─");
+    printf("┐");
 
-    for (int i = 0; i < h; i++) {
-        console_goto(x, y + i);
+    int start = (log_index - (h - 2) + LOG_LINES) % LOG_LINES;
 
-        // ★ 정확한 너비만큼 출력 (넘치지 않게)
+    // 로그 내용
+    for (int i = 0; i < h - 2; i++) {
+        console_goto(x, y + 1 + i);
+        printf("│ ");
+
         char line[256] = { 0 };
-        snprintf(line, sizeof(line), "%-*s", w - 1, log_buf[(start + i) % LOG_LINES]);
-        line[w - 1] = '\0';  // 안전하게 종료
+        snprintf(line, sizeof(line), "%-*s", w - 4, log_buf[(start + i) % LOG_LINES]);
+        line[w - 4] = '\0';
         printf("%s", line);
+
+        printf(" │");
     }
+
+    // 하단 테두리
+    console_goto(x, y + h - 1);
+    printf("└");
+    for (int i = 1; i < w - 1; i++) printf("─");
+    printf("┘");
 }
 

@@ -6,7 +6,7 @@
 // ========================
 
 // 맵 타일
-#define GLYPH_FLOOR    ".."    // 바닥
+#define GLYPH_FLOOR    "  "    // 바닥
 #define GLYPH_WALL     "██"    // 벽
 #define GLYPH_RAIL     "=="    // 철도 레일
 #define GLYPH_EMPTY    "  "    // 빈 공간
@@ -22,5 +22,14 @@
 // 기타
 #define GLYPH_TREE     "♣♣"    // 나무
 #define GLYPH_WATER    "≈≈"    // 물
+
+// ========================
+// 타일 문자 (맵 데이터용)
+// ========================
+#define TILE_FLOOR     '.'
+#define TILE_WALL      '#'
+#define TILE_RAIL      '='
+#define TILE_DOOR      '+'
+#define TILE_SPAWN     '@'     // ★ 스폰 포인트
 
 #endif
