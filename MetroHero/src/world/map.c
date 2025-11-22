@@ -12,8 +12,10 @@ const char* tile_to_glyph(char t) {
     switch (t) {
     case '.':
         return GLYPH_FLOOR;
+    //case '#':
+    //    return GLYPH_WALL;
     case '#':
-        return GLYPH_WALL;
+        return GLYPH_WALL;  // 단일 패턴
     case '=':
         return GLYPH_RAIL;
     case '+':
