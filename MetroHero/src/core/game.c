@@ -59,9 +59,30 @@ void game_run(void) {
             cmd = tolower(cmd);
 
             if (cmd == '0') {
-                // 다음 대화로
-                npc_next_dialogue(currentNPC);
-                ui_draw_dialogue(currentNPC, DIALOGUE_X, DIALOGUE_Y, DIALOGUE_W, DIALOGUE_H);
+                // 🔥 마지막 대사인지 체크
+                if (currentNPC->currentDialogue == currentNPC->dialogueCount - 1) {
+
+                    // 🔥 여기 추가
+                    currentNPC->currentDialogue = 0;
+
+                    // 🔥 대화 종료
+                    inDialogue = 0;
+                    currentNPC = NULL;
+
+                    // 🔥 대화창 영역 지우기
+                    ui_clear_dialogue_area(DIALOGUE_X, DIALOGUE_Y, DIALOGUE_W, DIALOGUE_H);
+
+                    // 🔥 원래 UI 복귀
+                    ui_draw_stats(&player, STATUS_X, STATUS_Y, STATUS_W, STATUS_H);
+                    ui_draw_equipment(&player, EQUIP_X, EQUIP_Y, EQUIP_W, EQUIP_H);
+                    ui_draw_log(0, LOG_Y, LOG_W, LOG_H);
+
+                }
+                else {
+                    // 🔥 아직 마지막이 아니면 다음 대사
+                    npc_next_dialogue(currentNPC);
+                    ui_draw_dialogue(currentNPC, DIALOGUE_X, DIALOGUE_Y, DIALOGUE_W, DIALOGUE_H);
+                }
             }
             else if (cmd == 't' && currentNPC->canTrade) {
                 // 거래 모드 (향후 구현)
@@ -69,6 +90,10 @@ void game_run(void) {
                 ui_draw_log(LOG_X, LOG_Y, LOG_W, LOG_H);
             }
             else if (cmd == 'x' || cmd == 27) {  // X 또는 ESC
+
+                // 🔥 여기 추가
+                currentNPC->currentDialogue = 0;
+
                 // 대화 종료
                 inDialogue = 0;
                 currentNPC = NULL;
@@ -163,7 +188,7 @@ void game_run(void) {
             }
         }
 
-        // ★ NPC 대화 처리 (0 키)
+        // ★ NPC 대화 처리 (0 키) - 바로 대화창 표시
         if (cmd == '0') {
             NPC* npc = map_get_adjacent_npc(&map, player.x, player.y);
             if (npc != NULL) {
@@ -171,7 +196,18 @@ void game_run(void) {
                     // ★ 전용 대화창 모드 진입
                     inDialogue = 1;
                     currentNPC = npc;
+
+                    // ★ 먼저 기존 UI 영역 지우기
+                    ui_clear_dialogue_area(DIALOGUE_X, DIALOGUE_Y, DIALOGUE_W, DIALOGUE_H);
+
+                    // ★ 대화창 그리기
                     ui_draw_dialogue(npc, DIALOGUE_X, DIALOGUE_Y, DIALOGUE_W, DIALOGUE_H);
+
+                    // 로그에도 기록
+                    char msg[128];
+                    snprintf(msg, sizeof(msg), "%s와 대화를 시작했다.", npc->name);
+                    ui_add_log(msg);
+                    ui_draw_log(LOG_X, LOG_Y, LOG_W, LOG_H);
                 }
                 else {
                     // ★ 로그창 모드 (기존 방식)
@@ -208,9 +244,16 @@ void game_run(void) {
         }
 
         // ★ 상태창 갱신 (HP 변경 반영)
-        ui_draw_stats(&player, STATUS_X, STATUS_Y, STATUS_W, STATUS_H);
+        //ui_draw_stats(&player, STATUS_X, STATUS_Y, STATUS_W, STATUS_H);
 
         // ★ 로그창 갱신
-        ui_draw_log(0, LOG_Y, LOG_W, LOG_H);
+        //ui_draw_log(0, LOG_Y, LOG_W, LOG_H);
+
+        // ★ 상태창/장비창/로그창은 대화 모드일 때 다시 그리면 안 됨
+        if (!inDialogue) {
+            ui_draw_stats(&player, STATUS_X, STATUS_Y, STATUS_W, STATUS_H);
+            ui_draw_equipment(&player, EQUIP_X, EQUIP_Y, EQUIP_W, EQUIP_H);
+            ui_draw_log(0, LOG_Y, LOG_W, LOG_H);
+        }
     }
 }

@@ -176,6 +176,10 @@ void game_run(void) {
     Player player;
     int prevX, prevY;  // ★ 이전 위치 저장
 
+    // ★ 대화 모드 관련 변수
+    int inDialogue = 0;
+    NPC* currentNPC = NULL;
+
     map_init(&map, 1);
     player_init(&player);
 
@@ -209,6 +213,53 @@ void game_run(void) {
     prevY = player.y;
 
     while (1) {
+
+        // ★ 대화 모드일 때
+        if (inDialogue && currentNPC != NULL) {
+            int cmd = _getch();
+            cmd = tolower(cmd);
+
+            if (cmd == '0') {
+                // 🔥 마지막 대사인지 체크
+                if (currentNPC->currentDialogue == currentNPC->dialogueCount - 1) {
+
+                    // 🔥 대화 종료
+                    inDialogue = 0;
+                    currentNPC = NULL;
+
+                    // 🔥 대화창 영역 지우기
+                    ui_clear_dialogue_area(DIALOGUE_X, DIALOGUE_Y, DIALOGUE_W, DIALOGUE_H);
+
+                    // 🔥 원래 UI 복귀
+                    ui_draw_stats(&player, STATUS_X, STATUS_Y, STATUS_W, STATUS_H);
+                    ui_draw_equipment(&player, EQUIP_X, EQUIP_Y, EQUIP_W, EQUIP_H);
+                    ui_draw_log(0, LOG_Y, LOG_W, LOG_H);
+
+                }
+                else {
+                    // 🔥 아직 마지막이 아니면 다음 대사
+                    npc_next_dialogue(currentNPC);
+                    ui_draw_dialogue(currentNPC, DIALOGUE_X, DIALOGUE_Y, DIALOGUE_W, DIALOGUE_H);
+                }
+            }
+            else if (cmd == 't' && currentNPC->canTrade) {
+                // 거래 모드 (향후 구현)
+                ui_add_log(COLOR_YELLOW "거래 시스템은 곧 추가됩니다!" COLOR_RESET);
+                ui_draw_log(LOG_X, LOG_Y, LOG_W, LOG_H);
+            }
+            else if (cmd == 'x' || cmd == 27) {  // X 또는 ESC
+                // 대화 종료
+                inDialogue = 0;
+                currentNPC = NULL;
+
+                // 대화창 지우고 원래 UI 복원
+                ui_clear_dialogue_area(DIALOGUE_X, DIALOGUE_Y, DIALOGUE_W, DIALOGUE_H);
+                ui_draw_stats(&player, STATUS_X, STATUS_Y, STATUS_W, STATUS_H);
+                ui_draw_equipment(&player, EQUIP_X, EQUIP_Y, EQUIP_W, EQUIP_H);
+            }
+
+            continue;  // 대화 모드에서는 다른 입력 무시
+        }
 
         // ★ 플레이어 사망 체크
         if (player.hp <= 0) {
@@ -291,25 +342,38 @@ void game_run(void) {
             }
         }
 
-        // ★ NPC 대화 처리 (0 키)
+        // ★ NPC 대화 처리 (0 키) - 바로 대화창 표시
         if (cmd == '0') {
             NPC* npc = map_get_adjacent_npc(&map, player.x, player.y);
             if (npc != NULL) {
-                const char* dialogue = npc_get_dialogue(npc);
+                if (npc->useDialogueBox) {
+                    // ★ 전용 대화창 모드 진입
+                    inDialogue = 1;
+                    currentNPC = npc;
 
-                char msg[256];
-                snprintf(msg, sizeof(msg),
-                    COLOR_BRIGHT_CYAN "💬 %s: " COLOR_RESET "「%s」",
-                    npc->name, dialogue);
+                    // ★ 먼저 기존 UI 영역 지우기
+                    ui_clear_dialogue_area(DIALOGUE_X, DIALOGUE_Y, DIALOGUE_W, DIALOGUE_H);
 
-                ui_add_log(msg);
+                    // ★ 대화창 그리기
+                    ui_draw_dialogue(npc, DIALOGUE_X, DIALOGUE_Y, DIALOGUE_W, DIALOGUE_H);
 
-                // 다음 대화로 전환
-                npc_next_dialogue(npc);
+                    // 로그에도 기록
+                    char msg[128];
+                    snprintf(msg, sizeof(msg), "%s와 대화를 시작했다.", npc->name);
+                    ui_add_log(msg);
+                    ui_draw_log(LOG_X, LOG_Y, LOG_W, LOG_H);
+                }
+                else {
+                    // ★ 로그창 모드 (기존 방식)
+                    const char* dialogue = npc_get_dialogue(npc);
 
-                // 거래 가능한 NPC인 경우 안내
-                if (npc->canTrade) {
-                    ui_add_log(COLOR_YELLOW "[향후 업데이트] 이 NPC와 거래할 수 있습니다!" COLOR_RESET);
+                    char msg[256];
+                    snprintf(msg, sizeof(msg),
+                        COLOR_BRIGHT_CYAN "💬 %s: " COLOR_RESET "「%s」",
+                        npc->name, dialogue);
+
+                    ui_add_log(msg);
+                    npc_next_dialogue(npc);
                 }
             }
         }
@@ -334,10 +398,17 @@ void game_run(void) {
         }
 
         // ★ 상태창 갱신 (HP 변경 반영)
-        ui_draw_stats(&player, STATUS_X, STATUS_Y, STATUS_W, STATUS_H);
+        //ui_draw_stats(&player, STATUS_X, STATUS_Y, STATUS_W, STATUS_H);
 
         // ★ 로그창 갱신
-        ui_draw_log(0, LOG_Y, LOG_W, LOG_H);
+        //ui_draw_log(0, LOG_Y, LOG_W, LOG_H);
+
+        // ★ 상태창/장비창/로그창은 대화 모드일 때 다시 그리면 안 됨
+        if (!inDialogue) {
+            ui_draw_stats(&player, STATUS_X, STATUS_Y, STATUS_W, STATUS_H);
+            ui_draw_equipment(&player, EQUIP_X, EQUIP_Y, EQUIP_W, EQUIP_H);
+            ui_draw_log(0, LOG_Y, LOG_W, LOG_H);
+        }
     }
 }
 
@@ -667,6 +738,151 @@ void ui_clear_combat_effect(int x, int y) {
     }
 }
 
+// ★ 대화창 그리기
+void ui_draw_dialogue(const NPC* npc, int x, int y, int w, int h) {
+    const int CONTENT_WIDTH = 34;
+
+    // 상단 테두리
+    console_goto(x, y);
+    printf("┌─ 대화 ");
+    for (int i = 7; i < w - 2; i++) printf("─");
+    printf("┐");
+
+    // NPC 이름 표시
+    console_goto(x, y + 1);
+    char nameText[128];
+    snprintf(nameText, sizeof(nameText), " 💬 %s", npc->name);
+    printf("│%s", nameText);
+    int remaining = CONTENT_WIDTH - display_width(nameText);
+    for (int i = 0; i < remaining; i++) printf(" ");
+    printf("│");
+
+    // 구분선
+    console_goto(x, y + 2);
+    printf("├");
+    for (int i = 1; i < w - 1; i++) printf("─");
+    printf("┤");
+
+    // 현재 대화 내용 가져오기
+    const char* dialogue = npc->dialogues[npc->currentDialogue];
+
+    // 대화 내용을 여러 줄로 나누기 (간단한 구현)
+    char line[128];
+    int lineStart = 0;
+    int lineNum = 0;
+    int maxLines = h - 6;  // 테두리, 이름, 버튼 공간 제외
+
+    for (int i = 3; i < h - 3 && lineNum < maxLines; i++) {
+        console_goto(x, y + i);
+        printf("│ ");
+
+        // 한 줄에 들어갈 만큼만 추출 (간단 버전)
+        int charsToPrint = 0;
+        int currentWidth = 0;
+        const char* dialoguePtr = dialogue + lineStart;
+
+        while (*dialoguePtr && currentWidth < 30) {
+            unsigned char c = *dialoguePtr;
+
+            if (c < 128) {
+                currentWidth += 1;
+                charsToPrint += 1;
+                dialoguePtr += 1;
+            }
+            else if ((c & 0xE0) == 0xC0) {
+                currentWidth += 2;
+                charsToPrint += 2;
+                dialoguePtr += 2;
+            }
+            else if ((c & 0xF0) == 0xE0) {
+                currentWidth += 2;
+                charsToPrint += 3;
+                dialoguePtr += 3;
+            }
+            else if ((c & 0xF8) == 0xF0) {
+                currentWidth += 2;
+                charsToPrint += 4;
+                dialoguePtr += 4;
+            }
+            else {
+                dialoguePtr += 1;
+            }
+        }
+
+        // 추출한 부분 출력
+        if (charsToPrint > 0) {
+            for (int j = 0; j < charsToPrint; j++) {
+                putchar(dialogue[lineStart + j]);
+            }
+            lineStart += charsToPrint;
+        }
+
+        // 남은 공간 채우기
+        remaining = CONTENT_WIDTH - 2 - currentWidth;
+        for (int j = 0; j < remaining; j++) printf(" ");
+        printf("│");
+
+        lineNum++;
+
+        // 대화가 끝났으면 종료
+        if (dialogue[lineStart] == '\0') break;
+    }
+
+    // 남은 빈 줄 채우기
+    for (int i = 3 + lineNum; i < h - 3; i++) {
+        console_goto(x, y + i);
+        printf("│                                  │");
+    }
+
+    // 구분선
+    console_goto(x, y + h - 3);
+    printf("├");
+    for (int i = 1; i < w - 1; i++) printf("─");
+    printf("┤");
+
+    // ★ 버튼 안내 개선
+    console_goto(x, y + h - 2);
+    char buttonText[64];
+    if (npc->currentDialogue < npc->dialogueCount - 1) {
+        // 아직 대화가 남았을 때
+        if (npc->canTrade) {
+            snprintf(buttonText, sizeof(buttonText), " [0]다음  [T]거래  [X]닫기");
+        }
+        else {
+            snprintf(buttonText, sizeof(buttonText), " [0]다음  [X]닫기");
+        }
+    }
+    else {
+        // 마지막 대화일 때
+        if (npc->canTrade) {
+            snprintf(buttonText, sizeof(buttonText), " [0]끝  [T]거래  [X]닫기");
+        }
+        else {
+            snprintf(buttonText, sizeof(buttonText), " [0]끝  [X]닫기");
+        }
+    }
+
+    printf("│%s", buttonText);
+    remaining = CONTENT_WIDTH - display_width(buttonText);
+    for (int i = 0; i < remaining; i++) printf(" ");
+    printf("│");
+
+    // 하단 테두리
+    console_goto(x, y + h - 1);
+    printf("└");
+    for (int i = 1; i < w - 1; i++) printf("─");
+    printf("┘");
+}
+
+// ★ 대화창 영역 지우기 (상태창/장비창 복원)
+void ui_clear_dialogue_area(int x, int y, int w, int h) {
+    for (int i = 0; i < h; i++) {
+        console_goto(x, y + i);
+        for (int j = 0; j < w; j++) {
+            printf(" ");
+        }
+    }
+}
 
 
 ------------------------------------------------------------
@@ -678,6 +894,7 @@ void ui_clear_combat_effect(int x, int y) {
 #define UI_H
 
 #include "../entity/player.h"
+#include "../entity/npc.h"  // ★ 추가
 
 #define SCREEN_W 120
 #define SCREEN_H 30
@@ -703,6 +920,12 @@ void ui_clear_combat_effect(int x, int y) {
 #define EQUIP_W 38
 #define EQUIP_H 6
 
+// ★ 대화창 (상태창/장비창 위에 오버레이)
+#define DIALOGUE_X 82
+#define DIALOGUE_Y 0
+#define DIALOGUE_W 38
+#define DIALOGUE_H 16
+
 // ★ 로그창 (하단 전체)
 #define LOG_X 0
 #define LOG_Y 20
@@ -720,6 +943,12 @@ void ui_draw_log(int x , int y , int w , int h);
 
 void ui_draw_combat_effect(int x , int y);  // 전투 이펙트
 void ui_clear_combat_effect(int x , int y); // 이펙트 제거
+
+// ★ 대화창 관련 함수
+void ui_draw_dialogue(const NPC* npc , int x , int y , int w , int h);
+void ui_clear_dialogue_area(int x , int y , int w , int h);
+
+int display_width(const char* str);
 
 #endif
 
@@ -977,18 +1206,20 @@ void npc_init(NPC* npc, char type, int x, int y) {
     switch (type) {
     case 'A': { // 상인
         static const char* lines[] = {
-            "어서오세요! 필요한 물건이 있으신가요?",
-            "좋은 장비를 구하고 싶으시다면 제게 오세요.",
-            "오늘은 특별 할인 중입니다!",
-            "여행자분, 안전한 여행 되세요."
+			"당신은 이제 이곳에서 모험을 시작하게 됩니다.. ",
+            "이곳은 성균관대역입니다.",
+            "당신은 이 모험을 끝내고 집으로 돌아가기 위해서는 영등포역에 도착해야합니다...",
+            "일단 이 역의 역장을 물리치고 의왕역으로 넘어가야 할 것입니다...",
+            "행운을 빕니다... 후후후..."
         };
 
-        npc->name = "상인";
+        npc->name = "우건박";
         npc->glyph = GLYPH_NPC_MERCHANT;
         npc->dialogues = lines;
         npc->dialogueCount = sizeof(lines) / sizeof(lines[0]);
-        npc->canTrade = 1;
+        npc->canTrade = 0;
         npc->shopType = "general";
+        npc->useDialogueBox = 1;  // ★ 전용 대화창 사용
         break;
     }
 
@@ -1006,6 +1237,7 @@ void npc_init(NPC* npc, char type, int x, int y) {
         npc->dialogueCount = sizeof(lines) / sizeof(lines[0]);
         npc->canTrade = 0;
         npc->shopType = NULL;
+        npc->useDialogueBox = 1;  // ★ 전용 대화창 사용
         break;
     }
 
@@ -1023,6 +1255,7 @@ void npc_init(NPC* npc, char type, int x, int y) {
         npc->dialogueCount = sizeof(lines) / sizeof(lines[0]);
         npc->canTrade = 0;
         npc->shopType = NULL;
+        npc->useDialogueBox = 0;  // ★ 로그창만 사용
         break;
     }
 
@@ -1039,6 +1272,7 @@ void npc_init(NPC* npc, char type, int x, int y) {
         npc->dialogueCount = sizeof(lines) / sizeof(lines[0]);
         npc->canTrade = 0;
         npc->shopType = NULL;
+        npc->useDialogueBox = 0;  // ★ 로그창만 사용
         break;
     }
     }
@@ -1080,6 +1314,9 @@ typedef struct {
 	const char** dialogues;
 	int dialogueCount;
 	int currentDialogue;    // 현재 대화 인덱스
+
+	// ★ 대화 모드 추가
+	int useDialogueBox;    // 1 = 전용 대화창 사용, 0 = 로그창만
 
 	// 향후 확장용
 	int canTrade;          // 거래 가능 여부
@@ -1315,7 +1552,7 @@ void player_move(Player* p , struct Map* m , int cmd);  // ★ const 제거
 #define GLYPH_MOB_GENERIC  COLOR_YELLOW "몹" COLOR_RESET
 
 // ★ NPC (대문자 A-Z)
-#define GLYPH_NPC_MERCHANT COLOR_BRIGHT_CYAN "상" COLOR_RESET
+#define GLYPH_NPC_MERCHANT COLOR_BRIGHT_BLUE "읏" COLOR_RESET
 #define GLYPH_NPC_GUARD    COLOR_BRIGHT_BLUE "경" COLOR_RESET
 #define GLYPH_NPC_CITIZEN  COLOR_BRIGHT_WHITE "민" COLOR_RESET
 #define GLYPH_NPC_GENERIC  COLOR_CYAN "N" COLOR_RESET
@@ -1476,7 +1713,7 @@ void map_load_chests(Map* m) {
             char tile = m->tiles[y][x];
 
             // 상자 타일이 아닌 경우 skip
-            if (tile < 'A' || tile > 'Z') continue;
+            if (tile < '0' || tile > '9') continue;
 
             // 해당 tile의 config 찾기
             for (int i = 0; i < cfgCount; i++) {
@@ -1845,34 +2082,35 @@ void map_draw_viewport(const Map* m , const Player* p , int startX , int startY 
 // ========================
 // 스테이지별 상자 설정
 // ========================
+// src/world/map_data.c - 상자 설정도 숫자로 변경
 
-// Stage 1 : A~E 상자 내용
+// ★ Stage 1 상자 설정 (숫자로 변경)
 static const ChestConfig STAGE1_CHESTS[] = {
-    {'A', "weapon", "초보자 검"},
-    {'B', "armor",  "가죽 갑옷"},
-    {'C', "item",   "HP 포션"},
-    {'D', "item",   "민첩의 물약"},
-    {'E', "item",   "힘의 물약"},
+    {'0', "weapon", "초보자 검"},
+    {'1', "armor",  "가죽 갑옷"},
+    {'2', "item",   "HP 포션"},
+    {'3', "item",   "민첩의 물약"},
+    {'4', "item",   "힘의 물약"},
 };
 static const int STAGE1_CHEST_COUNT = sizeof(STAGE1_CHESTS) / sizeof(STAGE1_CHESTS[0]);
 
 // Stage 2
 static const ChestConfig STAGE2_CHESTS[] = {
-    {'A', "weapon", "강철 검"},
-    {'B', "armor",  "철 갑옷"},
-    {'C', "item",   "대형 HP 포션"},
-    {'D', "item",   "스태미너 물약"},
-    {'E', "item",   "신비한 원석"},
+    {'0', "weapon", "강철 검"},
+    {'1', "armor",  "철 갑옷"},
+    {'2', "item",   "대형 HP 포션"},
+    {'3', "item",   "스태미너 물약"},
+    {'4', "item",   "신비한 원석"},
 };
 static const int STAGE2_CHEST_COUNT = sizeof(STAGE2_CHESTS) / sizeof(STAGE2_CHESTS[0]);
 
 // Stage 3
 static const ChestConfig STAGE3_CHESTS[] = {
-    {'A', "weapon", "마력의 검"},
-    {'B', "armor",  "마나 갑옷"},
-    {'C', "item",   "최대 HP +5"},
-    {'D', "item",   "공격력 +2"},
-    {'E', "item",   "방어력 +2"},
+    {'0', "weapon", "마력의 검"},
+    {'1', "armor",  "마나 갑옷"},
+    {'2', "item",   "최대 HP +5"},
+    {'3', "item",   "공격력 +2"},
+    {'4', "item",   "방어력 +2"},
 };
 static const int STAGE3_CHEST_COUNT = sizeof(STAGE3_CHESTS) / sizeof(STAGE3_CHESTS[0]);
 
@@ -1885,7 +2123,7 @@ static const char* MAP_STAGE_1[] = {
 "########################################################################################################################",
 "########################################################################################################################",
 "############..........@.........##############..........###########....................###############################",
-"############....................##############..........###########....................###############################",
+"############..................0.##############..........###########....................###############################",
 "############....................##############..........###########....................###############################",
 "############..........A.........##############..........###########....................###############################",
 "############....................##############..........###########....................###############################",
@@ -1928,14 +2166,14 @@ static const char* MAP_STAGE_1[] = {
 "########.............###########.......................###########....................###############....###########",
 "########.............###########.......................###########....................###############....###########",
 "########.............###########.......................###########....................###############....###########",
-"########.............###########.......................###########....................###############....###########",
-"########...............................................###########....................###############....###########",
-"########...............................................###########....................###############....###########",
-"########...............................................###########....................###############....###########",
-"########...............................................###########....................###############....###########",
-"########...............................................###########....................###############....###########",
-"########...............................................###########....................###############....###########",
-"########...............................................###########....................###############....###########",
+"########.............###########.......................##.....####....................###############....###########",
+"########...............................................##.###.####....................###############....###########",
+"########..................................................###.####....................###############....###########",
+"########...............................................######.####....................###############....###########",
+"########...............................................######.####....................###############....###########",
+"########...............................................######....#....................###############....###########",
+"########...............................................#########.#....................###############....###########",
+"########...............................................#########......................###############....###########",
 "########...............................................###########....................###############....###########",
 "########...............................................###########....................###############....###########",
 "########...............................................###########....................###############....###########",
@@ -1949,7 +2187,7 @@ static const char* MAP_STAGE_1[] = {
 "###############.................########################.##############################################....########",
 "###############.................########################.##############################################....########",
 "###############.................########################.##############################################....########",
-"###############.................########################.##############################################....########",
+"###############..........................................##############################################....########",
 "###############....c............########################.##############################################....########",
 "###############.................########################.##############################################....########",
 "###############.................########################.##############################################....########",

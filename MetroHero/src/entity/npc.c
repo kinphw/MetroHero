@@ -13,17 +13,18 @@ void npc_init(NPC* npc, char type, int x, int y) {
     switch (type) {
     case 'A': { // 상인
         static const char* lines[] = {
-            "어서오세요! 필요한 물건이 있으신가요?",
-            "좋은 장비를 구하고 싶으시다면 제게 오세요.",
-            "오늘은 특별 할인 중입니다!",
-            "여행자분, 안전한 여행 되세요."
+			"당신은 이제 이곳에서 모험을 시작하게 됩니다.. ",
+            "이곳은 성균관대역입니다.",
+            "당신은 이 모험을 끝내고 집으로 돌아가기 위해서는 영등포역에 도착해야합니다...",
+            "일단 이 역의 역장을 물리치고 의왕역으로 넘어가야 할 것입니다...",
+            "행운을 빕니다... 후후후..."
         };
 
-        npc->name = "상인";
+        npc->name = "우건박";
         npc->glyph = GLYPH_NPC_MERCHANT;
         npc->dialogues = lines;
         npc->dialogueCount = sizeof(lines) / sizeof(lines[0]);
-        npc->canTrade = 1;
+        npc->canTrade = 0;
         npc->shopType = "general";
         npc->useDialogueBox = 1;  // ★ 전용 대화창 사용
         break;

@@ -407,11 +407,28 @@ void ui_draw_dialogue(const NPC* npc, int x, int y, int w, int h) {
     for (int i = 1; i < w - 1; i++) printf("─");
     printf("┤");
 
-    // 버튼 안내
+    // ★ 버튼 안내 개선
     console_goto(x, y + h - 2);
-    const char* buttonText = npc->canTrade ?
-        " [0]다음 [T]거래 [X]닫기" :
-        " [0]다음 [X]닫기";
+    char buttonText[64];
+    if (npc->currentDialogue < npc->dialogueCount - 1) {
+        // 아직 대화가 남았을 때
+        if (npc->canTrade) {
+            snprintf(buttonText, sizeof(buttonText), " [0]다음  [T]거래  [X]닫기");
+        }
+        else {
+            snprintf(buttonText, sizeof(buttonText), " [0]다음  [X]닫기");
+        }
+    }
+    else {
+        // 마지막 대화일 때
+        if (npc->canTrade) {
+            snprintf(buttonText, sizeof(buttonText), " [0]끝  [T]거래  [X]닫기");
+        }
+        else {
+            snprintf(buttonText, sizeof(buttonText), " [0]끝  [X]닫기");
+        }
+    }
+
     printf("│%s", buttonText);
     remaining = CONTENT_WIDTH - display_width(buttonText);
     for (int i = 0; i < remaining; i++) printf(" ");
