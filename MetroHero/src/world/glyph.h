@@ -48,7 +48,8 @@
 // 맵 타일
 #define GLYPH_FLOOR    "  "    // 바닥
 //#define GLYPH_WALL     COLOR_YELLOW "██" COLOR_RESET    // ★ 노란색 벽
-#define GLYPH_WALL     "\033[48;5;220m  \033[0m"  // 노란 배경만
+// #define GLYPH_WALL     "\033[48;5;220m  \033[0m"  // 노란 배경만
+#define GLYPH_WALL     "██"    // 단일 패턴 벽
 //#define GLYPH_WALL     "\033[48;5;220m\033[38;5;234m˅ \033[0m"
 #define GLYPH_RAIL     "=="    // 철도 레일
 #define GLYPH_EMPTY    "  "    // 빈 공간

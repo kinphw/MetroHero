@@ -70,18 +70,17 @@ void console_goto(int x, int y) {
 }
 
 
-// 화면에 표시되는 실제 폭 계산 (한글 = 2칸, 영문 = 1칸)
+// ★ 개선된 display_width 함수
 int display_width(const char* str) {
     int width = 0;
     const unsigned char* s = (const unsigned char*)str;
 
     while (*s) {
-        // ★ ANSI 이스케이프 시퀀스 건너뛰기
-        if (*s == '\033' || *s == 0x1B) {  // ESC 문자
+        // ANSI 이스케이프 시퀀스 건너뛰기
+        if (*s == '\033' || *s == 0x1B) {
             s++;
-            if (*s == '[') {  // CSI 시퀀스 시작
+            if (*s == '[') {
                 s++;
-                // 'm'을 만날 때까지 건너뛰기
                 while (*s && *s != 'm') {
                     s++;
                 }
@@ -106,7 +105,7 @@ int display_width(const char* str) {
             s += 3;
         }
         else if ((*s & 0xF8) == 0xF0) {
-            // UTF-8 4바이트 문자 = 2칸
+            // UTF-8 4바이트 문자 (이모지) = 2칸
             width += 2;
             s += 4;
         }
@@ -119,41 +118,59 @@ int display_width(const char* str) {
 
 // ui.c에 추가
 
+// ★ 개선된 상태창 그리기
 void ui_draw_stats(const Player* p, int x, int y, int w, int h) {
+    const int CONTENT_WIDTH = 34;  // 테두리 안쪽 실제 폭
+
     console_goto(x, y);
     printf("┌─ 상태  ──────────────────────────┐");
 
     console_goto(x, y + 1);
     printf("│                                  │");
 
-    // HP 바 그리기
+    // HP 바
     console_goto(x, y + 2);
     printf("│ HP:");
     int hpBars = (p->hp * 10) / p->maxHp;
     for (int i = 0; i < 10; i++) {
-        if (i < hpBars)
-            printf("█");
-        else
-            printf("░");
+        printf(i < hpBars ? "█" : "░");
     }
-    printf("                  │");
+    // HP 바는 14칸 (4 + 10)
+    int remaining = CONTENT_WIDTH - 14;
+    for (int i = 0; i < remaining; i++) printf(" ");
+    printf("│");
 
     // HP 수치
     console_goto(x, y + 3);
-    printf("│     %3d / %3d                    │", p->hp, p->maxHp);
+    char hpText[64];
+    snprintf(hpText, sizeof(hpText), "     %3d / %3d", p->hp, p->maxHp);
+    printf("│%s", hpText);
+    remaining = CONTENT_WIDTH - display_width(hpText);
+    for (int i = 0; i < remaining; i++) printf(" ");
+    printf("│");
 
     console_goto(x, y + 4);
     printf("│                                  │");
 
-    // 공격력 범위 표시
+    // 공격력
     console_goto(x, y + 5);
-    printf("│ 공격력: %2d~%2d                  │", p->attackMin, p->attackMax);
+    char atkText[64];
+    snprintf(atkText, sizeof(atkText), " 공격력: %2d~%2d", p->attackMin, p->attackMax);
+    printf("│%s", atkText);
+    remaining = CONTENT_WIDTH - display_width(atkText);
+    for (int i = 0; i < remaining; i++) printf(" ");
+    printf("│");
 
     // 방어력
     console_goto(x, y + 6);
-    printf("│ 방어력:  %3d                     │", p->defense);
+    char defText[64];
+    snprintf(defText, sizeof(defText), " 방어력:  %3d", p->defense);
+    printf("│%s", defText);
+    remaining = CONTENT_WIDTH - display_width(defText);
+    for (int i = 0; i < remaining; i++) printf(" ");
+    printf("│");
 
-    // 나머지 빈 공간
+    // 빈 공간
     for (int i = 7; i < h - 1; i++) {
         console_goto(x, y + i);
         printf("│                                  │");
@@ -163,31 +180,42 @@ void ui_draw_stats(const Player* p, int x, int y, int w, int h) {
     printf("└──────────────────────────────────┘");
 }
 
-// ui_draw_equipment 수정 (높이 조정)
+// ★ 개선된 장비창 그리기
 void ui_draw_equipment(const Player* p, int x, int y, int w, int h) {
+    const int CONTENT_WIDTH = 34;
+
     console_goto(x, y);
     printf("┌─ 장비  ──────────────────────────┐");
 
     console_goto(x, y + 1);
     printf("│                                  │");
 
+    // 무기
     console_goto(x, y + 2);
-    printf("│ 무기:    %s", p->weaponName);
-    int len = display_width(p->weaponName);
-    for (int i = 0; i < 25 - len; i++) putchar(' ');
-    printf(" │");
+    char weaponText[128];
+    snprintf(weaponText, sizeof(weaponText), " 무기:    %s", p->weaponName);
+    printf("│%s", weaponText);
+    int remaining = CONTENT_WIDTH - display_width(weaponText);
+    for (int i = 0; i < remaining; i++) printf(" ");
+    printf("│");
 
+    // 방어구
     console_goto(x, y + 3);
-    printf("│ 방어구:  %s", p->armorName);
-    len = display_width(p->armorName);
-    for (int i = 0; i < 25 - len; i++) putchar(' ');
-    printf(" │");
+    char armorText[128];
+    snprintf(armorText, sizeof(armorText), " 방어구:  %s", p->armorName);
+    printf("│%s", armorText);
+    remaining = CONTENT_WIDTH - display_width(armorText);
+    for (int i = 0; i < remaining; i++) printf(" ");
+    printf("│");
 
+    // 아이템
     console_goto(x, y + 4);
-    printf("│ 아이템:  %s", p->item1);
-    len = display_width(p->item1);
-    for (int i = 0; i < 25 - len; i++) putchar(' ');
-    printf(" │");
+    char itemText[128];
+    snprintf(itemText, sizeof(itemText), " 아이템:  %s", p->item1);
+    printf("│%s", itemText);
+    remaining = CONTENT_WIDTH - display_width(itemText);
+    for (int i = 0; i < remaining; i++) printf(" ");
+    printf("│");
 
     console_goto(x, y + 5);
     printf("└──────────────────────────────────┘");
@@ -202,52 +230,10 @@ void ui_add_log(const char* msg) {
     log_index = (log_index + 1) % LOG_LINES;
 }
 
-//void ui_draw_log(int x, int y, int w, int h) {
-//    // 상단 테두리
-//    console_goto(x, y);
-//    printf("┌─ 대화  ");
-//    for (int i = 8; i < w - 2; i++) printf("─");
-//    printf("┐");
-//
-//    int start = (log_index - (h - 2) + LOG_LINES) % LOG_LINES;
-//
-//    // 로그 내용
-//    for (int i = 0; i < h - 2; i++) {
-//        console_goto(x, y + 1 + i);
-//        printf("│ ");
-//
-//        const char* logText = log_buf[(start + i) % LOG_LINES];
-//        printf("%s", logText);
-//
-//        // ★ 오른쪽 │ 제거 - 공백으로 남은 줄 전부 덮기
-//        int displayLen = display_width(logText);
-//        int remaining = w - 2 - displayLen;  // "│ " = 2칸만 고려
-//
-//        for (int j = 0; j < remaining; j++) {
-//            printf(" ");
-//        }
-//
-//        //// ★ 화면 표시 폭 정확히 계산
-//        //int displayLen = display_width(logText);
-//        //int contentWidth = w - 4;  // "│ " + " │" = 4칸
-//        //int remaining = contentWidth - displayLen;
-//
-//        //// ★ 남은 공간을 공백으로 채우기
-//        //for (int j = 0; j < remaining; j++) {
-//        //    printf(" ");
-//        //}
-//
-//        //printf(" │");
-//    }
-//
-//    // 하단 테두리
-//    console_goto(x, y + h - 1);
-//    printf("└");
-//    for (int i = 1; i < w - 1; i++) printf("─");
-//    printf("┘");
-//}
-
+// ★ 개선된 로그창 그리기
 void ui_draw_log(int x, int y, int w, int h) {
+    const int CONTENT_WIDTH = w - 4;  // "│ " + " │" = 4칸
+
     // 상단 테두리
     console_goto(x, y);
     printf("┌─ 대화  ");
@@ -264,16 +250,15 @@ void ui_draw_log(int x, int y, int w, int h) {
         const char* logText = log_buf[(start + i) % LOG_LINES];
         printf("%s", logText);
 
-        // ★ 남은 공간을 공백으로 채우기
+        // 남은 공간을 공백으로 채우기
         int displayLen = display_width(logText);
-        int contentWidth = w - 4;  // "│ " + " │" = 4칸
-        int remaining = contentWidth - displayLen;
+        int remaining = CONTENT_WIDTH - displayLen;
 
-        for (int j = 0; j < remaining + 1; j++) {
+        for (int j = 0; j < remaining; j++) {
             printf(" ");
         }
 
-        printf("│");
+        printf(" │");
     }
 
     // 하단 테두리
