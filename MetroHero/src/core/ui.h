@@ -2,6 +2,7 @@
 #define UI_H
 
 #include "../entity/player.h"
+#include "../entity/npc.h"  // ★ 추가
 
 #define SCREEN_W 120
 #define SCREEN_H 30
@@ -27,6 +28,12 @@
 #define EQUIP_W 38
 #define EQUIP_H 6
 
+// ★ 대화창 (상태창/장비창 위에 오버레이)
+#define DIALOGUE_X 82
+#define DIALOGUE_Y 0
+#define DIALOGUE_W 38
+#define DIALOGUE_H 16
+
 // ★ 로그창 (하단 전체)
 #define LOG_X 0
 #define LOG_Y 20
@@ -44,5 +51,11 @@ void ui_draw_log(int x , int y , int w , int h);
 
 void ui_draw_combat_effect(int x , int y);  // 전투 이펙트
 void ui_clear_combat_effect(int x , int y); // 이펙트 제거
+
+// ★ 대화창 관련 함수
+void ui_draw_dialogue(const NPC* npc , int x , int y , int w , int h);
+void ui_clear_dialogue_area(int x , int y , int w , int h);
+
+int display_width(const char* str);
 
 #endif

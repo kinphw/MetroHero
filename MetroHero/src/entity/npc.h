@@ -18,6 +18,9 @@ typedef struct {
 	int dialogueCount;
 	int currentDialogue;    // 현재 대화 인덱스
 
+	// ★ 대화 모드 추가
+	int useDialogueBox;    // 1 = 전용 대화창 사용, 0 = 로그창만
+
 	// 향후 확장용
 	int canTrade;          // 거래 가능 여부
 	const char* shopType;  // "weapon", "armor", "item" 등

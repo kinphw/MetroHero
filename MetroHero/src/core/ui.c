@@ -305,3 +305,131 @@ void ui_clear_combat_effect(int x, int y) {
     }
 }
 
+// ★ 대화창 그리기
+void ui_draw_dialogue(const NPC* npc, int x, int y, int w, int h) {
+    const int CONTENT_WIDTH = 34;
+
+    // 상단 테두리
+    console_goto(x, y);
+    printf("┌─ 대화 ");
+    for (int i = 7; i < w - 2; i++) printf("─");
+    printf("┐");
+
+    // NPC 이름 표시
+    console_goto(x, y + 1);
+    char nameText[128];
+    snprintf(nameText, sizeof(nameText), " 💬 %s", npc->name);
+    printf("│%s", nameText);
+    int remaining = CONTENT_WIDTH - display_width(nameText);
+    for (int i = 0; i < remaining; i++) printf(" ");
+    printf("│");
+
+    // 구분선
+    console_goto(x, y + 2);
+    printf("├");
+    for (int i = 1; i < w - 1; i++) printf("─");
+    printf("┤");
+
+    // 현재 대화 내용 가져오기
+    const char* dialogue = npc->dialogues[npc->currentDialogue];
+
+    // 대화 내용을 여러 줄로 나누기 (간단한 구현)
+    char line[128];
+    int lineStart = 0;
+    int lineNum = 0;
+    int maxLines = h - 6;  // 테두리, 이름, 버튼 공간 제외
+
+    for (int i = 3; i < h - 3 && lineNum < maxLines; i++) {
+        console_goto(x, y + i);
+        printf("│ ");
+
+        // 한 줄에 들어갈 만큼만 추출 (간단 버전)
+        int charsToPrint = 0;
+        int currentWidth = 0;
+        const char* dialoguePtr = dialogue + lineStart;
+
+        while (*dialoguePtr && currentWidth < 30) {
+            unsigned char c = *dialoguePtr;
+
+            if (c < 128) {
+                currentWidth += 1;
+                charsToPrint += 1;
+                dialoguePtr += 1;
+            }
+            else if ((c & 0xE0) == 0xC0) {
+                currentWidth += 2;
+                charsToPrint += 2;
+                dialoguePtr += 2;
+            }
+            else if ((c & 0xF0) == 0xE0) {
+                currentWidth += 2;
+                charsToPrint += 3;
+                dialoguePtr += 3;
+            }
+            else if ((c & 0xF8) == 0xF0) {
+                currentWidth += 2;
+                charsToPrint += 4;
+                dialoguePtr += 4;
+            }
+            else {
+                dialoguePtr += 1;
+            }
+        }
+
+        // 추출한 부분 출력
+        if (charsToPrint > 0) {
+            for (int j = 0; j < charsToPrint; j++) {
+                putchar(dialogue[lineStart + j]);
+            }
+            lineStart += charsToPrint;
+        }
+
+        // 남은 공간 채우기
+        remaining = CONTENT_WIDTH - 2 - currentWidth;
+        for (int j = 0; j < remaining; j++) printf(" ");
+        printf("│");
+
+        lineNum++;
+
+        // 대화가 끝났으면 종료
+        if (dialogue[lineStart] == '\0') break;
+    }
+
+    // 남은 빈 줄 채우기
+    for (int i = 3 + lineNum; i < h - 3; i++) {
+        console_goto(x, y + i);
+        printf("│                                  │");
+    }
+
+    // 구분선
+    console_goto(x, y + h - 3);
+    printf("├");
+    for (int i = 1; i < w - 1; i++) printf("─");
+    printf("┤");
+
+    // 버튼 안내
+    console_goto(x, y + h - 2);
+    const char* buttonText = npc->canTrade ?
+        " [0]다음 [T]거래 [X]닫기" :
+        " [0]다음 [X]닫기";
+    printf("│%s", buttonText);
+    remaining = CONTENT_WIDTH - display_width(buttonText);
+    for (int i = 0; i < remaining; i++) printf(" ");
+    printf("│");
+
+    // 하단 테두리
+    console_goto(x, y + h - 1);
+    printf("└");
+    for (int i = 1; i < w - 1; i++) printf("─");
+    printf("┘");
+}
+
+// ★ 대화창 영역 지우기 (상태창/장비창 복원)
+void ui_clear_dialogue_area(int x, int y, int w, int h) {
+    for (int i = 0; i < h; i++) {
+        console_goto(x, y + i);
+        for (int j = 0; j < w; j++) {
+            printf(" ");
+        }
+    }
+}

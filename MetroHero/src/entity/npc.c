@@ -25,6 +25,7 @@ void npc_init(NPC* npc, char type, int x, int y) {
         npc->dialogueCount = sizeof(lines) / sizeof(lines[0]);
         npc->canTrade = 1;
         npc->shopType = "general";
+        npc->useDialogueBox = 1;  // ★ 전용 대화창 사용
         break;
     }
 
@@ -42,6 +43,7 @@ void npc_init(NPC* npc, char type, int x, int y) {
         npc->dialogueCount = sizeof(lines) / sizeof(lines[0]);
         npc->canTrade = 0;
         npc->shopType = NULL;
+        npc->useDialogueBox = 1;  // ★ 전용 대화창 사용
         break;
     }
 
@@ -59,6 +61,7 @@ void npc_init(NPC* npc, char type, int x, int y) {
         npc->dialogueCount = sizeof(lines) / sizeof(lines[0]);
         npc->canTrade = 0;
         npc->shopType = NULL;
+        npc->useDialogueBox = 0;  // ★ 로그창만 사용
         break;
     }
 
@@ -75,6 +78,7 @@ void npc_init(NPC* npc, char type, int x, int y) {
         npc->dialogueCount = sizeof(lines) / sizeof(lines[0]);
         npc->canTrade = 0;
         npc->shopType = NULL;
+        npc->useDialogueBox = 0;  // ★ 로그창만 사용
         break;
     }
     }

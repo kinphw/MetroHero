@@ -15,6 +15,10 @@ void game_run(void) {
     Player player;
     int prevX, prevY;  // ★ 이전 위치 저장
 
+    // ★ 대화 모드 관련 변수
+    int inDialogue = 0;
+    NPC* currentNPC = NULL;
+
     map_init(&map, 1);
     player_init(&player);
 
@@ -48,6 +52,35 @@ void game_run(void) {
     prevY = player.y;
 
     while (1) {
+
+        // ★ 대화 모드일 때
+        if (inDialogue && currentNPC != NULL) {
+            int cmd = _getch();
+            cmd = tolower(cmd);
+
+            if (cmd == '0') {
+                // 다음 대화로
+                npc_next_dialogue(currentNPC);
+                ui_draw_dialogue(currentNPC, DIALOGUE_X, DIALOGUE_Y, DIALOGUE_W, DIALOGUE_H);
+            }
+            else if (cmd == 't' && currentNPC->canTrade) {
+                // 거래 모드 (향후 구현)
+                ui_add_log(COLOR_YELLOW "거래 시스템은 곧 추가됩니다!" COLOR_RESET);
+                ui_draw_log(LOG_X, LOG_Y, LOG_W, LOG_H);
+            }
+            else if (cmd == 'x' || cmd == 27) {  // X 또는 ESC
+                // 대화 종료
+                inDialogue = 0;
+                currentNPC = NULL;
+
+                // 대화창 지우고 원래 UI 복원
+                ui_clear_dialogue_area(DIALOGUE_X, DIALOGUE_Y, DIALOGUE_W, DIALOGUE_H);
+                ui_draw_stats(&player, STATUS_X, STATUS_Y, STATUS_W, STATUS_H);
+                ui_draw_equipment(&player, EQUIP_X, EQUIP_Y, EQUIP_W, EQUIP_H);
+            }
+
+            continue;  // 대화 모드에서는 다른 입력 무시
+        }
 
         // ★ 플레이어 사망 체크
         if (player.hp <= 0) {
@@ -134,21 +167,23 @@ void game_run(void) {
         if (cmd == '0') {
             NPC* npc = map_get_adjacent_npc(&map, player.x, player.y);
             if (npc != NULL) {
-                const char* dialogue = npc_get_dialogue(npc);
+                if (npc->useDialogueBox) {
+                    // ★ 전용 대화창 모드 진입
+                    inDialogue = 1;
+                    currentNPC = npc;
+                    ui_draw_dialogue(npc, DIALOGUE_X, DIALOGUE_Y, DIALOGUE_W, DIALOGUE_H);
+                }
+                else {
+                    // ★ 로그창 모드 (기존 방식)
+                    const char* dialogue = npc_get_dialogue(npc);
 
-                char msg[256];
-                snprintf(msg, sizeof(msg),
-                    COLOR_BRIGHT_CYAN "💬 %s: " COLOR_RESET "「%s」",
-                    npc->name, dialogue);
+                    char msg[256];
+                    snprintf(msg, sizeof(msg),
+                        COLOR_BRIGHT_CYAN "💬 %s: " COLOR_RESET "「%s」",
+                        npc->name, dialogue);
 
-                ui_add_log(msg);
-
-                // 다음 대화로 전환
-                npc_next_dialogue(npc);
-
-                // 거래 가능한 NPC인 경우 안내
-                if (npc->canTrade) {
-                    ui_add_log(COLOR_YELLOW "[향후 업데이트] 이 NPC와 거래할 수 있습니다!" COLOR_RESET);
+                    ui_add_log(msg);
+                    npc_next_dialogue(npc);
                 }
             }
         }
