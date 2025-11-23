@@ -4,17 +4,10 @@
 #include "../entity/player.h"
 #include "../entity/enemy.h"  // ★ 추가
 #include "../entity/chest.h"
+#include "../entity/npc.h"  // ★ 추가
 
 #define MAX_MAP_W 200  // 최대 크기만 정의
 #define MAX_MAP_H 120
-
-//#define MAP_W 40
-//#define MAP_H 20
-
-//typedef struct {
-//    char tiles[MAP_H][MAP_W];
-//} Map;
-
 #define MAX_CHESTS 50
 
 typedef struct {
@@ -31,6 +24,10 @@ typedef struct {
 
 	Chest chests[ MAX_CHESTS ];
 	int chestCount;
+
+	// ★ NPC 추가
+	NPC npcs[ MAX_NPCS ];
+	int npcCount;
 } Map;
 
 void map_init(Map* m , int stageNumber);  // ★ 인자 추가
@@ -46,6 +43,12 @@ const char* enemy_to_glyph(char type);
 
 Chest* map_get_chest_at(Map* m , int x , int y);
 Chest* map_get_adjacent_chest(Map* m , int px , int py);
+
+// ★ NPC 관련 함수
+void map_load_npcs(Map* m);
+NPC* map_get_npc_at(Map* m , int x , int y);
+NPC* map_get_adjacent_npc(Map* m , int px , int py);
+
 
 void map_draw_viewport(const Map* m , const Player* p , int startX , int startY ,
 	int viewW , int viewH);

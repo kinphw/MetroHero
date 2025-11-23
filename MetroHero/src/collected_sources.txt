@@ -66,8 +66,8 @@ void combat_check_nearby_enemy(Map* m, Player* p) {
 void combat_attack_enemy(Player* p, Enemy* e, Map* m) {
     char logMsg[128];
 
-    // ★ 전투 이펙트 표시
-    ui_draw_combat_effect(107, 2);  // 상태창 오른쪽
+    // ★ 전투 이펙트 표시 (상태창 내부 오른쪽)
+    ui_draw_combat_effect(STATUS_X + 25, STATUS_Y + 2);
 
     // ★★★ 플레이어 공격 - 랜덤 데미지 ★★★
     int playerAttack = p->attackMin + rand() % (p->attackMax - p->attackMin + 1);
@@ -188,21 +188,22 @@ void game_run(void) {
 
     // ★ 초기 화면은 한 번만 그리기
     console_clear_fast();
-    //map_draw_at(&map, &player, 0, 0);
-    // 뷰포트 구조로 개선
-    map_draw_viewport(&map, &player, 0, 0, 60, 20);
 
+    // ★ 뷰포트 (왼쪽) - 40칸 너비로 제한
+    map_draw_viewport(&map, &player, VIEWPORT_X, VIEWPORT_Y, 40, VIEWPORT_H);
 
-    // ★ 상태창 (상단)
-    ui_draw_stats(&player, EQ_X, 0, EQ_W, 10);
+    // ★ 상태창 (오른쪽 상단)
+    ui_draw_stats(&player, STATUS_X, STATUS_Y, STATUS_W, STATUS_H);
 
-    // ★ 장비창 (중간)
-    ui_draw_equipment(&player, EQ_X, 10, EQ_W, 6);
-    ui_draw_log(0, LOG_Y, LOG_W, LOG_H);
+    // ★ 장비창 (오른쪽 중단)
+    ui_draw_equipment(&player, EQUIP_X, EQUIP_Y, EQUIP_W, EQUIP_H);
 
-    // ★ 입력 안내는 초기에 한 번만 출력 (로그창 밖)
+    // ★ 로그창 (하단)
+    ui_draw_log(LOG_X, LOG_Y, LOG_W, LOG_H);
+
+    // ★ 입력 안내 (최하단)
     console_goto(0, SCREEN_H - 1);
-    printf("[화살표/WASD] 이동 | [Q] 종료");
+    printf("[화살표/WASD] 이동 | [E] 상자 열기 | [Q] 종료");
 
     prevX = player.x;
     prevY = player.y;
@@ -257,51 +258,22 @@ void game_run(void) {
 
         // ★ 전투가 발생했고 적이 죽었으면 화면에서 지우기
         if (targetEnemy != NULL && !targetEnemy->isAlive) {
-            console_goto(targetEnemy->x * 2, targetEnemy->y);
-            printf("%s", tile_to_glyph(map.tiles[targetEnemy->y][targetEnemy->x]));
+            // 뷰포트 갱신으로 처리됨
         }
 
-        //if (prevX != player.x || prevY != player.y) {
-        //    // ★ 이전 위치에 적이 있었는지 확인
-        //    Enemy* prevEnemy = map_get_enemy_at(&map, prevX, prevY);
-
-        //    // 이전 위치 복원
-        //    console_goto(prevX * 2, prevY);
-        //    if (prevEnemy != NULL) {
-        //        // 적이 있으면 적을 다시 그림
-        //        printf("%s", enemy_to_glyph(prevEnemy->type));
-        //    }
-        //    else {
-        //        // 바닥 타일 복원
-        //        printf("%s", tile_to_glyph(map.tiles[prevY][prevX]));
-        //    }
-
-        //    // 새 위치 그리기
-        //    console_goto(player.x * 2, player.y);
-        //    printf(GLYPH_PLAYER);
-
-        //    prevX = player.x;
-        //    prevY = player.y;
-        //}
-
+        // ★ 이동했으면 뷰포트만 다시 그리기
         if (prevX != player.x || prevY != player.y) {
-            map_draw_viewport(&map, &player, 0, 0, 60, 20);
+            map_draw_viewport(&map, &player, VIEWPORT_X, VIEWPORT_Y, 40, VIEWPORT_H);
             prevX = player.x;
             prevY = player.y;
         }
 
 
-        // ★★★★★ 상자 열기 처리 (E 키) ★★★★★
-        if (cmd == 'e' || cmd == '0') {
+        // ★ 상자 열기 처리 (E 키)
+        if (cmd == 'e') {
             Chest* chest = map_get_adjacent_chest(&map, player.x, player.y);
             if (chest != NULL && !chest->isOpened) {
-
                 chest->isOpened = 1;
-
-                //// 아이템 적용
-                //player.weaponName = chest->itemName;
-
-                // ★ 아이템 실제 적용
                 player_apply_item(&player, chest->itemType, chest->itemName);
 
                 char msg[128];
@@ -311,16 +283,49 @@ void game_run(void) {
 
                 ui_add_log(msg);
 
-                console_goto(chest->x * 2, chest->y);
-                printf("%s", tile_to_glyph(map.tiles[chest->y][chest->x]));
+                // 뷰포트 갱신
+                map_draw_viewport(&map, &player, VIEWPORT_X, VIEWPORT_Y, 40, VIEWPORT_H);
 
-                // UI 갱신
-                ui_draw_equipment(&player, EQ_X, 10, EQ_W, 6);
+                // 장비창 갱신
+                ui_draw_equipment(&player, EQUIP_X, EQUIP_Y, EQUIP_W, EQUIP_H);
+            }
+        }
+
+        // ★ NPC 대화 처리 (0 키)
+        if (cmd == '0') {
+            NPC* npc = map_get_adjacent_npc(&map, player.x, player.y);
+            if (npc != NULL) {
+                const char* dialogue = npc_get_dialogue(npc);
+
+                char msg[256];
+                snprintf(msg, sizeof(msg),
+                    COLOR_BRIGHT_CYAN "💬 %s: " COLOR_RESET "「%s」",
+                    npc->name, dialogue);
+
+                ui_add_log(msg);
+
+                // 다음 대화로 전환
+                npc_next_dialogue(npc);
+
+                // 거래 가능한 NPC인 경우 안내
+                if (npc->canTrade) {
+                    ui_add_log(COLOR_YELLOW "[향후 업데이트] 이 NPC와 거래할 수 있습니다!" COLOR_RESET);
+                }
             }
         }
 
         // ★ 인접 적 체크
         combat_check_nearby_enemy(&map, &player);
+
+        // ★ 인접 NPC 체크 추가
+        NPC* nearNpc = map_get_adjacent_npc(&map, player.x, player.y);
+        if (nearNpc != NULL) {
+            char msg[128];
+            snprintf(msg, sizeof(msg),
+                "%s이(가) 가까이 있다. [0] 키로 대화할 수 있다.",
+                nearNpc->name);
+            ui_add_log(msg);
+        }
 
         // ★ 인접 상자 체크 추가 (여기!)
         Chest* nearChest = map_get_adjacent_chest(&map, player.x, player.y);
@@ -329,7 +334,7 @@ void game_run(void) {
         }
 
         // ★ 상태창 갱신 (HP 변경 반영)
-        ui_draw_stats(&player, EQ_X, 0, EQ_W, 10);
+        ui_draw_stats(&player, STATUS_X, STATUS_Y, STATUS_W, STATUS_H);
 
         // ★ 로그창 갱신
         ui_draw_log(0, LOG_Y, LOG_W, LOG_H);
@@ -427,18 +432,17 @@ void console_goto(int x, int y) {
 }
 
 
-// 화면에 표시되는 실제 폭 계산 (한글 = 2칸, 영문 = 1칸)
+// ★ 개선된 display_width 함수
 int display_width(const char* str) {
     int width = 0;
     const unsigned char* s = (const unsigned char*)str;
 
     while (*s) {
-        // ★ ANSI 이스케이프 시퀀스 건너뛰기
-        if (*s == '\033' || *s == 0x1B) {  // ESC 문자
+        // ANSI 이스케이프 시퀀스 건너뛰기
+        if (*s == '\033' || *s == 0x1B) {
             s++;
-            if (*s == '[') {  // CSI 시퀀스 시작
+            if (*s == '[') {
                 s++;
-                // 'm'을 만날 때까지 건너뛰기
                 while (*s && *s != 'm') {
                     s++;
                 }
@@ -463,7 +467,7 @@ int display_width(const char* str) {
             s += 3;
         }
         else if ((*s & 0xF8) == 0xF0) {
-            // UTF-8 4바이트 문자 = 2칸
+            // UTF-8 4바이트 문자 (이모지) = 2칸
             width += 2;
             s += 4;
         }
@@ -476,78 +480,107 @@ int display_width(const char* str) {
 
 // ui.c에 추가
 
+// ★ 개선된 상태창 그리기
 void ui_draw_stats(const Player* p, int x, int y, int w, int h) {
+    const int CONTENT_WIDTH = 34;  // 테두리 안쪽 실제 폭
+
     console_goto(x, y);
-    printf("┌─ 상태      ──────────┐");
+    printf("┌─ 상태  ──────────────────────────┐");
 
     console_goto(x, y + 1);
-    printf("│                      │");
+    printf("│                                  │");
 
-    // HP 바 그리기
+    // HP 바
     console_goto(x, y + 2);
     printf("│ HP:");
     int hpBars = (p->hp * 10) / p->maxHp;
     for (int i = 0; i < 10; i++) {
-        if (i < hpBars)
-            printf("█");
-        else
-            printf("░");
+        printf(i < hpBars ? "█" : "░");
     }
-    printf("        │");
+    // HP 바는 14칸 (4 + 10)
+    int remaining = CONTENT_WIDTH - 14;
+    for (int i = 0; i < remaining; i++) printf(" ");
+    printf("│");
 
     // HP 수치
     console_goto(x, y + 3);
-    printf("│     %3d / %3d        │", p->hp, p->maxHp);
+    char hpText[64];
+    snprintf(hpText, sizeof(hpText), "     %3d / %3d", p->hp, p->maxHp);
+    printf("│%s", hpText);
+    remaining = CONTENT_WIDTH - display_width(hpText);
+    for (int i = 0; i < remaining; i++) printf(" ");
+    printf("│");
 
     console_goto(x, y + 4);
-    printf("│                      │");
+    printf("│                                  │");
 
-    // ★ 공격력 범위 표시
+    // 공격력
     console_goto(x, y + 5);
-    printf("│ 공격력: %2d~%2d        │", p->attackMin, p->attackMax);
+    char atkText[64];
+    snprintf(atkText, sizeof(atkText), " 공격력: %2d~%2d", p->attackMin, p->attackMax);
+    printf("│%s", atkText);
+    remaining = CONTENT_WIDTH - display_width(atkText);
+    for (int i = 0; i < remaining; i++) printf(" ");
+    printf("│");
 
     // 방어력
     console_goto(x, y + 6);
-    printf("│ 방어력:  %3d         │", p->defense);
+    char defText[64];
+    snprintf(defText, sizeof(defText), " 방어력:  %3d", p->defense);
+    printf("│%s", defText);
+    remaining = CONTENT_WIDTH - display_width(defText);
+    for (int i = 0; i < remaining; i++) printf(" ");
+    printf("│");
 
-    // 나머지 빈 공간
+    // 빈 공간
     for (int i = 7; i < h - 1; i++) {
         console_goto(x, y + i);
-        printf("│                      │");
+        printf("│                                  │");
     }
 
     console_goto(x, y + h - 1);
-    printf("└──────────────────────┘");
+    printf("└──────────────────────────────────┘");
 }
 
-// ui_draw_equipment 수정 (높이 조정)
+// ★ 개선된 장비창 그리기
 void ui_draw_equipment(const Player* p, int x, int y, int w, int h) {
+    const int CONTENT_WIDTH = 34;
+
     console_goto(x, y);
-    printf("┌─ 장비      ──────────┐");
+    printf("┌─ 장비  ──────────────────────────┐");
 
     console_goto(x, y + 1);
-    printf("│                      │");
+    printf("│                                  │");
 
+    // 무기
     console_goto(x, y + 2);
-    printf("│ 무기:    %s", p->weaponName);
-    int len = display_width(p->weaponName);
-    for (int i = 0; i < 11 - len; i++) putchar(' ');
-    printf(" │");
+    char weaponText[128];
+    snprintf(weaponText, sizeof(weaponText), " 무기:    %s", p->weaponName);
+    printf("│%s", weaponText);
+    int remaining = CONTENT_WIDTH - display_width(weaponText);
+    for (int i = 0; i < remaining; i++) printf(" ");
+    printf("│");
 
+    // 방어구
     console_goto(x, y + 3);
-    printf("│ 방어구:  %s", p->armorName);
-    len = display_width(p->armorName);
-    for (int i = 0; i < 11 - len; i++) putchar(' ');
-    printf(" │");
+    char armorText[128];
+    snprintf(armorText, sizeof(armorText), " 방어구:  %s", p->armorName);
+    printf("│%s", armorText);
+    remaining = CONTENT_WIDTH - display_width(armorText);
+    for (int i = 0; i < remaining; i++) printf(" ");
+    printf("│");
 
+    // 아이템
     console_goto(x, y + 4);
-    printf("│ 아이템 : %s", p->item1);
-    len = display_width(p->item1);
-    for (int i = 0; i < 11 - len; i++) putchar(' ');
-    printf(" │");
+    char itemText[128];
+    snprintf(itemText, sizeof(itemText), " 아이템:  %s", p->item1);
+    printf("│%s", itemText);
+    remaining = CONTENT_WIDTH - display_width(itemText);
+    for (int i = 0; i < remaining; i++) printf(" ");
+    printf("│");
 
     console_goto(x, y + 5);
-    printf("└──────────────────────┘");
+    printf("└──────────────────────────────────┘");
 }
 
 #define LOG_LINES 200
@@ -559,52 +592,10 @@ void ui_add_log(const char* msg) {
     log_index = (log_index + 1) % LOG_LINES;
 }
 
-//void ui_draw_log(int x, int y, int w, int h) {
-//    // 상단 테두리
-//    console_goto(x, y);
-//    printf("┌─ 대화  ");
-//    for (int i = 8; i < w - 2; i++) printf("─");
-//    printf("┐");
-//
-//    int start = (log_index - (h - 2) + LOG_LINES) % LOG_LINES;
-//
-//    // 로그 내용
-//    for (int i = 0; i < h - 2; i++) {
-//        console_goto(x, y + 1 + i);
-//        printf("│ ");
-//
-//        const char* logText = log_buf[(start + i) % LOG_LINES];
-//        printf("%s", logText);
-//
-//        // ★ 오른쪽 │ 제거 - 공백으로 남은 줄 전부 덮기
-//        int displayLen = display_width(logText);
-//        int remaining = w - 2 - displayLen;  // "│ " = 2칸만 고려
-//
-//        for (int j = 0; j < remaining; j++) {
-//            printf(" ");
-//        }
-//
-//        //// ★ 화면 표시 폭 정확히 계산
-//        //int displayLen = display_width(logText);
-//        //int contentWidth = w - 4;  // "│ " + " │" = 4칸
-//        //int remaining = contentWidth - displayLen;
-//
-//        //// ★ 남은 공간을 공백으로 채우기
-//        //for (int j = 0; j < remaining; j++) {
-//        //    printf(" ");
-//        //}
-//
-//        //printf(" │");
-//    }
-//
-//    // 하단 테두리
-//    console_goto(x, y + h - 1);
-//    printf("└");
-//    for (int i = 1; i < w - 1; i++) printf("─");
-//    printf("┘");
-//}
-
+// ★ 개선된 로그창 그리기
 void ui_draw_log(int x, int y, int w, int h) {
+    const int CONTENT_WIDTH = w - 4;  // "│ " + " │" = 4칸
+
     // 상단 테두리
     console_goto(x, y);
     printf("┌─ 대화  ");
@@ -621,16 +612,15 @@ void ui_draw_log(int x, int y, int w, int h) {
         const char* logText = log_buf[(start + i) % LOG_LINES];
         printf("%s", logText);
 
-        // ★ 남은 공간을 공백으로 채우기
+        // 남은 공간을 공백으로 채우기
         int displayLen = display_width(logText);
-        int contentWidth = w - 4;  // "│ " + " │" = 4칸
-        int remaining = contentWidth - displayLen;
+        int remaining = CONTENT_WIDTH - displayLen;
 
-        for (int j = 0; j < remaining + 1; j++) {
+        for (int j = 0; j < remaining; j++) {
             printf(" ");
         }
 
-        printf("│");
+        printf(" │");
     }
 
     // 하단 테두리
@@ -695,35 +685,38 @@ void ui_clear_combat_effect(int x, int y) {
 // 상단 전체 높이
 #define TOP_H 20
 
-// 맵 설정
-//#define MAP_W 40                // 논리적 가로 칸 수
-//#define MAP_H 20                // 맵 세로 수
-//#define MAP_RENDER_W (MAP_W*2)  // 실제 출력되는 문자 폭 80
+// ★ 뷰포트 영역 (왼쪽)
+#define VIEWPORT_X 0
+#define VIEWPORT_Y 0
+#define VIEWPORT_W 80    // 40칸 × 2 (전각)
+#define VIEWPORT_H 20
 
-// ★ 맵 렌더링 최대 너비 (동적 크기 지원)
-#define MAX_MAP_RENDER_W 100  // 최대값만 정의
+// ★ 상태창 (오른쪽 상단)
+#define STATUS_X 82
+#define STATUS_Y 0
+#define STATUS_W 38
+#define STATUS_H 10
 
-// 장비창(오른쪽) - 고정 위치
-#define EQ_X 80       // ★ 고정값으로 변경 (MAX_MAP_W * 2)
-#define EQ_W (SCREEN_W - EQ_X)
-#define EQ_H TOP_H
+// ★ 장비창 (오른쪽 중단)
+#define EQUIP_X 82
+#define EQUIP_Y 10
+#define EQUIP_W 38
+#define EQUIP_H 6
 
-// 로그창(하단)
-#define LOG_Y TOP_H
-#define LOG_W SCREEN_W
-#define LOG_H (SCREEN_H - TOP_H -1)
-
+// ★ 로그창 (하단 전체)
+#define LOG_X 0
+#define LOG_Y 20
+#define LOG_W 120
+#define LOG_H 9
 
 void console_goto(int x , int y);
+void console_clear_fast(void);
 
 void ui_draw_equipment(const Player* p , int x , int y , int w , int h);  // ★ 이 줄 확인
 void ui_draw_stats(const Player* p , int x , int y , int w , int h);  // ★ 추가
 
-
 void ui_add_log(const char* msg);
 void ui_draw_log(int x , int y , int w , int h);
-
-void console_clear_fast(void);
 
 void ui_draw_combat_effect(int x , int y);  // 전투 이펙트
 void ui_clear_combat_effect(int x , int y); // 이펙트 제거
@@ -965,6 +958,142 @@ int enemy_is_at(const Enemy* e , int x , int y);
 
 
 ------------------------------------------------------------
+[FILE PATH] C:\projects\MetroHero\MetroHero\src\entity\npc.c
+[FILE NAME] npc.c
+------------------------------------------------------------
+
+// src/entity/npc.c - 새 파일 생성
+
+#include <stdio.h>
+#include "npc.h"
+#include "../world/glyph.h"
+
+void npc_init(NPC* npc, char type, int x, int y) {
+    npc->type = type;
+    npc->x = x;
+    npc->y = y;
+    npc->currentDialogue = 0;
+
+    switch (type) {
+    case 'A': { // 상인
+        static const char* lines[] = {
+            "어서오세요! 필요한 물건이 있으신가요?",
+            "좋은 장비를 구하고 싶으시다면 제게 오세요.",
+            "오늘은 특별 할인 중입니다!",
+            "여행자분, 안전한 여행 되세요."
+        };
+
+        npc->name = "상인";
+        npc->glyph = GLYPH_NPC_MERCHANT;
+        npc->dialogues = lines;
+        npc->dialogueCount = sizeof(lines) / sizeof(lines[0]);
+        npc->canTrade = 1;
+        npc->shopType = "general";
+        break;
+    }
+
+    case 'B': { // 경비원
+        static const char* lines[] = {
+            "이 구역은 제가 지키고 있습니다.",
+            "수상한 자들이 많으니 조심하세요.",
+            "질서를 유지하는 것이 제 임무입니다.",
+            "평화로운 하루입니다."
+        };
+
+        npc->name = "경비원";
+        npc->glyph = GLYPH_NPC_GUARD;
+        npc->dialogues = lines;
+        npc->dialogueCount = sizeof(lines) / sizeof(lines[0]);
+        npc->canTrade = 0;
+        npc->shopType = NULL;
+        break;
+    }
+
+    case 'C': { // 시민
+        static const char* lines[] = {
+            "안녕하세요, 좋은 하루입니다.",
+            "요즘 전철역이 위험하다고 하더라고요.",
+            "지하에는 이상한 것들이 많다던데...",
+            "조심히 다니세요!"
+        };
+
+        npc->name = "시민";
+        npc->glyph = GLYPH_NPC_CITIZEN;
+        npc->dialogues = lines;
+        npc->dialogueCount = sizeof(lines) / sizeof(lines[0]);
+        npc->canTrade = 0;
+        npc->shopType = NULL;
+        break;
+    }
+
+    default: { // 기본 NPC
+        static const char* lines[] = {
+            "안녕하세요.",
+            "무슨 일이신가요?",
+            "도와드릴 일이 있나요?"
+        };
+
+        npc->name = "NPC";
+        npc->glyph = GLYPH_NPC_GENERIC;
+        npc->dialogues = lines;
+        npc->dialogueCount = sizeof(lines) / sizeof(lines[0]);
+        npc->canTrade = 0;
+        npc->shopType = NULL;
+        break;
+    }
+    }
+}
+
+int npc_is_at(const NPC* npc, int x, int y) {
+    return (npc->x == x && npc->y == y);
+}
+
+const char* npc_get_dialogue(NPC* npc) {
+    return npc->dialogues[npc->currentDialogue];
+}
+
+void npc_next_dialogue(NPC* npc) {
+    npc->currentDialogue = (npc->currentDialogue + 1) % npc->dialogueCount;
+}
+
+------------------------------------------------------------
+[FILE PATH] C:\projects\MetroHero\MetroHero\src\entity\npc.h
+[FILE NAME] npc.h
+------------------------------------------------------------
+
+#pragma once
+// src/entity/npc.h - 새 파일 생성
+
+#ifndef NPC_H
+#define NPC_H
+
+#define MAX_NPCS 20
+#define MAX_NPC_DIALOGUES 10
+
+typedef struct {
+	int x , y;
+	char type;              // 'A', 'B', 'C' 등
+	const char* name;       // "상인", "경비원" 등
+	const char* glyph;      // 렌더링용 문자
+
+	// 대화 시스템
+	const char** dialogues;
+	int dialogueCount;
+	int currentDialogue;    // 현재 대화 인덱스
+
+	// 향후 확장용
+	int canTrade;          // 거래 가능 여부
+	const char* shopType;  // "weapon", "armor", "item" 등
+} NPC;
+
+void npc_init(NPC* npc , char type , int x , int y);
+int npc_is_at(const NPC* npc , int x , int y);
+const char* npc_get_dialogue(NPC* npc);
+void npc_next_dialogue(NPC* npc);
+
+#endif
+
+------------------------------------------------------------
 [FILE PATH] C:\projects\MetroHero\MetroHero\src\entity\player.c
 [FILE NAME] player.c
 ------------------------------------------------------------
@@ -1124,12 +1253,10 @@ void player_move(Player* p , struct Map* m , int cmd);  // ★ const 제거
 [FILE NAME] glyph.h
 ------------------------------------------------------------
 
+// src/world/glyph.h - 타일 정의 추가
+
 #ifndef GLYPH_H
 #define GLYPH_H
-
-// ========================
-// 렌더링 문자 상수 정의
-// ========================
 
 // ========================
 // ANSI 색상 코드
@@ -1165,34 +1292,40 @@ void player_move(Player* p , struct Map* m , int cmd);  // ★ const 제거
 #define BG_WHITE   "\033[47m"
 
 // 전투 메시지용 색상
-#define COMBAT_ATTACK    COLOR_BRIGHT_RED      // 공격 (밝은 빨강)
-#define COMBAT_DAMAGE    COLOR_BRIGHT_YELLOW   // 데미지 (밝은 노랑)
-#define COMBAT_DEATH     COLOR_BRIGHT_MAGENTA  // 처치 (밝은 보라)
-#define COMBAT_ENEMY     COLOR_RED             // 적 반격 (빨강)
-#define COMBAT_DETECT    COLOR_CYAN            // 적 발견 (청록)
+#define COMBAT_ATTACK    COLOR_BRIGHT_RED
+#define COMBAT_DAMAGE    COLOR_BRIGHT_YELLOW
+#define COMBAT_DEATH     COLOR_BRIGHT_MAGENTA
+#define COMBAT_ENEMY     COLOR_RED
+#define COMBAT_DETECT    COLOR_CYAN
 
 // 맵 타일
-#define GLYPH_FLOOR    "  "    // 바닥
-//#define GLYPH_WALL     COLOR_YELLOW "██" COLOR_RESET    // ★ 노란색 벽
-#define GLYPH_WALL     "\033[48;5;220m  \033[0m"  // 노란 배경만
-//#define GLYPH_WALL     "\033[48;5;220m\033[38;5;234m˅ \033[0m"
-#define GLYPH_RAIL     "=="    // 철도 레일
-#define GLYPH_EMPTY    "  "    // 빈 공간
-#define GLYPH_DOOR     "++"    // 문
-#define GLYPH_STAIRS   "▼▼"    // 계단
+#define GLYPH_FLOOR    "  "
+#define GLYPH_WALL     "\033[48;5;220m  \033[0m"
+#define GLYPH_RAIL     "=="
+#define GLYPH_EMPTY    "  "
+#define GLYPH_DOOR     "++"
+#define GLYPH_STAIRS   "▼▼"
 
 // 엔티티
-#define GLYPH_PLAYER   COLOR_BRIGHT_GREEN "옷" COLOR_RESET    // 밝은 녹색
-#define GLYPH_DOG      "🐈‍"    // ★ 고블린 추가
-#define GLYPH_ORC      "옷"    // 나중에 사용
-#define GLYPH_NPC      "민"    // NPC
-#define GLYPH_ITEM     "물"    // 아이템
+#define GLYPH_PLAYER   COLOR_BRIGHT_GREEN "옷" COLOR_RESET
 
-#define GLYPH_CHEST  "📦"
+// ★ 몹 (소문자 a-z)
+#define GLYPH_MOB_CAT      "🐈"
+#define GLYPH_MOB_ROBOT    COLOR_RED "🤖" COLOR_RESET
+#define GLYPH_MOB_GENERIC  COLOR_YELLOW "몹" COLOR_RESET
+
+// ★ NPC (대문자 A-Z)
+#define GLYPH_NPC_MERCHANT COLOR_BRIGHT_CYAN "상" COLOR_RESET
+#define GLYPH_NPC_GUARD    COLOR_BRIGHT_BLUE "경" COLOR_RESET
+#define GLYPH_NPC_CITIZEN  COLOR_BRIGHT_WHITE "민" COLOR_RESET
+#define GLYPH_NPC_GENERIC  COLOR_CYAN "N" COLOR_RESET
+
+// ★ 상자 (숫자 0-9)
+#define GLYPH_CHEST        "📦"
 
 // 기타
-#define GLYPH_TREE     "♣♣"    // 나무
-#define GLYPH_WATER    "≈≈"    // 물
+#define GLYPH_TREE     "♣♣"
+#define GLYPH_WATER    "≈≈"
 
 // ========================
 // 타일 문자 (맵 데이터용)
@@ -1201,11 +1334,29 @@ void player_move(Player* p , struct Map* m , int cmd);  // ★ const 제거
 #define TILE_WALL      '#'
 #define TILE_RAIL      '='
 #define TILE_DOOR      '+'
-#define TILE_SPAWN     '@'     // ★ 스폰 포인트
+#define TILE_SPAWN     '@'
 
-// ★ 적 타일
-#define TILE_GOBLIN    'a'
-#define TILE_ORC       'b'
+// ★ Entity 타일 분류
+// 몹: 소문자 a-z
+#define TILE_MOB_CAT    'a'
+#define TILE_MOB_ROBOT  'b'
+
+// NPC: 대문자 A-Z
+#define TILE_NPC_MERCHANT 'A'
+#define TILE_NPC_GUARD    'B'
+#define TILE_NPC_CITIZEN  'C'
+
+// 상자: 숫자 0-9
+#define TILE_CHEST_0    '0'
+#define TILE_CHEST_1    '1'
+#define TILE_CHEST_2    '2'
+#define TILE_CHEST_3    '3'
+#define TILE_CHEST_4    '4'
+#define TILE_CHEST_5    '5'
+#define TILE_CHEST_6    '6'
+#define TILE_CHEST_7    '7'
+#define TILE_CHEST_8    '8'
+#define TILE_CHEST_9    '9'
 
 #endif
 
@@ -1247,9 +1398,9 @@ const char* tile_to_glyph(char t) {
 const char* enemy_to_glyph(char type) {
     switch (type) {
     case 'a':
-        return GLYPH_DOG;
+        return GLYPH_MOB_CAT;
     case 'b':
-        return GLYPH_ORC;
+        return GLYPH_MOB_ROBOT;
     default:
         return "??";
     }
@@ -1404,15 +1555,22 @@ void map_draw_at(const Map* m, const Player* p, int startX, int startY) {
     }
 }
 
+// ★ map_is_walkable 수정 - NPC도 이동 불가
 int map_is_walkable(const Map* m, int x, int y) {
     if (x < 0 || x >= m->width || y < 0 || y >= m->height)
         return 0;
 
     char t = m->tiles[y][x];
 
-    // ★ 상자(A~Z)는 이동 불가
-    if (t >= 'A' && t <= 'Z')
+    // 상자(숫자)는 이동 불가
+    if (t >= '0' && t <= '9')
         return 0;
+
+    // NPC가 있는 위치는 이동 불가
+    for (int i = 0; i < m->npcCount; i++) {
+        if (m->npcs[i].x == x && m->npcs[i].y == y)
+            return 0;
+    }
 
     return (t == '.');
 }
@@ -1490,18 +1648,18 @@ void map_init(Map* m, int stageNumber) {
 
     map_load_enemies(m);
     map_load_chests(m);
+    map_load_npcs(m);  // ★ 추가
 }
 
 
+// ★ map_draw_viewport 수정 - NPC 렌더링 추가
 void map_draw_viewport(const Map* m, const Player* p,
     int startX, int startY,
     int viewW, int viewH)
 {
-    // 플레이어 중심 뷰 계산
     int viewX = p->x - viewW / 2;
     int viewY = p->y - viewH / 2;
 
-    // 맵 범위를 벗어나면 클램프
     if (viewX < 0) viewX = 0;
     if (viewY < 0) viewY = 0;
     if (viewX + viewW > m->width)  viewX = m->width - viewW;
@@ -1511,13 +1669,11 @@ void map_draw_viewport(const Map* m, const Player* p,
 
     for (int sy = 0; sy < viewH; sy++) {
         int my = viewY + sy;
-
         console_goto(startX, startY + sy);
 
         for (int sx = 0; sx < viewW; sx++) {
             int mx = viewX + sx;
 
-            // 맵 범위 밖이면 공백
             if (mx < 0 || mx >= m->width ||
                 my < 0 || my >= m->height)
             {
@@ -1528,6 +1684,13 @@ void map_draw_viewport(const Map* m, const Player* p,
             // 플레이어 출력
             if (mx == p->x && my == p->y) {
                 printf(GLYPH_PLAYER);
+                continue;
+            }
+
+            // ★ NPC 출력 (우선순위 높음)
+            NPC* npc = map_get_npc_at((Map*)m, mx, my);
+            if (npc != NULL) {
+                printf("%s", npc->glyph);
                 continue;
             }
 
@@ -1551,6 +1714,62 @@ void map_draw_viewport(const Map* m, const Player* p,
     }
 }
 
+// src/world/map.c - NPC 관련 함수 추가
+
+// 기존 코드 유지하고 아래 함수들 추가
+
+// ★ NPC 타일 체크
+int is_npc_tile(char t) {
+    return (t >= 'A' && t <= 'Z');
+}
+
+// ★ 맵에서 NPC 찾아서 초기화
+void map_load_npcs(Map* m) {
+    m->npcCount = 0;
+
+    for (int y = 0; y < m->height; y++) {
+        for (int x = 0; x < m->width; x++) {
+            char tile = m->tiles[y][x];
+
+            if (is_npc_tile(tile)) {
+                if (m->npcCount < MAX_NPCS) {
+                    npc_init(&m->npcs[m->npcCount], tile, x, y);
+                    m->npcCount++;
+
+                    // NPC가 있던 자리는 바닥으로 변경
+                    m->tiles[y][x] = '.';
+                }
+            }
+        }
+    }
+}
+
+// ★ 특정 위치에 있는 NPC 반환
+NPC* map_get_npc_at(Map* m, int x, int y) {
+    for (int i = 0; i < m->npcCount; i++) {
+        if (npc_is_at(&m->npcs[i], x, y)) {
+            return &m->npcs[i];
+        }
+    }
+    return NULL;
+}
+
+// ★ 플레이어 인접한 NPC 찾기
+NPC* map_get_adjacent_npc(Map* m, int px, int py) {
+    int dirs[4][2] = {
+        {0, -1}, {0, 1}, {-1, 0}, {1, 0}
+    };
+
+    for (int i = 0; i < 4; i++) {
+        int nx = px + dirs[i][0];
+        int ny = py + dirs[i][1];
+
+        NPC* npc = map_get_npc_at(m, nx, ny);
+        if (npc != NULL) return npc;
+    }
+
+    return NULL;
+}
 
 ------------------------------------------------------------
 [FILE PATH] C:\projects\MetroHero\MetroHero\src\world\map.h
@@ -1563,17 +1782,10 @@ void map_draw_viewport(const Map* m, const Player* p,
 #include "../entity/player.h"
 #include "../entity/enemy.h"  // ★ 추가
 #include "../entity/chest.h"
+#include "../entity/npc.h"  // ★ 추가
 
 #define MAX_MAP_W 200  // 최대 크기만 정의
 #define MAX_MAP_H 120
-
-//#define MAP_W 40
-//#define MAP_H 20
-
-//typedef struct {
-//    char tiles[MAP_H][MAP_W];
-//} Map;
-
 #define MAX_CHESTS 50
 
 typedef struct {
@@ -1590,6 +1802,10 @@ typedef struct {
 
 	Chest chests[ MAX_CHESTS ];
 	int chestCount;
+
+	// ★ NPC 추가
+	NPC npcs[ MAX_NPCS ];
+	int npcCount;
 } Map;
 
 void map_init(Map* m , int stageNumber);  // ★ 인자 추가
@@ -1605,6 +1821,12 @@ const char* enemy_to_glyph(char type);
 
 Chest* map_get_chest_at(Map* m , int x , int y);
 Chest* map_get_adjacent_chest(Map* m , int px , int py);
+
+// ★ NPC 관련 함수
+void map_load_npcs(Map* m);
+NPC* map_get_npc_at(Map* m , int x , int y);
+NPC* map_get_adjacent_npc(Map* m , int px , int py);
+
 
 void map_draw_viewport(const Map* m , const Player* p , int startX , int startY ,
 	int viewW , int viewH);
@@ -1662,10 +1884,10 @@ static const int STAGE3_CHEST_COUNT = sizeof(STAGE3_CHESTS) / sizeof(STAGE3_CHES
 static const char* MAP_STAGE_1[] = {
 "########################################################################################################################",
 "########################################################################################################################",
+"############..........@.........##############..........###########....................###############################",
 "############....................##############..........###########....................###############################",
 "############....................##############..........###########....................###############################",
-"############....................##############..........###########....................###############################",
-"############....................##############..........###########....................###############################",
+"############..........A.........##############..........###########....................###############################",
 "############....................##############..........###########....................###############################",
 "############....................##############..........###########....................###############################",
 "############....................##############..........###########....................###############################",
@@ -1685,7 +1907,7 @@ static const char* MAP_STAGE_1[] = {
 "########.............###########.......................###########....................###############################",
 "########.............###########.......................###########....................###############################",
 "########.............###########.......................###########....................###############################",
-"########.....@.......###########.......................###########............A.......###############################",
+"########.............###########.......................###########............A.......###############################",
 "########.............###########.......................###########....................###############################",
 "########.............###########.......................###########....................###############################",
 "########.............###########.......................###########....................###############################",

@@ -130,8 +130,41 @@ void game_run(void) {
             }
         }
 
+        // ★ NPC 대화 처리 (0 키)
+        if (cmd == '0') {
+            NPC* npc = map_get_adjacent_npc(&map, player.x, player.y);
+            if (npc != NULL) {
+                const char* dialogue = npc_get_dialogue(npc);
+
+                char msg[256];
+                snprintf(msg, sizeof(msg),
+                    COLOR_BRIGHT_CYAN "💬 %s: " COLOR_RESET "「%s」",
+                    npc->name, dialogue);
+
+                ui_add_log(msg);
+
+                // 다음 대화로 전환
+                npc_next_dialogue(npc);
+
+                // 거래 가능한 NPC인 경우 안내
+                if (npc->canTrade) {
+                    ui_add_log(COLOR_YELLOW "[향후 업데이트] 이 NPC와 거래할 수 있습니다!" COLOR_RESET);
+                }
+            }
+        }
+
         // ★ 인접 적 체크
         combat_check_nearby_enemy(&map, &player);
+
+        // ★ 인접 NPC 체크 추가
+        NPC* nearNpc = map_get_adjacent_npc(&map, player.x, player.y);
+        if (nearNpc != NULL) {
+            char msg[128];
+            snprintf(msg, sizeof(msg),
+                "%s이(가) 가까이 있다. [0] 키로 대화할 수 있다.",
+                nearNpc->name);
+            ui_add_log(msg);
+        }
 
         // ★ 인접 상자 체크 추가 (여기!)
         Chest* nearChest = map_get_adjacent_chest(&map, player.x, player.y);

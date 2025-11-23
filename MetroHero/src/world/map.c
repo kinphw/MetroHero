@@ -31,9 +31,9 @@ const char* tile_to_glyph(char t) {
 const char* enemy_to_glyph(char type) {
     switch (type) {
     case 'a':
-        return GLYPH_DOG;
+        return GLYPH_MOB_CAT;
     case 'b':
-        return GLYPH_ORC;
+        return GLYPH_MOB_ROBOT;
     default:
         return "??";
     }
@@ -109,7 +109,7 @@ void map_load_chests(Map* m) {
             char tile = m->tiles[y][x];
 
             // 상자 타일이 아닌 경우 skip
-            if (tile < 'A' || tile > 'Z') continue;
+            if (tile < '0' || tile > '9') continue;
 
             // 해당 tile의 config 찾기
             for (int i = 0; i < cfgCount; i++) {
@@ -188,15 +188,22 @@ void map_draw_at(const Map* m, const Player* p, int startX, int startY) {
     }
 }
 
+// ★ map_is_walkable 수정 - NPC도 이동 불가
 int map_is_walkable(const Map* m, int x, int y) {
     if (x < 0 || x >= m->width || y < 0 || y >= m->height)
         return 0;
 
     char t = m->tiles[y][x];
 
-    // ★ 상자(A~Z)는 이동 불가
-    if (t >= 'A' && t <= 'Z')
+    // 상자(숫자)는 이동 불가
+    if (t >= '0' && t <= '9')
         return 0;
+
+    // NPC가 있는 위치는 이동 불가
+    for (int i = 0; i < m->npcCount; i++) {
+        if (m->npcs[i].x == x && m->npcs[i].y == y)
+            return 0;
+    }
 
     return (t == '.');
 }
@@ -274,18 +281,18 @@ void map_init(Map* m, int stageNumber) {
 
     map_load_enemies(m);
     map_load_chests(m);
+    map_load_npcs(m);  // ★ 추가
 }
 
 
+// ★ map_draw_viewport 수정 - NPC 렌더링 추가
 void map_draw_viewport(const Map* m, const Player* p,
     int startX, int startY,
     int viewW, int viewH)
 {
-    // 플레이어 중심 뷰 계산
     int viewX = p->x - viewW / 2;
     int viewY = p->y - viewH / 2;
 
-    // 맵 범위를 벗어나면 클램프
     if (viewX < 0) viewX = 0;
     if (viewY < 0) viewY = 0;
     if (viewX + viewW > m->width)  viewX = m->width - viewW;
@@ -295,13 +302,11 @@ void map_draw_viewport(const Map* m, const Player* p,
 
     for (int sy = 0; sy < viewH; sy++) {
         int my = viewY + sy;
-
         console_goto(startX, startY + sy);
 
         for (int sx = 0; sx < viewW; sx++) {
             int mx = viewX + sx;
 
-            // 맵 범위 밖이면 공백
             if (mx < 0 || mx >= m->width ||
                 my < 0 || my >= m->height)
             {
@@ -312,6 +317,13 @@ void map_draw_viewport(const Map* m, const Player* p,
             // 플레이어 출력
             if (mx == p->x && my == p->y) {
                 printf(GLYPH_PLAYER);
+                continue;
+            }
+
+            // ★ NPC 출력 (우선순위 높음)
+            NPC* npc = map_get_npc_at((Map*)m, mx, my);
+            if (npc != NULL) {
+                printf("%s", npc->glyph);
                 continue;
             }
 
@@ -333,4 +345,61 @@ void map_draw_viewport(const Map* m, const Player* p,
             printf("%s", tile_to_glyph(m->tiles[my][mx]));
         }
     }
+}
+
+// src/world/map.c - NPC 관련 함수 추가
+
+// 기존 코드 유지하고 아래 함수들 추가
+
+// ★ NPC 타일 체크
+int is_npc_tile(char t) {
+    return (t >= 'A' && t <= 'Z');
+}
+
+// ★ 맵에서 NPC 찾아서 초기화
+void map_load_npcs(Map* m) {
+    m->npcCount = 0;
+
+    for (int y = 0; y < m->height; y++) {
+        for (int x = 0; x < m->width; x++) {
+            char tile = m->tiles[y][x];
+
+            if (is_npc_tile(tile)) {
+                if (m->npcCount < MAX_NPCS) {
+                    npc_init(&m->npcs[m->npcCount], tile, x, y);
+                    m->npcCount++;
+
+                    // NPC가 있던 자리는 바닥으로 변경
+                    m->tiles[y][x] = '.';
+                }
+            }
+        }
+    }
+}
+
+// ★ 특정 위치에 있는 NPC 반환
+NPC* map_get_npc_at(Map* m, int x, int y) {
+    for (int i = 0; i < m->npcCount; i++) {
+        if (npc_is_at(&m->npcs[i], x, y)) {
+            return &m->npcs[i];
+        }
+    }
+    return NULL;
+}
+
+// ★ 플레이어 인접한 NPC 찾기
+NPC* map_get_adjacent_npc(Map* m, int px, int py) {
+    int dirs[4][2] = {
+        {0, -1}, {0, 1}, {-1, 0}, {1, 0}
+    };
+
+    for (int i = 0; i < 4; i++) {
+        int nx = px + dirs[i][0];
+        int ny = py + dirs[i][1];
+
+        NPC* npc = map_get_npc_at(m, nx, ny);
+        if (npc != NULL) return npc;
+    }
+
+    return NULL;
 }

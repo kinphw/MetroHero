@@ -1,9 +1,7 @@
+// src/world/glyph.h - 타일 정의 추가
+
 #ifndef GLYPH_H
 #define GLYPH_H
-
-// ========================
-// 렌더링 문자 상수 정의
-// ========================
 
 // ========================
 // ANSI 색상 코드
@@ -39,35 +37,40 @@
 #define BG_WHITE   "\033[47m"
 
 // 전투 메시지용 색상
-#define COMBAT_ATTACK    COLOR_BRIGHT_RED      // 공격 (밝은 빨강)
-#define COMBAT_DAMAGE    COLOR_BRIGHT_YELLOW   // 데미지 (밝은 노랑)
-#define COMBAT_DEATH     COLOR_BRIGHT_MAGENTA  // 처치 (밝은 보라)
-#define COMBAT_ENEMY     COLOR_RED             // 적 반격 (빨강)
-#define COMBAT_DETECT    COLOR_CYAN            // 적 발견 (청록)
+#define COMBAT_ATTACK    COLOR_BRIGHT_RED
+#define COMBAT_DAMAGE    COLOR_BRIGHT_YELLOW
+#define COMBAT_DEATH     COLOR_BRIGHT_MAGENTA
+#define COMBAT_ENEMY     COLOR_RED
+#define COMBAT_DETECT    COLOR_CYAN
 
 // 맵 타일
-#define GLYPH_FLOOR    "  "    // 바닥
-//#define GLYPH_WALL     COLOR_YELLOW "██" COLOR_RESET    // ★ 노란색 벽
-// #define GLYPH_WALL     "\033[48;5;220m  \033[0m"  // 노란 배경만
-#define GLYPH_WALL     "██"    // 단일 패턴 벽
-//#define GLYPH_WALL     "\033[48;5;220m\033[38;5;234m˅ \033[0m"
-#define GLYPH_RAIL     "=="    // 철도 레일
-#define GLYPH_EMPTY    "  "    // 빈 공간
-#define GLYPH_DOOR     "++"    // 문
-#define GLYPH_STAIRS   "▼▼"    // 계단
+#define GLYPH_FLOOR    "  "
+#define GLYPH_WALL     "\033[48;5;220m  \033[0m"
+#define GLYPH_RAIL     "=="
+#define GLYPH_EMPTY    "  "
+#define GLYPH_DOOR     "++"
+#define GLYPH_STAIRS   "▼▼"
 
 // 엔티티
-#define GLYPH_PLAYER   COLOR_BRIGHT_GREEN "옷" COLOR_RESET    // 밝은 녹색
-#define GLYPH_DOG      "🐈‍"    // ★ 고블린 추가
-#define GLYPH_ORC      "옷"    // 나중에 사용
-#define GLYPH_NPC      "민"    // NPC
-#define GLYPH_ITEM     "물"    // 아이템
+#define GLYPH_PLAYER   COLOR_BRIGHT_GREEN "옷" COLOR_RESET
 
-#define GLYPH_CHEST  "📦"
+// ★ 몹 (소문자 a-z)
+#define GLYPH_MOB_CAT      "🐈"
+#define GLYPH_MOB_ROBOT    COLOR_RED "🤖" COLOR_RESET
+#define GLYPH_MOB_GENERIC  COLOR_YELLOW "몹" COLOR_RESET
+
+// ★ NPC (대문자 A-Z)
+#define GLYPH_NPC_MERCHANT COLOR_BRIGHT_CYAN "상" COLOR_RESET
+#define GLYPH_NPC_GUARD    COLOR_BRIGHT_BLUE "경" COLOR_RESET
+#define GLYPH_NPC_CITIZEN  COLOR_BRIGHT_WHITE "민" COLOR_RESET
+#define GLYPH_NPC_GENERIC  COLOR_CYAN "N" COLOR_RESET
+
+// ★ 상자 (숫자 0-9)
+#define GLYPH_CHEST        "📦"
 
 // 기타
-#define GLYPH_TREE     "♣♣"    // 나무
-#define GLYPH_WATER    "≈≈"    // 물
+#define GLYPH_TREE     "♣♣"
+#define GLYPH_WATER    "≈≈"
 
 // ========================
 // 타일 문자 (맵 데이터용)
@@ -76,10 +79,28 @@
 #define TILE_WALL      '#'
 #define TILE_RAIL      '='
 #define TILE_DOOR      '+'
-#define TILE_SPAWN     '@'     // ★ 스폰 포인트
+#define TILE_SPAWN     '@'
 
-// ★ 적 타일
-#define TILE_GOBLIN    'a'
-#define TILE_ORC       'b'
+// ★ Entity 타일 분류
+// 몹: 소문자 a-z
+#define TILE_MOB_CAT    'a'
+#define TILE_MOB_ROBOT  'b'
+
+// NPC: 대문자 A-Z
+#define TILE_NPC_MERCHANT 'A'
+#define TILE_NPC_GUARD    'B'
+#define TILE_NPC_CITIZEN  'C'
+
+// 상자: 숫자 0-9
+#define TILE_CHEST_0    '0'
+#define TILE_CHEST_1    '1'
+#define TILE_CHEST_2    '2'
+#define TILE_CHEST_3    '3'
+#define TILE_CHEST_4    '4'
+#define TILE_CHEST_5    '5'
+#define TILE_CHEST_6    '6'
+#define TILE_CHEST_7    '7'
+#define TILE_CHEST_8    '8'
+#define TILE_CHEST_9    '9'
 
 #endif
