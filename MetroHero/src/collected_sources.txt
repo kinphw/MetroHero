@@ -282,14 +282,17 @@ void game_run(void) {
         }
 
         // ★★★★★ 상자 열기 처리 (E 키) ★★★★★
-        if (cmd == 'e') {
+        if (cmd == 'e' || cmd == '0') {
             Chest* chest = map_get_adjacent_chest(&map, player.x, player.y);
             if (chest != NULL && !chest->isOpened) {
 
                 chest->isOpened = 1;
 
-                // 아이템 적용
-                player.weaponName = chest->itemName;
+                //// 아이템 적용
+                //player.weaponName = chest->itemName;
+
+                // ★ 아이템 실제 적용
+                player_apply_item(&player, chest->itemType, chest->itemName);
 
                 char msg[128];
                 snprintf(msg, sizeof(msg),
@@ -1014,6 +1017,64 @@ void player_move(Player* p, const Map* m, int cmd) {
     }
 }
 
+void player_apply_item(Player* p, const char* itemType, const char* itemName) {
+
+    // ======== 무기 적용 ========
+    if (strcmp(itemType, "weapon") == 0) {
+        p->weaponName = itemName;
+
+        // 무기 종류별 능력치 설정
+        if (strcmp(itemName, "초보자 검") == 0) {
+            p->attackMin = 1000;
+            p->attackMax = 10000;
+        }
+        else if (strcmp(itemName, "강철 검") == 0) {
+            p->attackMin = 20;
+            p->attackMax = 150;
+        }
+        else if (strcmp(itemName, "마력의 검") == 0) {
+            p->attackMin = 50;
+            p->attackMax = 200;
+        }
+
+        ui_add_log("무기를 장착했다!");
+        return;
+    }
+
+    // ======== 방어구 적용 ========
+    if (strcmp(itemType, "armor") == 0) {
+        p->armorName = itemName;
+
+        if (strcmp(itemName, "가죽 갑옷") == 0)
+            p->defense = 2;
+        else if (strcmp(itemName, "철 갑옷") == 0)
+            p->defense = 5;
+        else if (strcmp(itemName, "마나 갑옷") == 0)
+            p->defense = 10;
+
+        ui_add_log("방어구를 착용했다!");
+        return;
+    }
+
+    // ======== 아이템 적용 (영구 버프 버전) ========
+    if (strcmp(itemType, "item") == 0) {
+        if (strcmp(itemName, "HP 포션") == 0) {
+            p->hp += 10;
+            if (p->hp > p->maxHp) p->hp = p->maxHp;
+        }
+        else if (strcmp(itemName, "힘의 물약") == 0) {
+            p->attackMin += 2;
+            p->attackMax += 2;
+        }
+        else if (strcmp(itemName, "민첩의 물약") == 0) {
+            p->defense += 1;
+        }
+
+        ui_add_log("아이템 효과가 적용되었다!");
+        return;
+    }
+}
+
 
 ------------------------------------------------------------
 [FILE PATH] C:\projects\MetroHero\MetroHero\src\entity\player.h
@@ -1240,28 +1301,42 @@ Enemy* map_get_enemy_at(Map* m, int x, int y) {
     return NULL;
 }
 
-// ★ 맵에서 상자 찾기
 void map_load_chests(Map* m) {
     m->chestCount = 0;
 
+    int cfgCount = 0;
+    const ChestConfig* cfg = get_chest_config(m->stageNumber, &cfgCount);
+
+    if (cfg == NULL) return;
+
     for (int y = 0; y < m->height; y++) {
         for (int x = 0; x < m->width; x++) {
-            if (m->tiles[y][x] == 'c') {  // ★ 상자 타일
-                if (m->chestCount < MAX_CHESTS) {
-                    // 기본적으로 무기 상자를 넣자
+
+            char tile = m->tiles[y][x];
+
+            // 상자 타일이 아닌 경우 skip
+            if (tile < 'A' || tile > 'Z') continue;
+
+            // 해당 tile의 config 찾기
+            for (int i = 0; i < cfgCount; i++) {
+                if (cfg[i].tile == tile) {
+
                     chest_init(
                         &m->chests[m->chestCount],
                         x, y,
-                        "weapon",
-                        "빨간 검"
+                        cfg[i].itemType,
+                        cfg[i].itemName
                     );
                     m->chestCount++;
-                    m->tiles[y][x] = '.'; // 상자 자리는 바닥으로 바꿔두기
+
+                    //m->tiles[y][x] = '.'; // 상자 타일을 바닥으로 변경
+                    break;
                 }
             }
         }
     }
 }
+
 
 
 
@@ -1319,17 +1394,17 @@ void map_draw_at(const Map* m, const Player* p, int startX, int startY) {
     }
 }
 
-
-
-
-
 int map_is_walkable(const Map* m, int x, int y) {
     if (x < 0 || x >= m->width || y < 0 || y >= m->height)
         return 0;
 
-    // ★ 적 체크 제거 (player_move에서 처리)
-    // 타일만 체크
-    return (m->tiles[y][x] == '.');
+    char t = m->tiles[y][x];
+
+    // ★ 상자(A~Z)는 이동 불가
+    if (t >= 'A' && t <= 'Z')
+        return 0;
+
+    return (t == '.');
 }
 
 
@@ -1474,6 +1549,41 @@ Chest* map_get_adjacent_chest(Map* m , int px , int py);
 #include <string.h>
 
 // ========================
+// 스테이지별 상자 설정
+// ========================
+
+// Stage 1 : A~E 상자 내용
+static const ChestConfig STAGE1_CHESTS[] = {
+    {'A', "weapon", "초보자 검"},
+    {'B', "armor",  "가죽 갑옷"},
+    {'C', "item",   "HP 포션"},
+    {'D', "item",   "민첩의 물약"},
+    {'E', "item",   "힘의 물약"},
+};
+static const int STAGE1_CHEST_COUNT = sizeof(STAGE1_CHESTS) / sizeof(STAGE1_CHESTS[0]);
+
+// Stage 2
+static const ChestConfig STAGE2_CHESTS[] = {
+    {'A', "weapon", "강철 검"},
+    {'B', "armor",  "철 갑옷"},
+    {'C', "item",   "대형 HP 포션"},
+    {'D', "item",   "스태미너 물약"},
+    {'E', "item",   "신비한 원석"},
+};
+static const int STAGE2_CHEST_COUNT = sizeof(STAGE2_CHESTS) / sizeof(STAGE2_CHESTS[0]);
+
+// Stage 3
+static const ChestConfig STAGE3_CHESTS[] = {
+    {'A', "weapon", "마력의 검"},
+    {'B', "armor",  "마나 갑옷"},
+    {'C', "item",   "최대 HP +5"},
+    {'D', "item",   "공격력 +2"},
+    {'E', "item",   "방어력 +2"},
+};
+static const int STAGE3_CHEST_COUNT = sizeof(STAGE3_CHESTS) / sizeof(STAGE3_CHESTS[0]);
+
+
+// ========================
 // 맵 데이터 정의 (상단에 모아두기)
 // ========================
 
@@ -1484,7 +1594,7 @@ static const char* MAP_STAGE_1[] = {
     "#.....#.####...........#########.......#",
     "#.....#a#..#...........#.......#.......#",
     "#.......#..#############.......#.......#",
-    "#c......#..................#####.......#",
+    "#A......#..................#####.......#",
     "#########..................#...........#",
     "#.........................##......b....#",
     "#.......#####..........#####...........#",
@@ -1583,6 +1693,26 @@ void load_map(Map* m, int stageNumber) {
     }
 }
 
+const ChestConfig* get_chest_config(int stage, int* outCount) {
+    switch (stage) {
+    case 1:
+        *outCount = STAGE1_CHEST_COUNT;
+        return STAGE1_CHESTS;
+
+    case 2:
+        *outCount = STAGE2_CHEST_COUNT;
+        return STAGE2_CHESTS;
+
+    case 3:
+        *outCount = STAGE3_CHEST_COUNT;
+        return STAGE3_CHESTS;
+    }
+
+    *outCount = 0;
+    return NULL;
+}
+
+
 ------------------------------------------------------------
 [FILE PATH] C:\projects\MetroHero\MetroHero\src\world\map_data.h
 [FILE NAME] map_data.h
@@ -1592,6 +1722,14 @@ void load_map(Map* m, int stageNumber) {
 #define MAP_DATA_H
 
 #include "map.h"
+
+typedef struct {
+	char tile;              // 'A', 'B', 'C' ...
+	const char* itemType;   // "weapon", "armor", "item"
+	const char* itemName;   // "초보자 검"
+} ChestConfig;
+
+const ChestConfig* get_chest_config(int stage , int* outCount);
 
 // ★ 단일 함수로 변경
 void load_map(Map* m , int stageNumber);

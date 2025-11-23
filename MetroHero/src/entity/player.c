@@ -55,3 +55,61 @@ void player_move(Player* p, const Map* m, int cmd) {
         p->y = ny;
     }
 }
+
+void player_apply_item(Player* p, const char* itemType, const char* itemName) {
+
+    // ======== 무기 적용 ========
+    if (strcmp(itemType, "weapon") == 0) {
+        p->weaponName = itemName;
+
+        // 무기 종류별 능력치 설정
+        if (strcmp(itemName, "초보자 검") == 0) {
+            p->attackMin = 1000;
+            p->attackMax = 10000;
+        }
+        else if (strcmp(itemName, "강철 검") == 0) {
+            p->attackMin = 20;
+            p->attackMax = 150;
+        }
+        else if (strcmp(itemName, "마력의 검") == 0) {
+            p->attackMin = 50;
+            p->attackMax = 200;
+        }
+
+        ui_add_log("무기를 장착했다!");
+        return;
+    }
+
+    // ======== 방어구 적용 ========
+    if (strcmp(itemType, "armor") == 0) {
+        p->armorName = itemName;
+
+        if (strcmp(itemName, "가죽 갑옷") == 0)
+            p->defense = 2;
+        else if (strcmp(itemName, "철 갑옷") == 0)
+            p->defense = 5;
+        else if (strcmp(itemName, "마나 갑옷") == 0)
+            p->defense = 10;
+
+        ui_add_log("방어구를 착용했다!");
+        return;
+    }
+
+    // ======== 아이템 적용 (영구 버프 버전) ========
+    if (strcmp(itemType, "item") == 0) {
+        if (strcmp(itemName, "HP 포션") == 0) {
+            p->hp += 10;
+            if (p->hp > p->maxHp) p->hp = p->maxHp;
+        }
+        else if (strcmp(itemName, "힘의 물약") == 0) {
+            p->attackMin += 2;
+            p->attackMax += 2;
+        }
+        else if (strcmp(itemName, "민첩의 물약") == 0) {
+            p->defense += 1;
+        }
+
+        ui_add_log("아이템 효과가 적용되었다!");
+        return;
+    }
+}

@@ -121,14 +121,17 @@ void game_run(void) {
         }
 
         // ★★★★★ 상자 열기 처리 (E 키) ★★★★★
-        if (cmd == 'e') {
+        if (cmd == 'e' || cmd == '0') {
             Chest* chest = map_get_adjacent_chest(&map, player.x, player.y);
             if (chest != NULL && !chest->isOpened) {
 
                 chest->isOpened = 1;
 
-                // 아이템 적용
-                player.weaponName = chest->itemName;
+                //// 아이템 적용
+                //player.weaponName = chest->itemName;
+
+                // ★ 아이템 실제 적용
+                player_apply_item(&player, chest->itemType, chest->itemName);
 
                 char msg[128];
                 snprintf(msg, sizeof(msg),
