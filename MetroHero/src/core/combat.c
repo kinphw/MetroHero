@@ -41,8 +41,8 @@ void combat_check_nearby_enemy(Map* m, Player* p) {
 void combat_attack_enemy(Player* p, Enemy* e, Map* m) {
     char logMsg[128];
 
-    // ★ 전투 이펙트 표시
-    ui_draw_combat_effect(107, 2);  // 상태창 오른쪽
+    // ★ 전투 이펙트 표시 (상태창 내부 오른쪽)
+    ui_draw_combat_effect(STATUS_X + 25, STATUS_Y + 2);
 
     // ★★★ 플레이어 공격 - 랜덤 데미지 ★★★
     int playerAttack = p->attackMin + rand() % (p->attackMax - p->attackMin + 1);

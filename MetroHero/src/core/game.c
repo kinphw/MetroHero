@@ -27,21 +27,22 @@ void game_run(void) {
 
     // ★ 초기 화면은 한 번만 그리기
     console_clear_fast();
-    //map_draw_at(&map, &player, 0, 0);
-    // 뷰포트 구조로 개선
-    map_draw_viewport(&map, &player, 0, 0, 60, 20);
 
+    // ★ 뷰포트 (왼쪽) - 40칸 너비로 제한
+    map_draw_viewport(&map, &player, VIEWPORT_X, VIEWPORT_Y, 40, VIEWPORT_H);
 
-    // ★ 상태창 (상단)
-    ui_draw_stats(&player, EQ_X, 0, EQ_W, 10);
+    // ★ 상태창 (오른쪽 상단)
+    ui_draw_stats(&player, STATUS_X, STATUS_Y, STATUS_W, STATUS_H);
 
-    // ★ 장비창 (중간)
-    ui_draw_equipment(&player, EQ_X, 10, EQ_W, 6);
-    ui_draw_log(0, LOG_Y, LOG_W, LOG_H);
+    // ★ 장비창 (오른쪽 중단)
+    ui_draw_equipment(&player, EQUIP_X, EQUIP_Y, EQUIP_W, EQUIP_H);
 
-    // ★ 입력 안내는 초기에 한 번만 출력 (로그창 밖)
+    // ★ 로그창 (하단)
+    ui_draw_log(LOG_X, LOG_Y, LOG_W, LOG_H);
+
+    // ★ 입력 안내 (최하단)
     console_goto(0, SCREEN_H - 1);
-    printf("[화살표/WASD] 이동 | [Q] 종료");
+    printf("[화살표/WASD] 이동 | [E] 상자 열기 | [Q] 종료");
 
     prevX = player.x;
     prevY = player.y;
@@ -96,51 +97,22 @@ void game_run(void) {
 
         // ★ 전투가 발생했고 적이 죽었으면 화면에서 지우기
         if (targetEnemy != NULL && !targetEnemy->isAlive) {
-            console_goto(targetEnemy->x * 2, targetEnemy->y);
-            printf("%s", tile_to_glyph(map.tiles[targetEnemy->y][targetEnemy->x]));
+            // 뷰포트 갱신으로 처리됨
         }
 
-        //if (prevX != player.x || prevY != player.y) {
-        //    // ★ 이전 위치에 적이 있었는지 확인
-        //    Enemy* prevEnemy = map_get_enemy_at(&map, prevX, prevY);
-
-        //    // 이전 위치 복원
-        //    console_goto(prevX * 2, prevY);
-        //    if (prevEnemy != NULL) {
-        //        // 적이 있으면 적을 다시 그림
-        //        printf("%s", enemy_to_glyph(prevEnemy->type));
-        //    }
-        //    else {
-        //        // 바닥 타일 복원
-        //        printf("%s", tile_to_glyph(map.tiles[prevY][prevX]));
-        //    }
-
-        //    // 새 위치 그리기
-        //    console_goto(player.x * 2, player.y);
-        //    printf(GLYPH_PLAYER);
-
-        //    prevX = player.x;
-        //    prevY = player.y;
-        //}
-
+        // ★ 이동했으면 뷰포트만 다시 그리기
         if (prevX != player.x || prevY != player.y) {
-            map_draw_viewport(&map, &player, 0, 0, 60, 20);
+            map_draw_viewport(&map, &player, VIEWPORT_X, VIEWPORT_Y, 40, VIEWPORT_H);
             prevX = player.x;
             prevY = player.y;
         }
 
 
-        // ★★★★★ 상자 열기 처리 (E 키) ★★★★★
-        if (cmd == 'e' || cmd == '0') {
+        // ★ 상자 열기 처리 (E 키)
+        if (cmd == 'e') {
             Chest* chest = map_get_adjacent_chest(&map, player.x, player.y);
             if (chest != NULL && !chest->isOpened) {
-
                 chest->isOpened = 1;
-
-                //// 아이템 적용
-                //player.weaponName = chest->itemName;
-
-                // ★ 아이템 실제 적용
                 player_apply_item(&player, chest->itemType, chest->itemName);
 
                 char msg[128];
@@ -150,11 +122,11 @@ void game_run(void) {
 
                 ui_add_log(msg);
 
-                console_goto(chest->x * 2, chest->y);
-                printf("%s", tile_to_glyph(map.tiles[chest->y][chest->x]));
+                // 뷰포트 갱신
+                map_draw_viewport(&map, &player, VIEWPORT_X, VIEWPORT_Y, 40, VIEWPORT_H);
 
-                // UI 갱신
-                ui_draw_equipment(&player, EQ_X, 10, EQ_W, 6);
+                // 장비창 갱신
+                ui_draw_equipment(&player, EQUIP_X, EQUIP_Y, EQUIP_W, EQUIP_H);
             }
         }
 
@@ -168,7 +140,7 @@ void game_run(void) {
         }
 
         // ★ 상태창 갱신 (HP 변경 반영)
-        ui_draw_stats(&player, EQ_X, 0, EQ_W, 10);
+        ui_draw_stats(&player, STATUS_X, STATUS_Y, STATUS_W, STATUS_H);
 
         // ★ 로그창 갱신
         ui_draw_log(0, LOG_Y, LOG_W, LOG_H);

@@ -9,35 +9,38 @@
 // 상단 전체 높이
 #define TOP_H 20
 
-// 맵 설정
-//#define MAP_W 40                // 논리적 가로 칸 수
-//#define MAP_H 20                // 맵 세로 수
-//#define MAP_RENDER_W (MAP_W*2)  // 실제 출력되는 문자 폭 80
+// ★ 뷰포트 영역 (왼쪽)
+#define VIEWPORT_X 0
+#define VIEWPORT_Y 0
+#define VIEWPORT_W 80    // 40칸 × 2 (전각)
+#define VIEWPORT_H 20
 
-// ★ 맵 렌더링 최대 너비 (동적 크기 지원)
-#define MAX_MAP_RENDER_W 100  // 최대값만 정의
+// ★ 상태창 (오른쪽 상단)
+#define STATUS_X 82
+#define STATUS_Y 0
+#define STATUS_W 38
+#define STATUS_H 10
 
-// 장비창(오른쪽) - 고정 위치
-#define EQ_X 80       // ★ 고정값으로 변경 (MAX_MAP_W * 2)
-#define EQ_W (SCREEN_W - EQ_X)
-#define EQ_H TOP_H
+// ★ 장비창 (오른쪽 중단)
+#define EQUIP_X 82
+#define EQUIP_Y 10
+#define EQUIP_W 38
+#define EQUIP_H 6
 
-// 로그창(하단)
-#define LOG_Y TOP_H
-#define LOG_W SCREEN_W
-#define LOG_H (SCREEN_H - TOP_H -1)
-
+// ★ 로그창 (하단 전체)
+#define LOG_X 0
+#define LOG_Y 20
+#define LOG_W 120
+#define LOG_H 9
 
 void console_goto(int x , int y);
+void console_clear_fast(void);
 
 void ui_draw_equipment(const Player* p , int x , int y , int w , int h);  // ★ 이 줄 확인
 void ui_draw_stats(const Player* p , int x , int y , int w , int h);  // ★ 추가
 
-
 void ui_add_log(const char* msg);
 void ui_draw_log(int x , int y , int w , int h);
-
-void console_clear_fast(void);
 
 void ui_draw_combat_effect(int x , int y);  // 전투 이펙트
 void ui_clear_combat_effect(int x , int y); // 이펙트 제거

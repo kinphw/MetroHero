@@ -121,10 +121,10 @@ int display_width(const char* str) {
 
 void ui_draw_stats(const Player* p, int x, int y, int w, int h) {
     console_goto(x, y);
-    printf("┌─ 상태      ──────────┐");
+    printf("┌─ 상태  ──────────────────────────┐");
 
     console_goto(x, y + 1);
-    printf("│                      │");
+    printf("│                                  │");
 
     // HP 바 그리기
     console_goto(x, y + 2);
@@ -136,61 +136,61 @@ void ui_draw_stats(const Player* p, int x, int y, int w, int h) {
         else
             printf("░");
     }
-    printf("        │");
+    printf("                  │");
 
     // HP 수치
     console_goto(x, y + 3);
-    printf("│     %3d / %3d        │", p->hp, p->maxHp);
+    printf("│     %3d / %3d                    │", p->hp, p->maxHp);
 
     console_goto(x, y + 4);
-    printf("│                      │");
+    printf("│                                  │");
 
-    // ★ 공격력 범위 표시
+    // 공격력 범위 표시
     console_goto(x, y + 5);
-    printf("│ 공격력: %2d~%2d        │", p->attackMin, p->attackMax);
+    printf("│ 공격력: %2d~%2d                  │", p->attackMin, p->attackMax);
 
     // 방어력
     console_goto(x, y + 6);
-    printf("│ 방어력:  %3d         │", p->defense);
+    printf("│ 방어력:  %3d                     │", p->defense);
 
     // 나머지 빈 공간
     for (int i = 7; i < h - 1; i++) {
         console_goto(x, y + i);
-        printf("│                      │");
+        printf("│                                  │");
     }
 
     console_goto(x, y + h - 1);
-    printf("└──────────────────────┘");
+    printf("└──────────────────────────────────┘");
 }
 
 // ui_draw_equipment 수정 (높이 조정)
 void ui_draw_equipment(const Player* p, int x, int y, int w, int h) {
     console_goto(x, y);
-    printf("┌─ 장비      ──────────┐");
+    printf("┌─ 장비  ──────────────────────────┐");
 
     console_goto(x, y + 1);
-    printf("│                      │");
+    printf("│                                  │");
 
     console_goto(x, y + 2);
     printf("│ 무기:    %s", p->weaponName);
     int len = display_width(p->weaponName);
-    for (int i = 0; i < 11 - len; i++) putchar(' ');
+    for (int i = 0; i < 25 - len; i++) putchar(' ');
     printf(" │");
 
     console_goto(x, y + 3);
     printf("│ 방어구:  %s", p->armorName);
     len = display_width(p->armorName);
-    for (int i = 0; i < 11 - len; i++) putchar(' ');
+    for (int i = 0; i < 25 - len; i++) putchar(' ');
     printf(" │");
 
     console_goto(x, y + 4);
-    printf("│ 아이템 : %s", p->item1);
+    printf("│ 아이템:  %s", p->item1);
     len = display_width(p->item1);
-    for (int i = 0; i < 11 - len; i++) putchar(' ');
+    for (int i = 0; i < 25 - len; i++) putchar(' ');
     printf(" │");
 
     console_goto(x, y + 5);
-    printf("└──────────────────────┘");
+    printf("└──────────────────────────────────┘");
 }
 
 #define LOG_LINES 200
