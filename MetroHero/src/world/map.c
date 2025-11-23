@@ -275,3 +275,62 @@ void map_init(Map* m, int stageNumber) {
     map_load_enemies(m);
     map_load_chests(m);
 }
+
+
+void map_draw_viewport(const Map* m, const Player* p,
+    int startX, int startY,
+    int viewW, int viewH)
+{
+    // 플레이어 중심 뷰 계산
+    int viewX = p->x - viewW / 2;
+    int viewY = p->y - viewH / 2;
+
+    // 맵 범위를 벗어나면 클램프
+    if (viewX < 0) viewX = 0;
+    if (viewY < 0) viewY = 0;
+    if (viewX + viewW > m->width)  viewX = m->width - viewW;
+    if (viewY + viewH > m->height) viewY = m->height - viewH;
+    if (viewX < 0) viewX = 0;
+    if (viewY < 0) viewY = 0;
+
+    for (int sy = 0; sy < viewH; sy++) {
+        int my = viewY + sy;
+
+        console_goto(startX, startY + sy);
+
+        for (int sx = 0; sx < viewW; sx++) {
+            int mx = viewX + sx;
+
+            // 맵 범위 밖이면 공백
+            if (mx < 0 || mx >= m->width ||
+                my < 0 || my >= m->height)
+            {
+                printf("  ");
+                continue;
+            }
+
+            // 플레이어 출력
+            if (mx == p->x && my == p->y) {
+                printf(GLYPH_PLAYER);
+                continue;
+            }
+
+            // 적 출력
+            Enemy* enemy = map_get_enemy_at((Map*)m, mx, my);
+            if (enemy != NULL) {
+                printf("%s", enemy_to_glyph(enemy->type));
+                continue;
+            }
+
+            // 상자 출력
+            Chest* chest = map_get_chest_at((Map*)m, mx, my);
+            if (chest != NULL && !chest->isOpened) {
+                printf(GLYPH_CHEST);
+                continue;
+            }
+
+            // 기본 타일 출력
+            printf("%s", tile_to_glyph(m->tiles[my][mx]));
+        }
+    }
+}

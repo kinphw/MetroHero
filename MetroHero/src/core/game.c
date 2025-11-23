@@ -27,7 +27,10 @@ void game_run(void) {
 
     // ★ 초기 화면은 한 번만 그리기
     console_clear_fast();
-    map_draw_at(&map, &player, 0, 0);
+    //map_draw_at(&map, &player, 0, 0);
+    // 뷰포트 구조로 개선
+    map_draw_viewport(&map, &player, 0, 0, 60, 20);
+
 
     // ★ 상태창 (상단)
     ui_draw_stats(&player, EQ_X, 0, EQ_W, 10);
@@ -97,28 +100,35 @@ void game_run(void) {
             printf("%s", tile_to_glyph(map.tiles[targetEnemy->y][targetEnemy->x]));
         }
 
+        //if (prevX != player.x || prevY != player.y) {
+        //    // ★ 이전 위치에 적이 있었는지 확인
+        //    Enemy* prevEnemy = map_get_enemy_at(&map, prevX, prevY);
+
+        //    // 이전 위치 복원
+        //    console_goto(prevX * 2, prevY);
+        //    if (prevEnemy != NULL) {
+        //        // 적이 있으면 적을 다시 그림
+        //        printf("%s", enemy_to_glyph(prevEnemy->type));
+        //    }
+        //    else {
+        //        // 바닥 타일 복원
+        //        printf("%s", tile_to_glyph(map.tiles[prevY][prevX]));
+        //    }
+
+        //    // 새 위치 그리기
+        //    console_goto(player.x * 2, player.y);
+        //    printf(GLYPH_PLAYER);
+
+        //    prevX = player.x;
+        //    prevY = player.y;
+        //}
+
         if (prevX != player.x || prevY != player.y) {
-            // ★ 이전 위치에 적이 있었는지 확인
-            Enemy* prevEnemy = map_get_enemy_at(&map, prevX, prevY);
-
-            // 이전 위치 복원
-            console_goto(prevX * 2, prevY);
-            if (prevEnemy != NULL) {
-                // 적이 있으면 적을 다시 그림
-                printf("%s", enemy_to_glyph(prevEnemy->type));
-            }
-            else {
-                // 바닥 타일 복원
-                printf("%s", tile_to_glyph(map.tiles[prevY][prevX]));
-            }
-
-            // 새 위치 그리기
-            console_goto(player.x * 2, player.y);
-            printf(GLYPH_PLAYER);
-
+            map_draw_viewport(&map, &player, 0, 0, 60, 20);
             prevX = player.x;
             prevY = player.y;
         }
+
 
         // ★★★★★ 상자 열기 처리 (E 키) ★★★★★
         if (cmd == 'e' || cmd == '0') {

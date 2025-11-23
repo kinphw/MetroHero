@@ -5,8 +5,8 @@
 #include "../entity/enemy.h"  // ★ 추가
 #include "../entity/chest.h"
 
-#define MAX_MAP_W 100  // 최대 크기만 정의
-#define MAX_MAP_H 50
+#define MAX_MAP_W 200  // 최대 크기만 정의
+#define MAX_MAP_H 120
 
 //#define MAP_W 40
 //#define MAP_H 20
@@ -46,5 +46,8 @@ const char* enemy_to_glyph(char type);
 
 Chest* map_get_chest_at(Map* m , int x , int y);
 Chest* map_get_adjacent_chest(Map* m , int px , int py);
+
+void map_draw_viewport(const Map* m , const Player* p , int startX , int startY ,
+	int viewW , int viewH);
 
 #endif
