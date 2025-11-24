@@ -53,6 +53,9 @@ void game_run(void) {
 
     while (1) {
 
+        int tx = player.x + player.dirX;
+        int ty = player.y + player.dirY;
+
         // ★ 대화 모드일 때
         if (inDialogue && currentNPC != NULL) {
             int cmd = _getch();
@@ -166,31 +169,33 @@ void game_run(void) {
         }
 
 
-        // ★ 상자 열기 처리 (E 키)
-        if (cmd == 'e') {
-            Chest* chest = map_get_adjacent_chest(&map, player.x, player.y);
-            if (chest != NULL && !chest->isOpened) {
-                chest->isOpened = 1;
-                player_apply_item(&player, chest->itemType, chest->itemName);
+        //// ★ 상자 열기 처리 (E 키)
+        //if (cmd == 'e') {
+        //    //Chest* chest = map_get_adjacent_chest(&map, player.x, player.y);
+        //    Chest* chest = map_get_chest_at(&map, tx, ty);
+        //    if (chest != NULL && !chest->isOpened) {
+        //        chest->isOpened = 1;
+        //        player_apply_item(&player, chest->itemType, chest->itemName);
 
-                char msg[128];
-                snprintf(msg, sizeof(msg),
-                    COLOR_BRIGHT_YELLOW "📦 상자를 열었다! → %s 획득!" COLOR_RESET,
-                    chest->itemName);
+        //        char msg[128];
+        //        snprintf(msg, sizeof(msg),
+        //            COLOR_BRIGHT_YELLOW "📦 상자를 열었다! → %s 획득!" COLOR_RESET,
+        //            chest->itemName);
 
-                ui_add_log(msg);
+        //        ui_add_log(msg);
 
-                // 뷰포트 갱신
-                map_draw_viewport(&map, &player, VIEWPORT_X, VIEWPORT_Y, 40, VIEWPORT_H);
+        //        // 뷰포트 갱신
+        //        map_draw_viewport(&map, &player, VIEWPORT_X, VIEWPORT_Y, 40, VIEWPORT_H);
 
-                // 장비창 갱신
-                ui_draw_equipment(&player, EQUIP_X, EQUIP_Y, EQUIP_W, EQUIP_H);
-            }
-        }
+        //        // 장비창 갱신
+        //        ui_draw_equipment(&player, EQUIP_X, EQUIP_Y, EQUIP_W, EQUIP_H);
+        //    }
+        //}
 
         // ★ NPC 대화 처리 (0 키) - 바로 대화창 표시
         if (cmd == '0') {
-            NPC* npc = map_get_adjacent_npc(&map, player.x, player.y);
+            //NPC* npc = map_get_adjacent_npc(&map, player.x, player.y);
+            NPC* npc = map_get_npc_at(&map, tx, ty);
             if (npc != NULL) {
                 if (npc->useDialogueBox) {
                     // ★ 전용 대화창 모드 진입
@@ -222,6 +227,29 @@ void game_run(void) {
                     npc_next_dialogue(npc);
                 }
             }
+
+            // Chest
+            Chest* chest = map_get_chest_at(&map, tx, ty);
+            if (chest != NULL && !chest->isOpened) {
+                chest->isOpened = 1;
+                player_apply_item(&player, chest->itemType, chest->itemName);
+
+                char msg[128];
+                snprintf(msg, sizeof(msg),
+                    COLOR_BRIGHT_YELLOW "📦 상자를 열었다! → %s 획득!" COLOR_RESET,
+                    chest->itemName);
+
+                ui_add_log(msg);
+
+                // 뷰포트 갱신
+                map_draw_viewport(&map, &player, VIEWPORT_X, VIEWPORT_Y, 40, VIEWPORT_H);
+
+                // 장비창 갱신
+                ui_draw_equipment(&player, EQUIP_X, EQUIP_Y, EQUIP_W, EQUIP_H);
+            }
+
+            
+
         }
 
         // ★ 인접 적 체크

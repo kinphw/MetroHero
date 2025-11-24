@@ -12,6 +12,9 @@ void player_init(Player* p) {
     p->x = 20;  // 또는 map_init 후에 설정
     p->y = 10;
 
+    p->dirX = 0;
+    p->dirY = 1;   // 아래 방향을 기본값
+
     // ★ 초기 스탯
     p->maxHp = 10;
     p->hp = 10;
@@ -34,10 +37,25 @@ void player_move(Player* p, const Map* m, int cmd) {
     int ny = p->y;
 
     switch (cmd) {
-    case 'w': ny--; break;
-    case 's': ny++; break;
-    case 'a': nx--; break;
-    case 'd': nx++; break;
+    case 'w':
+        p->dirX = 0; p->dirY = -1;
+        ny--;
+        break;
+
+    case 's':
+        p->dirX = 0; p->dirY = 1;
+        ny++;
+        break;
+
+    case 'a':
+        p->dirX = -1; p->dirY = 0;
+        nx--;
+        break;
+
+    case 'd':
+        p->dirX = 1;  p->dirY = 0;
+        nx++;
+        break;
     }
 
     // ★ 목표 위치에 적이 있는지 확인

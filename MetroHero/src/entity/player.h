@@ -6,6 +6,9 @@ struct Map;
 typedef struct {
 	int x , y;
 
+	int dirX;
+	int dirY;
+
 	int hp;
 	int maxHp;
 	//int attack;
@@ -19,6 +22,7 @@ typedef struct {
 	const char* weaponName;
 	const char* armorName;
 	const char* item1;
+
 } Player;
 
 void player_init(Player* p);

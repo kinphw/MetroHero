@@ -223,6 +223,9 @@ void game_run(void) {
                 // 🔥 마지막 대사인지 체크
                 if (currentNPC->currentDialogue == currentNPC->dialogueCount - 1) {
 
+                    // 🔥 여기 추가
+                    currentNPC->currentDialogue = 0;
+
                     // 🔥 대화 종료
                     inDialogue = 0;
                     currentNPC = NULL;
@@ -248,6 +251,10 @@ void game_run(void) {
                 ui_draw_log(LOG_X, LOG_Y, LOG_W, LOG_H);
             }
             else if (cmd == 'x' || cmd == 27) {  // X 또는 ESC
+
+                // 🔥 여기 추가
+                currentNPC->currentDialogue = 0;
+
                 // 대화 종료
                 inDialogue = 0;
                 currentNPC = NULL;
