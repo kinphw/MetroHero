@@ -1,29 +1,40 @@
 #ifndef STORY_H
 #define STORY_H
 
-#include "../core/cinematic.h"
+#include "../cinematic/cinematic.h"
 #include "../world/glyph.h"
 
 // ============================================
 // 게임 인트로 시나리오
 // ============================================
 
+//static const CinematicLine INTRO_LINES[] = {
+//    { "", STYLE_NORMAL, 500 },
+//    { "오래 전...", STYLE_TYPEWRITER, 800 },
+//    { "", STYLE_NORMAL, 300 },
+//    { "수원 지하철 어딘가에서...", STYLE_TYPEWRITER, 1000 },
+//    { "", STYLE_NORMAL, 500 },
+//    { "", STYLE_NORMAL, 300 },
+//    { "도시의 심장부를 연결하는 지하 세계,", STYLE_TYPEWRITER, 800 },
+//    { "그곳에는 평범한 시민들만 있는 것이 아니었다.", STYLE_TYPEWRITER, 1000 },
+//    { "", STYLE_NORMAL, 500 },
+//    { "어둠 속에서 깨어난 존재들...", STYLE_TYPEWRITER, 800 },
+//    { "버려진 역사의 미로...", STYLE_TYPEWRITER, 800 },
+//    { "그리고 단 한 명의 영웅.", STYLE_TYPEWRITER, 1000 },
+//    { "", STYLE_NORMAL, 800 },
+//    { "당신은 지하철의 수호자가 되어", STYLE_TYPEWRITER, 600 },
+//    { "이 도시의 평화를 되찾아야 한다.", STYLE_TYPEWRITER, 0 },
+//};
+
 static const CinematicLine INTRO_LINES[] = {
-    { "", STYLE_NORMAL, 500 },
-    { "오래 전...", STYLE_TYPEWRITER, 800 },
-    { "", STYLE_NORMAL, 300 },
-    { "수원 지하철 어딘가에서...", STYLE_TYPEWRITER, 1000 },
-    { "", STYLE_NORMAL, 500 },
-    { "", STYLE_NORMAL, 300 },
-    { "도시의 심장부를 연결하는 지하 세계,", STYLE_TYPEWRITER, 800 },
-    { "그곳에는 평범한 시민들만 있는 것이 아니었다.", STYLE_TYPEWRITER, 1000 },
-    { "", STYLE_NORMAL, 500 },
-    { "어둠 속에서 깨어난 존재들...", STYLE_TYPEWRITER, 800 },
-    { "버려진 역사의 미로...", STYLE_TYPEWRITER, 800 },
-    { "그리고 단 한 명의 영웅.", STYLE_TYPEWRITER, 1000 },
-    { "", STYLE_NORMAL, 800 },
-    { "당신은 지하철의 수호자가 되어", STYLE_TYPEWRITER, 600 },
-    { "이 도시의 평화를 되찾아야 한다.", STYLE_TYPEWRITER, 0 },
+	{ "", STYLE_NORMAL, 500 },
+	{ "갑자기 당신은 눈을 떴다...", STYLE_TYPEWRITER, 800 },
+	{ "", STYLE_NORMAL, 300 },
+	{ "이곳은...", STYLE_TYPEWRITER, 800 },
+	{ "", STYLE_NORMAL, 300 },
+	{ "성균관대역....?", STYLE_TYPEWRITER, 1000 },
+	{ "", STYLE_NORMAL, 300 },
+	{ "당신은 몸을 일으켜 주위를 둘러본다...", STYLE_TYPEWRITER, 0 },
 };
 
 static const Cinematic STORY_INTRO = {
@@ -46,9 +57,9 @@ static const CinematicLine STAGE1_START_LINES[] = {
     { "[ STAGE 1 ]", STYLE_TITLE, 500 },
     { "", STYLE_NORMAL, 200 },
     { "성균관대역", STYLE_SUBTITLE, 800 },
-    { "", STYLE_NORMAL, 500 },
-    { "오래된 역사, 어둠 속에 잠든 터널...", STYLE_TYPEWRITER, 600 },
-    { "이곳에서 당신의 여정이 시작된다.", STYLE_TYPEWRITER, 0 },
+    //{ "", STYLE_NORMAL, 500 },
+    //{ "오래된 역사, 어둠 속에 잠든 터널...", STYLE_TYPEWRITER, 600 },
+    //{ "이곳에서 당신의 여정이 시작된다.", STYLE_TYPEWRITER, 0 },
 };
 
 static const Cinematic STORY_STAGE1_START = {

@@ -401,7 +401,7 @@ void game_run(void) {
         // ★ 인접 상자 체크 추가 (여기!)
         Chest* nearChest = map_get_adjacent_chest(&map, player.x, player.y);
         if (nearChest != NULL && !nearChest->isOpened) {
-            ui_add_log("가까운 곳에 상자가 있다. [E] 키로 열 수 있다.");
+            ui_add_log("가까운 곳에 상자가 있다. [0] 키로 열 수 있다.");
         }
 
         // ★ 상태창 갱신 (HP 변경 반영)

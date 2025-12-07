@@ -4,7 +4,7 @@
 #include <string.h>
 #include <conio.h>
 #include "cinematic.h"
-#include "ui.h"
+#include "../core/ui.h"
 #include "../world/glyph.h"
 #include "../data/story.h"
 
@@ -219,9 +219,8 @@ void cinematic_scroll_text(const char** lines, int lineCount, int speed) {
 // ============================================
 
 int cinematic_wait_key(void) {
-    // 하단에 안내 표시
-    cinematic_print_centered(CINE_HEIGHT - 3,
-        "[SPACE] 계속    [ESC] 스킵", COLOR_GRAY);
+    // ★ 안내 메시지는 cinematic_play()에서 이미 표시됨
+    // 여기서는 키 입력만 대기
 
     while (1) {
         int key = cinematic_get_key();
@@ -278,12 +277,27 @@ void cinematic_play(const Cinematic* cine) {
         printf("%s", COLOR_RESET);
     }
 
+    // ★ 하단 안내 메시지 표시 (처음부터 항상 표시)
+    if (cine->showSkipHint) {
+        cinematic_print_centered(CINE_HEIGHT - 3,
+            "[SPACE] 계속    [ESC] 스킵", COLOR_GRAY);
+    }
+
     // 각 라인 처리
     int currentY = cine->title ? 5 : 3;
     int skipped = 0;
 
     for (int i = 0; i < cine->lineCount && !skipped; i++) {
         const CinematicLine* line = &cine->lines[i];
+
+        // ★ ESC 키로 언제든지 스킵 가능
+        if (cinematic_key_pressed()) {
+            int key = cinematic_get_key();
+            if (key == 27) {  // ESC
+                skipped = 1;
+                break;
+            }
+        }
 
         // ★ 하단 안내 메시지 영역 보호: Y가 CONTENT_MAX_Y를 넘으면 출력 중단
         if (currentY > CONTENT_MAX_Y) {
@@ -336,7 +350,23 @@ void cinematic_play(const Cinematic* cine) {
 
         // 라인 후 대기
         if (line->delayAfter > 0) {
-            cinematic_delay(line->delayAfter);
+            // ★ 딜레이 중에도 ESC로 스킵 가능하도록 짧은 단위로 나눠서 체크
+            int remainingDelay = line->delayAfter;
+            const int checkInterval = 50;  // 50ms마다 체크
+
+            while (remainingDelay > 0 && !skipped) {
+                int waitTime = (remainingDelay < checkInterval) ? remainingDelay : checkInterval;
+                cinematic_delay(waitTime);
+                remainingDelay -= waitTime;
+
+                if (cinematic_key_pressed()) {
+                    int key = cinematic_get_key();
+                    if (key == 27) {  // ESC
+                        skipped = 1;
+                        break;
+                    }
+                }
+            }
         }
         else if (line->delayAfter == 0 && line->style != STYLE_NORMAL) {
             // 키 입력 대기

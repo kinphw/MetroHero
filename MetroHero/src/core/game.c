@@ -5,7 +5,7 @@
 #include <ctype.h>   // tolower
 #include "game.h"
 #include "ui.h"
-#include "cinematic.h"  // ★ 시네마틱 시스템 추가
+#include "../cinematic/cinematic.h"  // ★ 시네마틱 시스템 추가
 #include "../world/map.h"
 #include "../entity/player.h"
 #include "../world/glyph.h"  // ★ 추가
@@ -53,7 +53,7 @@ void game_run(void) {
 
     // ★ 입력 안내 (최하단)
     console_goto(0, SCREEN_H - 1);
-    printf("[화살표/WASD] 이동 | [E] 상자 열기 | [Q] 종료");
+    printf("[화살표/WASD] 이동 | [0] 상호작용 | [Q] 종료");
 
     prevX = player.x;
     prevY = player.y;
@@ -272,7 +272,7 @@ void game_run(void) {
         // ★ 인접 상자 체크 추가 (여기!)
         Chest* nearChest = map_get_adjacent_chest(&map, player.x, player.y);
         if (nearChest != NULL && !nearChest->isOpened) {
-            ui_add_log("가까운 곳에 상자가 있다. [E] 키로 열 수 있다.");
+            ui_add_log("가까운 곳에 상자가 있다. [0] 키로 열 수 있다.");
         }
 
         // ★ 상태창 갱신 (HP 변경 반영)

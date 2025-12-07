@@ -16,6 +16,12 @@
     <Filter Include="src\debug">
       <UniqueIdentifier>{243265fd-63c3-4761-9a12-ca51fe20b1a0}</UniqueIdentifier>
     </Filter>
+    <Filter Include="src\cinematic">
+      <UniqueIdentifier>{5031c940-8be6-49bf-b336-cd98532cb6da}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="src\data">
+      <UniqueIdentifier>{b0928c29-0917-44c6-8e5f-d9c3842c0ae7}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="src\main.c">
@@ -51,6 +57,9 @@
     <ClCompile Include="src\entity\npc.c">
       <Filter>src\entity</Filter>
     </ClCompile>
+    <ClCompile Include="src\cinematic\cinematic.c">
+      <Filter>src\cinematic</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="src\core\game.h">
@@ -85,6 +94,12 @@
     </ClInclude>
     <ClInclude Include="src\entity\npc.h">
       <Filter>src\entity</Filter>
+    </ClInclude>
+    <ClInclude Include="src\cinematic\cinematic.h">
+      <Filter>src\cinematic</Filter>
+    </ClInclude>
+    <ClInclude Include="src\data\story.h">
+      <Filter>src\data</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>
