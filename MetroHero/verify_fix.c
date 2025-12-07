@@ -20,10 +20,11 @@ int display_width(const char* str) {
         if (*s < 128) { width += 1; s += 1; }
         else if ((*s & 0xE0) == 0xC0) { width += 2; s += 2; }
         else if ((*s & 0xF0) == 0xE0) { 
-             // U+25xx (Box) or U+20xx (Punctuation) -> Width 1 check
+             // U+25xx (Box) or U+20xx (Punctuation) or U+26xx (Symbols) -> Width 1 check
              if (*s == 0xE2) {
                  unsigned char c2 = *(s+1);
-                 if ((c2 >= 0x94 && c2 <= 0x97) || c2 == 0x80) width += 1;
+                 // 0x94~0x9B: Box, Block, Shapes, Misc Symbols
+                 if ((c2 >= 0x94 && c2 <= 0x9B) || c2 == 0x80) width += 1;
                  else width += 2;
              } else {
                  width += 2; 
@@ -38,8 +39,6 @@ int display_width(const char* str) {
 
 // Old Logic (Buggy)
 void test_old_logic(const char* text, int maxTextWidth) {
-    // Just verifying display_width correctness implies we fixed the issue.
-    int currentWidth = 0;
     // ...
 }
 
@@ -59,12 +58,26 @@ int main() {
     printf("\n=== CASE 2: Box Drawing Char ===\n");
     const char* box = "─"; // U+2500
     printf("String: %s\n", box);
-    printf("Width: %d (Expected: 1, Old: 2)\n", display_width(box));
+    printf("Width: %d (Expected: 1)\n", display_width(box));
 
     printf("\n=== CASE 3: Ellipsis ===\n");
     const char* ell = "…"; // U+2026
     printf("String: %s\n", ell);
-    printf("Width: %d (Expected: 1, Old: 2)\n", display_width(ell));
+    printf("Width: %d (Expected: 1)\n", display_width(ell));
+
+    printf("\n=== CASE 4: Symbols (Sword ⚔ / Star ★) ===\n");
+    // ⚔ U+2694 (E2 9A 94)
+    // ★ U+2605 (E2 98 85)
+    // Note: In C string literal, hex escapes might be tricky if not careful, but UTF-8 string literal is better if source is UTF-8.
+    // Assuming source is handled as UTF-8 or we manually construct.
+    char sword[] = { 0xE2, 0x9A, 0x94, 0 };
+    char star[] = { 0xE2, 0x98, 0x85, 0 };
+    
+    printf("Symbol: Sword (E2 9A 94)\n");
+    printf("Width: %d (Expected: 1)\n", display_width(sword));
+    
+    printf("Symbol: Star (E2 98 85)\n");
+    printf("Width: %d (Expected: 1)\n", display_width(star));
     
     return 0;
 }

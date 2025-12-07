@@ -101,12 +101,12 @@ int display_width(const char* str) {
         }
         else if ((*s & 0xF0) == 0xE0) {
             // UTF-8 3바이트 처리
-            // 특수 기호(상자 그리기 등) 예외 처리: 0xE2로 시작하는 경우
+            // 특수 기호(상자 그리기, 기호, 이모지 등) 예외 처리: 0xE2로 시작하는 경우
             if (*s == 0xE2) {
                 unsigned char c2 = *(s + 1);
-                // 0x94~0x97: Box Drawing, Block Elements, Shapes (─ │ ┌ ┐ 등)
+                // 0x94~0x9B: Box Drawing(94-97), Misc Symbols(98-9B: ★, ⚔ 등)
                 // 0x80: General Punctuation (… 등)
-                if ((c2 >= 0x94 && c2 <= 0x97) || c2 == 0x80) {
+                if ((c2 >= 0x94 && c2 <= 0x9B) || c2 == 0x80) {
                     width += 1; // 1칸으로 처리
                 }
                 else {
@@ -251,8 +251,12 @@ void ui_draw_log(int x, int y, int w, int h) {
 
     // 상단 테두리
     console_goto(x, y);
-    printf("┌─ 대화  ");
-    for (int i = 8; i < w - 2; i++) printf("─");
+    const char* titleText = "─ 대화  ";
+    printf("┌%s", titleText);
+    
+    int titleWidth = display_width(titleText);
+    int dashes = w - 2 - titleWidth;
+    for (int i = 0; i < dashes; i++) printf("─");
     printf("┐");
 
     int start = (log_index - (h - 2) + LOG_LINES) % LOG_LINES;
