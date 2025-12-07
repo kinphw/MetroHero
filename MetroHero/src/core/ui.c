@@ -335,17 +335,17 @@ void ui_draw_dialogue(const NPC* npc, int x, int y, int w, int h) {
     for (int i = 0; i < w - 2 - titleWidth; i++) printf("─");
     printf("┐");
 
-    // NPC 이름 표시
+    // NPC 이름 표시 (이모지 포함)
     console_goto(x, y + 1);
     printf("│ ");
-    printf("%s", npc->name);
-    // ★ 이름 출력 후 남은 공간 계산 (CONTENT_WIDTH - 앞공백1 - 이름폭)
-    // 이전에는 -2를 했으나, "│ "는 2칸이지만 뒤쪽 "│"를 맞추기 위한 여백 계산 시
-    // CONTENT_WIDTH(w-2) 영역 내에서 " "(1칸) + 이름 을 사용했으므로 -1이 맞음 (혹은 정확히 계산)
-    // LeftBorder(1) + Space(1) + Name + Padding + RightBorder(1) = w
-    // Padding = w - 3 - Name
-    // Code: remaining = (w-2) - 1 - Name = w - 3 - Name. Correct.
-    int nameWidth = display_width(npc->name);
+
+    // 💬 이모지 + 이름 출력
+    char nameWithEmoji[256];
+    snprintf(nameWithEmoji, sizeof(nameWithEmoji), "💬 %s", npc->name);
+    printf("%s", nameWithEmoji);
+
+    // 남은 공간 계산
+    int nameWidth = display_width(nameWithEmoji);
     int remaining = CONTENT_WIDTH - 1 - nameWidth;
     for (int i = 0; i < remaining; i++) printf(" ");
     printf("│");
