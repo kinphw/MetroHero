@@ -100,8 +100,23 @@ int display_width(const char* str) {
             s += 2;
         }
         else if ((*s & 0xF0) == 0xE0) {
-            // UTF-8 3바이트 문자 (한글 등) = 2칸
-            width += 2;
+            // UTF-8 3바이트 처리
+            // 특수 기호(상자 그리기 등) 예외 처리: 0xE2로 시작하는 경우
+            if (*s == 0xE2) {
+                unsigned char c2 = *(s + 1);
+                // 0x94~0x97: Box Drawing, Block Elements, Shapes (─ │ ┌ ┐ 등)
+                // 0x80: General Punctuation (… 등)
+                if ((c2 >= 0x94 && c2 <= 0x97) || c2 == 0x80) {
+                    width += 1; // 1칸으로 처리
+                }
+                else {
+                    width += 2; // 그 외(한글 등)는 2칸
+                }
+            }
+            else {
+                width += 2; // 일반적인 3바이트 문자(한글)는 2칸
+            }
+            
             s += 3;
         }
         else if ((*s & 0xF8) == 0xF0) {
@@ -307,20 +322,31 @@ void ui_clear_combat_effect(int x, int y) {
 
 // ★ 대화창 그리기
 void ui_draw_dialogue(const NPC* npc, int x, int y, int w, int h) {
-    const int CONTENT_WIDTH = 34;
+    // ★ 콘텐츠 폭 = 전체 폭 - 양쪽 테두리(2칸)
+    const int CONTENT_WIDTH = w - 2;
 
     // 상단 테두리
     console_goto(x, y);
-    printf("┌─ 대화 ");
-    for (int i = 7; i < w - 2; i++) printf("─");
+    const char* titleText = "─ 대화 ";
+    int titleWidth = display_width(titleText);
+
+    printf("┌%s", titleText);
+    // 남은 선 길이 = w - 2(양쪽 모서리) - titleWidth
+    for (int i = 0; i < w - 2 - titleWidth; i++) printf("─");
     printf("┐");
 
     // NPC 이름 표시
     console_goto(x, y + 1);
-    char nameText[128];
-    snprintf(nameText, sizeof(nameText), " 💬 %s", npc->name);
-    printf("│%s", nameText);
-    int remaining = CONTENT_WIDTH - display_width(nameText);
+    printf("│ ");
+    printf("%s", npc->name);
+    // ★ 이름 출력 후 남은 공간 계산 (CONTENT_WIDTH - 앞공백1 - 이름폭)
+    // 이전에는 -2를 했으나, "│ "는 2칸이지만 뒤쪽 "│"를 맞추기 위한 여백 계산 시
+    // CONTENT_WIDTH(w-2) 영역 내에서 " "(1칸) + 이름 을 사용했으므로 -1이 맞음 (혹은 정확히 계산)
+    // LeftBorder(1) + Space(1) + Name + Padding + RightBorder(1) = w
+    // Padding = w - 3 - Name
+    // Code: remaining = (w-2) - 1 - Name = w - 3 - Name. Correct.
+    int nameWidth = display_width(npc->name);
+    int remaining = CONTENT_WIDTH - 1 - nameWidth;
     for (int i = 0; i < remaining; i++) printf(" ");
     printf("│");
 
@@ -347,33 +373,72 @@ void ui_draw_dialogue(const NPC* npc, int x, int y, int w, int h) {
         int charsToPrint = 0;
         int currentWidth = 0;
         const char* dialoguePtr = dialogue + lineStart;
+        // ★ 최대 텍스트 폭 = CONTENT_WIDTH - 앞공백(1칸)
+        // 위와 동일 논리: w - 3 공간 가용. CONTENT_WIDTH - 1.
+        int maxTextWidth = CONTENT_WIDTH - 1;
 
-        while (*dialoguePtr && currentWidth < 30) {
+        while (*dialoguePtr) {
             unsigned char c = *dialoguePtr;
+            int codeWidth = 0;
+            int codeBytes = 0;
 
+            // ANSI 이스케이프 시퀀스 처리
+            if (c == '\033' || c == 0x1B) {
+                const char* ansiStart = dialoguePtr;
+                dialoguePtr++;
+                if (*dialoguePtr == '[') {
+                    dialoguePtr++;
+                    while (*dialoguePtr && *dialoguePtr != 'm') {
+                        dialoguePtr++;
+                    }
+                    if (*dialoguePtr == 'm') dialoguePtr++;
+                }
+                codeBytes = (int)(dialoguePtr - ansiStart);
+                
+                charsToPrint += codeBytes;
+                continue;
+            }
+
+            // 문자 폭 계산
             if (c < 128) {
-                currentWidth += 1;
-                charsToPrint += 1;
-                dialoguePtr += 1;
+                codeWidth = 1;
+                codeBytes = 1;
             }
             else if ((c & 0xE0) == 0xC0) {
-                currentWidth += 2;
-                charsToPrint += 2;
-                dialoguePtr += 2;
+                codeWidth = 2;
+                codeBytes = 2;
             }
             else if ((c & 0xF0) == 0xE0) {
-                currentWidth += 2;
-                charsToPrint += 3;
-                dialoguePtr += 3;
+                 // display_width와 동일한 예외 처리 (3바이트)
+                if (c == 0xE2) {
+                     unsigned char c2 = *(dialoguePtr + 1);
+                     if ((c2 >= 0x94 && c2 <= 0x97) || c2 == 0x80) {
+                         codeWidth = 1;
+                     } else {
+                         codeWidth = 2;
+                     }
+                } else {
+                    codeWidth = 2;
+                }
+                codeBytes = 3;
             }
             else if ((c & 0xF8) == 0xF0) {
-                currentWidth += 2;
-                charsToPrint += 4;
-                dialoguePtr += 4;
+                codeWidth = 2;
+                codeBytes = 4;
             }
             else {
-                dialoguePtr += 1;
+                codeWidth = 0;
+                codeBytes = 1;
             }
+
+            // 최대 폭을 초과하면 중단
+            if (currentWidth + codeWidth > maxTextWidth) {
+                break;
+            }
+
+            currentWidth += codeWidth;
+            charsToPrint += codeBytes;
+            dialoguePtr += codeBytes;
         }
 
         // 추출한 부분 출력
@@ -385,7 +450,7 @@ void ui_draw_dialogue(const NPC* npc, int x, int y, int w, int h) {
         }
 
         // 남은 공간 채우기
-        remaining = CONTENT_WIDTH - 2 - currentWidth;
+        remaining = CONTENT_WIDTH - 1 - currentWidth;
         for (int j = 0; j < remaining; j++) printf(" ");
         printf("│");
 
@@ -398,7 +463,9 @@ void ui_draw_dialogue(const NPC* npc, int x, int y, int w, int h) {
     // 남은 빈 줄 채우기
     for (int i = 3 + lineNum; i < h - 3; i++) {
         console_goto(x, y + i);
-        printf("│                                  │");
+        printf("│");
+        for (int j = 0; j < CONTENT_WIDTH; j++) printf(" ");
+        printf("│");
     }
 
     // 구분선
@@ -429,8 +496,10 @@ void ui_draw_dialogue(const NPC* npc, int x, int y, int w, int h) {
         }
     }
 
-    printf("│%s", buttonText);
-    remaining = CONTENT_WIDTH - display_width(buttonText);
+    printf("│");
+    printf("%s", buttonText);
+    int buttonWidth = display_width(buttonText);
+    remaining = CONTENT_WIDTH - buttonWidth;
     for (int i = 0; i < remaining; i++) printf(" ");
     printf("│");
 
