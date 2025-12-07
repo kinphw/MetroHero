@@ -5,6 +5,7 @@
 #include <ctype.h>   // tolower
 #include "game.h"
 #include "ui.h"
+#include "cinematic.h"  // ★ 시네마틱 시스템 추가
 #include "../world/map.h"
 #include "../entity/player.h"
 #include "../world/glyph.h"  // ★ 추가
@@ -19,14 +20,20 @@ void game_run(void) {
     int inDialogue = 0;
     NPC* currentNPC = NULL;
 
+    ui_init();
+
+    // ★ 게임 인트로 시네마틱 재생
+    cinematic_play_intro();
+
     map_init(&map, 1);
     player_init(&player);
+
+    // ★ 스테이지 1 시작 시네마틱
+    cinematic_play_stage_start(1);
 
     // ★ 스폰 포인트에 플레이어 배치
     player.x = map.spawnX;
     player.y = map.spawnY;
-
-    ui_init();
 
 
     // ★ 초기 화면은 한 번만 그리기
@@ -112,11 +119,8 @@ void game_run(void) {
 
         // ★ 플레이어 사망 체크
         if (player.hp <= 0) {
-            ui_add_log("게임 오버!");
-            ui_draw_log(0, LOG_Y, LOG_W, LOG_H);
-            console_goto(0, SCREEN_H - 1);
-            printf("아무 키나 누르면 종료...");
-            _getch();
+            // ★ 게임 오버 시네마틱 재생
+            cinematic_play_ending(1);  // 1 = 나쁜 엔딩
             break;
         }
 

@@ -22,6 +22,7 @@
     <ClCompile Include="src\entity\npc.c" />
     <ClCompile Include="src\entity\chest.c" />
     <ClCompile Include="src\core\combat.c" />
+    <ClCompile Include="src\core\cinematic.c" />
     <ClCompile Include="src\entity\enemy.c" />
     <ClCompile Include="src\world\map_data.c" />
     <ClCompile Include="src\debug\debug.c" />
@@ -35,6 +36,8 @@
     <ClInclude Include="src\entity\npc.h" />
     <ClInclude Include="src\entity\chest.h" />
     <ClInclude Include="src\core\combat.h" />
+    <ClInclude Include="src\core\cinematic.h" />
+    <ClInclude Include="src\data\story.h" />
     <ClInclude Include="src\entity\enemy.h" />
     <ClInclude Include="src\world\glyph.h" />
     <ClInclude Include="src\world\map_data.h" />
