@@ -50,7 +50,14 @@ void ui_init(void) {
     GetConsoleMode(hOut, &dwMode);
     dwMode |= ENABLE_VIRTUAL_TERMINAL_PROCESSING;
     SetConsoleMode(hOut, dwMode);
-    
+
+    // ★ 전체화면 설정 (Alt+Enter 효과)
+    // Windows 10 이상에서는 SendInput으로 Alt+Enter 키 입력 시뮬레이션
+    keybd_event(VK_MENU, 0x38, 0, 0);  // Alt 누름
+    keybd_event(VK_RETURN, 0x1c, 0, 0);  // Enter 누름
+    keybd_event(VK_RETURN, 0x1c, KEYEVENTF_KEYUP, 0);  // Enter 뗌
+    keybd_event(VK_MENU, 0x38, KEYEVENTF_KEYUP, 0);  // Alt 뗌
+
     // 커서 숨기기
     CONSOLE_CURSOR_INFO info;
     info.dwSize = 1;
