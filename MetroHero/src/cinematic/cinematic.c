@@ -4,7 +4,7 @@
 #include <string.h>
 #include <conio.h>
 #include "cinematic.h"
-#include "../core/ui.h"
+#include "../core/ui/ui.h"
 #include "../world/glyph.h"
 #include "../data/story.h"
 
@@ -218,19 +218,48 @@ void cinematic_scroll_text(const char** lines, int lineCount, int speed) {
 // 키 입력 대기
 // ============================================
 
-int cinematic_wait_key(void) {
-    // ★ 안내 메시지는 cinematic_play()에서 이미 표시됨
-    // 여기서는 키 입력만 대기
+// ============================================
+// 키 입력 대기 (깜빡임 효과 포함)
+// ============================================
+
+int cinematic_wait_key(int showHint) {
+    // showHint가 참이면 하단 안내 메시지를 깜빡임
+    int blinkState = 0;
+    int elapsed = 0;
+    const int BLINK_INTERVAL = 500; // 0.5초
 
     while (1) {
-        int key = cinematic_get_key();
+        if (cinematic_key_pressed()) {
+            int key = cinematic_get_key();
+            
+            // 키 입력 시 안내 메시지를 원래 색(회색)으로 복구
+            if (showHint) {
+                cinematic_print_centered(CINE_HEIGHT - 3,
+                    "[SPACE] 계속    [ESC] 스킵", COLOR_GRAY);
+            }
 
-        if (key == ' ' || key == 13) {  // SPACE 또는 ENTER
-            return 0;  // 계속
+            if (key == ' ' || key == 13) {  // SPACE 또는 ENTER
+                return 0;  // 계속
+            }
+            else if (key == 27) {  // ESC
+                return 1;  // 스킵
+            }
         }
-        else if (key == 27) {  // ESC
-            return 1;  // 스킵
+
+        // 깜빡임 처리
+        if (showHint) {
+            elapsed += 50;
+            if (elapsed >= BLINK_INTERVAL) {
+                elapsed = 0;
+                blinkState = !blinkState;
+                
+                const char* blinkColor = blinkState ? COLOR_BRIGHT_WHITE : COLOR_GRAY;
+                cinematic_print_centered(CINE_HEIGHT - 3,
+                    "[SPACE] 계속    [ESC] 스킵", blinkColor);
+            }
         }
+
+        cinematic_delay(50);
     }
 }
 
@@ -369,14 +398,14 @@ void cinematic_play(const Cinematic* cine) {
             }
         }
         else if (line->delayAfter == 0 && line->style != STYLE_NORMAL) {
-            // 키 입력 대기
-            skipped = cinematic_wait_key();
+            // 키 입력 대기 (힌트 깜빡임 적용)
+            skipped = cinematic_wait_key(cine->showSkipHint);
         }
     }
 
-    // 스킵하지 않았으면 최종 키 대기
+    // 스킵하지 않았으면 최종 키 대기 (힌트 깜빡임 적용)
     if (!skipped && cine->showSkipHint) {
-        cinematic_wait_key();
+        cinematic_wait_key(cine->showSkipHint);
     }
 
     // 페이드 아웃
