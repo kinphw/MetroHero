@@ -31,7 +31,7 @@
 #define DIALOGUE_X 82
 #define DIALOGUE_Y 0
 #define DIALOGUE_W 38
-#define DIALOGUE_H 16
+#define DIALOGUE_H 17
 
 // 로그창 (하단 전체)
 #define LOG_X 0
@@ -96,6 +96,7 @@ int display_width(const char* str) {
             if (*s == 0xE2) {
                 unsigned char c2 = *(s + 1);
                 if ((c2 >= 0x94 && c2 <= 0x9B) || c2 == 0x80) width += 1;
+                else if (c2 == 0x86) width += 1; // 화살표 (U+21xx -> E2 86 xx)
                 else width += 2;
             } else width += 2;
             s += 3;
@@ -167,7 +168,21 @@ void ui_draw_stats(const Player* p) {
     for (int i = 0; i < remaining; i++) printf(" ");
     printf("│");
 
-    for (int i = 7; i < h - 1; i++) {
+    console_goto(x, y + 7);
+    char dirText[128];
+    const char* arrow = " ";
+    if (p->dirY < 0) arrow = "↑";
+    else if (p->dirY > 0) arrow = "↓";
+    else if (p->dirX < 0) arrow = "←";
+    else if (p->dirX > 0) arrow = "→";
+    
+    snprintf(dirText, sizeof(dirText), " 방향:    %s", arrow);
+    printf("│%s", dirText);
+    remaining = CONTENT_WIDTH - display_width(dirText);
+    for (int i = 0; i < remaining; i++) printf(" ");
+    printf("│");
+
+    for (int i = 8; i < h - 1; i++) {
         console_goto(x, y + i);
         printf("│");
         for (int j = 0; j < CONTENT_WIDTH; j++) printf(" ");
