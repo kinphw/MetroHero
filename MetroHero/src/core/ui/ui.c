@@ -117,17 +117,24 @@ void ui_draw_stats(const Player* p) {
     int w = STATUS_W;
     int h = STATUS_H;
     
-    const int CONTENT_WIDTH = 34;
+    const int CONTENT_WIDTH = w - 2;
     console_goto(x, y);
-    printf("┌─ 상태  ──────────────────────────┐");
+    const char* title = "─ 상태 ";
+    printf("┌%s", title);
+    int titleW = display_width(title);
+    for (int i = 0; i < w - 2 - titleW; i++) printf("─");
+    printf("┐");
+
     console_goto(x, y + 1);
-    printf("│                                  │");
+    printf("│");
+    for (int i = 0; i < CONTENT_WIDTH; i++) printf(" ");
+    printf("│");
 
     console_goto(x, y + 2);
     printf("│ HP:");
     int hpBars = (p->hp * 10) / p->maxHp;
     for (int i = 0; i < 10; i++) printf(i < hpBars ? "█" : "░");
-    int remaining = CONTENT_WIDTH - 14;
+    int remaining = CONTENT_WIDTH - 14; 
     for (int i = 0; i < remaining; i++) printf(" ");
     printf("│");
 
@@ -140,7 +147,9 @@ void ui_draw_stats(const Player* p) {
     printf("│");
 
     console_goto(x, y + 4);
-    printf("│                                  │");
+    printf("│");
+    for (int i = 0; i < CONTENT_WIDTH; i++) printf(" ");
+    printf("│");
 
     console_goto(x, y + 5);
     char atkText[64];
@@ -160,24 +169,36 @@ void ui_draw_stats(const Player* p) {
 
     for (int i = 7; i < h - 1; i++) {
         console_goto(x, y + i);
-        printf("│                                  │");
+        printf("│");
+        for (int j = 0; j < CONTENT_WIDTH; j++) printf(" ");
+        printf("│");
     }
     console_goto(x, y + h - 1);
-    printf("└──────────────────────────────────┘");
+    printf("└");
+    for (int i = 1; i < w - 1; i++) printf("─");
+
+    printf("┘");
 }
 
 void ui_draw_equipment(const Player* p) {
     int x = EQUIP_X;
     int y = EQUIP_Y;
-    // int w = EQUIP_W; 
-    // int h = EQUIP_H;
+    int w = EQUIP_W;
+    int h = EQUIP_H;
     
-    const int CONTENT_WIDTH = 34;
+    const int CONTENT_WIDTH = w - 2;
 
     console_goto(x, y);
-    printf("┌─ 장비  ──────────────────────────┐");
+    const char* title = "─ 장비 ";
+    printf("┌%s", title);
+    int titleW = display_width(title);
+    for (int i = 0; i < w - 2 - titleW; i++) printf("─");
+    printf("┐");
+
     console_goto(x, y + 1);
-    printf("│                                  │");
+    printf("│");
+    for (int i = 0; i < CONTENT_WIDTH; i++) printf(" ");
+    printf("│");
 
     console_goto(x, y + 2);
     char weaponText[128];
@@ -204,7 +225,9 @@ void ui_draw_equipment(const Player* p) {
     printf("│");
 
     console_goto(x, y + 5);
-    printf("└──────────────────────────────────┘");
+    printf("└");
+    for (int i = 1; i < w - 1; i++) printf("─");
+    printf("┘");
 }
 
 #define LOG_LINES 200
