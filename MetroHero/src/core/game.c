@@ -28,9 +28,9 @@ void game_run(void) {
     state.player.x = state.map.spawnX;
     state.player.y = state.map.spawnY;
     
-    // 초기 뷰포트 상태 설정
-    state.prevX = state.player.x;
-    state.prevY = state.player.y;
+    // 초기 뷰포트 상태 설정 (강제 렌더링을 위해 다르게 설정)
+    state.prevX = -1;
+    state.prevY = -1;
     state.isRunning = 1;
     state.inDialogue = 0;
     state.currentNPC = NULL;

@@ -22,30 +22,30 @@ void game_process_input(GameState* state) {
                 state->inDialogue = 0;
                 state->currentNPC = NULL;
 
-                ui_clear_dialogue_area(DIALOGUE_X, DIALOGUE_Y, DIALOGUE_W, DIALOGUE_H);
+                ui_clear_dialogue_area();
                 // UI 복구는 game_render 혹은 다음 프레임에서 처리됨
-                ui_draw_stats(&state->player, STATUS_X, STATUS_Y, STATUS_W, STATUS_H);
-                ui_draw_equipment(&state->player, EQUIP_X, EQUIP_Y, EQUIP_W, EQUIP_H);
-                ui_draw_log(LOG_X, LOG_Y, LOG_W, LOG_H);
+                ui_draw_stats(&state->player);
+                ui_draw_equipment(&state->player);
+                ui_draw_log();
             }
             else {
                 // 다음 대화
                 npc_next_dialogue(state->currentNPC);
-                ui_draw_dialogue(state->currentNPC, DIALOGUE_X, DIALOGUE_Y, DIALOGUE_W, DIALOGUE_H);
+                ui_draw_dialogue(state->currentNPC);
             }
         }
         else if (cmd == 't' && state->currentNPC->canTrade) {
             ui_add_log(COLOR_YELLOW "거래 시스템은 곧 추가됩니다!" COLOR_RESET);
-            ui_draw_log(LOG_X, LOG_Y, LOG_W, LOG_H);
+            ui_draw_log();
         }
         else if (cmd == 'x' || cmd == 27) {
             state->currentNPC->currentDialogue = 0;
             state->inDialogue = 0;
             state->currentNPC = NULL;
             
-            ui_clear_dialogue_area(DIALOGUE_X, DIALOGUE_Y, DIALOGUE_W, DIALOGUE_H);
-            ui_draw_stats(&state->player, STATUS_X, STATUS_Y, STATUS_W, STATUS_H);
-            ui_draw_equipment(&state->player, EQUIP_X, EQUIP_Y, EQUIP_W, EQUIP_H);
+            ui_clear_dialogue_area();
+            ui_draw_stats(&state->player);
+            ui_draw_equipment(&state->player);
         }
         return;
     }
@@ -75,7 +75,7 @@ void game_process_input(GameState* state) {
     }
 
     // 행동 전 이펙트 클리어
-    ui_clear_combat_effect(107, 2);
+    ui_hide_combat_effect();
 
     int targetX = state->player.x;
     int targetY = state->player.y;
@@ -110,13 +110,13 @@ void game_process_input(GameState* state) {
             if (interactNpc->useDialogueBox) {
                 state->inDialogue = 1;
                 state->currentNPC = interactNpc;
-                ui_clear_dialogue_area(DIALOGUE_X, DIALOGUE_Y, DIALOGUE_W, DIALOGUE_H);
-                ui_draw_dialogue(interactNpc, DIALOGUE_X, DIALOGUE_Y, DIALOGUE_W, DIALOGUE_H);
+                ui_clear_dialogue_area();
+                ui_draw_dialogue(interactNpc);
                 
                 char msg[128];
                 snprintf(msg, sizeof(msg), "%s와 대화를 시작했다.", interactNpc->name);
                 ui_add_log(msg);
-                ui_draw_log(LOG_X, LOG_Y, LOG_W, LOG_H);
+                ui_draw_log();
             } else {
                 const char* dialogue = npc_get_dialogue(interactNpc);
                 char msg[256];
@@ -134,8 +134,8 @@ void game_process_input(GameState* state) {
             char msg[128];
             snprintf(msg, sizeof(msg), COLOR_BRIGHT_YELLOW "📦 상자를 열었다! → %s 획득!" COLOR_RESET, chest->itemName);
             ui_add_log(msg);
-            map_draw_viewport(&state->map, &state->player, VIEWPORT_X, VIEWPORT_Y, 40, VIEWPORT_H);
-            ui_draw_equipment(&state->player, EQUIP_X, EQUIP_Y, EQUIP_W, EQUIP_H);
+            ui_render_map_viewport(&state->map, &state->player);
+            ui_draw_equipment(&state->player);
         }
     }
 
