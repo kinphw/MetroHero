@@ -4,8 +4,8 @@
 
 #include "../world/map.h"
 #include "player.h"
-#include "../core/ui.h"  // ★ ui_add_log 사용을 위해 추가
-#include "../core/combat.h"  // ★ 추가
+#include "../core/ui/ui.h"  // ★ ui_add_log 사용을 위해 추가
+#include "../core/logic/combat.h"  // ★ 추가
 
 void player_init(Player* p) {
     // ★ 맵 크기를 알 수 없으므로 기본값 설정

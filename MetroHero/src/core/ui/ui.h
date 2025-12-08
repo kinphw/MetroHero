@@ -1,8 +1,8 @@
 #ifndef UI_H
 #define UI_H
 
-#include "../entity/player.h"
-#include "../entity/npc.h"  // ★ 추가
+#include "../../entity/player.h"
+#include "../../entity/npc.h"  // ★ 추가
 
 #define SCREEN_W 120
 #define SCREEN_H 30

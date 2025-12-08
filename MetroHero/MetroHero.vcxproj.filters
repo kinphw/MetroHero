@@ -22,6 +22,15 @@
     <Filter Include="src\data">
       <UniqueIdentifier>{b0928c29-0917-44c6-8e5f-d9c3842c0ae7}</UniqueIdentifier>
     </Filter>
+    <Filter Include="src\core\logic">
+      <UniqueIdentifier>{cd05a228-265e-4c95-b648-729a052a5af8}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="src\core\system">
+      <UniqueIdentifier>{32bbe3e9-8016-4005-bd6a-b0a61aae7347}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="src\core\ui">
+      <UniqueIdentifier>{0e90d8f3-d035-4fde-a358-7466a2a35ae1}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="src\main.c">
@@ -36,9 +45,6 @@
     <ClCompile Include="src\entity\player.c">
       <Filter>src\entity</Filter>
     </ClCompile>
-    <ClCompile Include="src\core\ui.c">
-      <Filter>src\core</Filter>
-    </ClCompile>
     <ClCompile Include="src\debug\debug.c">
       <Filter>src\debug</Filter>
     </ClCompile>
@@ -48,9 +54,6 @@
     <ClCompile Include="src\entity\enemy.c">
       <Filter>src\entity</Filter>
     </ClCompile>
-    <ClCompile Include="src\core\combat.c">
-      <Filter>src\core</Filter>
-    </ClCompile>
     <ClCompile Include="src\entity\chest.c">
       <Filter>src\entity</Filter>
     </ClCompile>
@@ -59,6 +62,21 @@
     </ClCompile>
     <ClCompile Include="src\cinematic\cinematic.c">
       <Filter>src\cinematic</Filter>
+    </ClCompile>
+    <ClCompile Include="src\core\logic\combat.c">
+      <Filter>src\core\logic</Filter>
+    </ClCompile>
+    <ClCompile Include="src\core\ui\ui.c">
+      <Filter>src\core\ui</Filter>
+    </ClCompile>
+    <ClCompile Include="src\core\system\game_input.c">
+      <Filter>src\core\system</Filter>
+    </ClCompile>
+    <ClCompile Include="src\core\system\game_loop.c">
+      <Filter>src\core\system</Filter>
+    </ClCompile>
+    <ClCompile Include="src\core\system\game_render.c">
+      <Filter>src\core\system</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -70,9 +88,6 @@
     </ClInclude>
     <ClInclude Include="src\entity\player.h">
       <Filter>src\entity</Filter>
-    </ClInclude>
-    <ClInclude Include="src\core\ui.h">
-      <Filter>src\core</Filter>
     </ClInclude>
     <ClInclude Include="src\debug\debug.h">
       <Filter>src\debug</Filter>
@@ -86,9 +101,6 @@
     <ClInclude Include="src\entity\enemy.h">
       <Filter>src\entity</Filter>
     </ClInclude>
-    <ClInclude Include="src\core\combat.h">
-      <Filter>src\core</Filter>
-    </ClInclude>
     <ClInclude Include="src\entity\chest.h">
       <Filter>src\entity</Filter>
     </ClInclude>
@@ -100,6 +112,18 @@
     </ClInclude>
     <ClInclude Include="src\data\story.h">
       <Filter>src\data</Filter>
+    </ClInclude>
+    <ClInclude Include="src\core\logic\combat.h">
+      <Filter>src\core\logic</Filter>
+    </ClInclude>
+    <ClInclude Include="src\core\ui\ui.h">
+      <Filter>src\core\ui</Filter>
+    </ClInclude>
+    <ClInclude Include="src\core\system\context.h">
+      <Filter>src\core\system</Filter>
+    </ClInclude>
+    <ClInclude Include="src\core\system\game_internal.h">
+      <Filter>src\core\system</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>

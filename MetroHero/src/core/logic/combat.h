@@ -2,9 +2,9 @@
 #ifndef COMBAT_H
 #define COMBAT_H
 
-#include "../entity/player.h"
-#include "../entity/enemy.h"
-#include "../world/map.h"
+#include "../../entity/player.h"
+#include "../../entity/enemy.h"
+#include "../../world/map.h"
 
 // 인접 적 체크 및 메시지 생성
 void combat_check_nearby_enemy(Map* m , Player* p);

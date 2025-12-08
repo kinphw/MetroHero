@@ -3,9 +3,9 @@
 #include <windows.h>  // Sleep 사용
 
 #include "combat.h"
-#include "ui.h"
-#include "../world/map.h"
-#include "../world/glyph.h"  // ★ 추가
+#include "../ui/ui.h"
+#include "../../world/map.h"
+#include "../../world/glyph.h"  // ★ 추가
 
 
 // ★ 인접 적 체크 및 메시지 (체력 + 순환 대사 포함)

@@ -1,8 +1,8 @@
 #include <windows.h>
 #include <stdio.h>
 #include "ui.h"
-#include "../entity/player.h"
-#include "../world/glyph.h"
+#include "../../entity/player.h"
+#include "../../world/glyph.h"
 
 void ui_init(void) {
 
