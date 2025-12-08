@@ -67,7 +67,7 @@ void cinematic_draw_frame(const char* borderColor);
 void cinematic_print_centered(int y, const char* text, const char* color);
 
 // 타이핑 효과로 텍스트 출력
-void cinematic_print_typewriter(int x, int y, const char* text, int charDelay);
+void cinematic_print_typewriter(int x, int y, const char* text, const char* color, int charDelay);
 
 // 스크롤 텍스트 (스타워즈 스타일)
 void cinematic_scroll_text(const char** lines, int lineCount, int speed);

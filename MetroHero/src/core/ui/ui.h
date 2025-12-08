@@ -32,4 +32,13 @@ void ui_clear_dialogue_area(void);
 
 int display_width(const char* str);
 
+// ============================================
+// 더블 버퍼링 API
+// ============================================
+void ui_init_buffer(void);
+void ui_clear_buffer(void);
+void ui_present(void);
+void ui_draw_char_at(int x, int y, const char* c, const char* color);
+void ui_draw_str_at(int x, int y, const char* str, const char* color);
+
 #endif

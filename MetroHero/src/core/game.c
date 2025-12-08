@@ -36,14 +36,14 @@ void game_run(void) {
     state.currentNPC = NULL;
 
     // 초기 화면 그리기 (렌더링 모듈에서 일부 수행하지만, 전체 클리어는 여기서 하는게 깔끔할 수 있음)
-    console_clear_fast();
+    ui_clear_buffer();
     
     // 뷰포트, UI 초기화 그리기
     game_render(&state);
 
     // 입력 안내
-    console_goto(0, SCREEN_H - 1);
-    printf("[화살표/WASD] 이동 | [0] 상호작용 | [Q] 종료");
+    ui_draw_str_at(0, SCREEN_H - 1, "[화살표/WASD] 이동 | [0] 상호작용 | [Q] 종료", NULL);
+    ui_present();
 
     // 2. 메인 루프 실행
     game_loop(&state);

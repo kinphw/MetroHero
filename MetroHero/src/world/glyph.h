@@ -38,6 +38,16 @@
 #define BG_CYAN    "\033[46m"
 #define BG_WHITE   "\033[47m"
 
+// Bright Backgrounds
+#define BG_BRIGHT_BLACK   "\033[100m"
+#define BG_BRIGHT_RED     "\033[101m"
+#define BG_BRIGHT_GREEN   "\033[102m"
+#define BG_BRIGHT_YELLOW  "\033[103m"
+#define BG_BRIGHT_BLUE    "\033[104m"
+#define BG_BRIGHT_MAGENTA "\033[105m"
+#define BG_BRIGHT_CYAN    "\033[106m"
+#define BG_BRIGHT_WHITE   "\033[107m"
+
 // 전투 메시지용 색상
 #define COMBAT_ATTACK    COLOR_BRIGHT_RED
 #define COMBAT_DAMAGE    COLOR_BRIGHT_YELLOW

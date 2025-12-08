@@ -3,7 +3,7 @@
 #include "map.h"
 #include "../entity/player.h"
 #include "../entity/enemy.h"  // ★ 추가
-#include "../core/ui.h"   // ★ 반드시 필요
+#include "../core/ui/ui.h"   // ★ 반드시 필요
 #include "map_data.h"  // ★ 추가
 #include "glyph.h"  // ★ 추가
 
@@ -156,37 +156,7 @@ void map_load_chests(Map* m) {
 //    }
 //}
 
-void map_draw_at(const Map* m, const Player* p, int startX, int startY) {
-    for (int y = 0; y < m->height; y++) {
-        console_goto(startX, startY + y);
 
-        for (int x = 0; x < m->width; x++) {
-
-            // 1) 플레이어
-            if (x == p->x && y == p->y) {
-                printf(GLYPH_PLAYER);
-                continue;
-            }
-
-            // 2) 적
-            Enemy* enemy = map_get_enemy_at((Map*)m, x, y);
-            if (enemy != NULL) {
-                printf("%s", enemy_to_glyph(enemy->type));
-                continue;
-            }
-
-            // 3) ★★★ 상자(Chest) 체크 — 여기 새로 추가하는 부분 ★★★
-            Chest* chest = map_get_chest_at((Map*)m, x, y);
-            if (chest != NULL && !chest->isOpened) {
-                printf(GLYPH_CHEST);   // 예: 📦
-                continue;
-            }
-
-            // 4) 기본 타일
-            printf("%s", tile_to_glyph(m->tiles[y][x]));
-        }
-    }
-}
 
 // ★ map_is_walkable 수정 - NPC도 이동 불가
 int map_is_walkable(const Map* m, int x, int y) {
@@ -302,47 +272,48 @@ void map_draw_viewport(const Map* m, const Player* p,
 
     for (int sy = 0; sy < viewH; sy++) {
         int my = viewY + sy;
-        console_goto(startX, startY + sy);
-
+        int screenY = startY + sy;
+        
         for (int sx = 0; sx < viewW; sx++) {
             int mx = viewX + sx;
+            int screenX = startX + sx * 2; // Assuming 2 chars per tile
 
             if (mx < 0 || mx >= m->width ||
                 my < 0 || my >= m->height)
             {
-                printf("  ");
+                ui_draw_str_at(screenX, screenY, "  ", NULL);
                 continue;
             }
 
             // 플레이어 출력
             if (mx == p->x && my == p->y) {
-                printf(GLYPH_PLAYER);
+                ui_draw_str_at(screenX, screenY, GLYPH_PLAYER, NULL);
                 continue;
             }
 
             // ★ NPC 출력 (우선순위 높음)
             NPC* npc = map_get_npc_at((Map*)m, mx, my);
             if (npc != NULL) {
-                printf("%s", npc->glyph);
+                ui_draw_str_at(screenX, screenY, npc->glyph, NULL);
                 continue;
             }
 
             // 적 출력
             Enemy* enemy = map_get_enemy_at((Map*)m, mx, my);
             if (enemy != NULL) {
-                printf("%s", enemy_to_glyph(enemy->type));
+                ui_draw_str_at(screenX, screenY, enemy_to_glyph(enemy->type), NULL);
                 continue;
             }
 
             // 상자 출력
             Chest* chest = map_get_chest_at((Map*)m, mx, my);
             if (chest != NULL && !chest->isOpened) {
-                printf(GLYPH_CHEST);
+                ui_draw_str_at(screenX, screenY, GLYPH_CHEST, NULL);
                 continue;
             }
 
             // 기본 타일 출력
-            printf("%s", tile_to_glyph(m->tiles[my][mx]));
+            ui_draw_str_at(screenX, screenY, tile_to_glyph(m->tiles[my][mx]), NULL);
         }
     }
 }

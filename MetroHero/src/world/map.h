@@ -30,14 +30,13 @@ typedef struct {
 	int npcCount;
 } Map;
 
-void map_init(Map* m , int stageNumber);  // ★ 인자 추가
-void map_draw_at(const Map* m , const Player* p , int startX , int startY);
+void map_init(Map* m , int stageNumber);
 int map_is_walkable(const Map* m, int x, int y);
-const char* tile_to_glyph(char t);  // ★ 추가
-void map_find_spawn(Map* m);  // ★ 추가
-void map_load_enemies(Map* m);  // ★ 추가
-Enemy* map_get_enemy_at(Map* m , int x , int y);  // ★ 추가
-Enemy* map_get_adjacent_enemy(Map* m , int px , int py);  // ★ 추가
+const char* tile_to_glyph(char t);
+void map_find_spawn(Map* m);
+void map_load_enemies(Map* m);
+Enemy* map_get_enemy_at(Map* m , int x , int y);
+Enemy* map_get_adjacent_enemy(Map* m , int px , int py);
 const char* map_get_enemy_direction(Map* m , int px , int py , Enemy* enemy);  // ★ 추가
 const char* enemy_to_glyph(char type);
 

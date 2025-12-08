@@ -1,3 +1,4 @@
+#define _CRT_SECURE_NO_WARNINGS
 #include <windows.h>
 #include <stdio.h>
 #include "ui.h"
@@ -12,57 +13,249 @@
 // 뷰포트 영역 (왼쪽)
 #define VIEWPORT_X 0
 #define VIEWPORT_Y 0
-#define VIEWPORT_W 80    // 40칸 × 2 (전각)
-#define VIEWPORT_H 20
+#define VIEWPORT_W 118    // Reduced slightly to be safe? Or keep 120? Let's Keep 118 for safety margin.
+#define VIEWPORT_H 30
 
 // 상태창 (오른쪽 상단)
-#define STATUS_X 82
+#define STATUS_X 120      // Moved left
 #define STATUS_Y 0
-#define STATUS_W 38
-#define STATUS_H 10
+#define STATUS_W 48       // Reduced from 50
+#define STATUS_H 14
 
 // 장비창 (오른쪽 중단)
-#define EQUIP_X 82
-#define EQUIP_Y 10
-#define EQUIP_W 38
-#define EQUIP_H 6
+#define EQUIP_X 120
+#define EQUIP_Y 14
+#define EQUIP_W 48
+#define EQUIP_H 16
 
 // 대화창 (상태창/장비창 위에 오버레이)
-#define DIALOGUE_X 82
+#define DIALOGUE_X 120
 #define DIALOGUE_Y 0
-#define DIALOGUE_W 38
-#define DIALOGUE_H 17
+#define DIALOGUE_W 48
+#define DIALOGUE_H 30
 
 // 로그창 (하단 전체)
+// Width 168: 120 + 48 = 168.
 #define LOG_X 0
-#define LOG_Y 20
-#define LOG_W 120
-#define LOG_H 9
+#define LOG_Y 30
+#define LOG_W 168
+#define LOG_H 12
 // ============================================
 
-void ui_init(void) {
+// ============================================
+// Double Buffering Engine
+// ============================================
+// ============================================
+// ANSI Double Buffering Engine
+// ============================================
+
+typedef struct {
+    char ch[5];        // UTF-8 char (max 4 bytes + null)
+    char color[32];    // ANSI Color char string
+    int isDoubleWidth; // 0=single, 1=double, -1=padding
+} Cell;
+
+static Cell* screenBuffer = NULL;
+static int bufferWidth = 0;
+static int bufferHeight = 0;
+// Current global color state for drawing
+static char globalColor[32] = "\033[0m"; 
+static int combatEffectFrames = 0; 
+
+void ui_init_buffer(void) {
+    // 1. Setup Console
+    // Enable ANSI sequences for Windows 10+
     HANDLE hOut = GetStdHandle(STD_OUTPUT_HANDLE);
-
-    SetConsoleOutputCP(CP_UTF8);
-    SetConsoleCP(CP_UTF8);
-
     DWORD dwMode = 0;
     GetConsoleMode(hOut, &dwMode);
     dwMode |= ENABLE_VIRTUAL_TERMINAL_PROCESSING;
     SetConsoleMode(hOut, dwMode);
+    
+    // Set UTF-8 Output
+    SetConsoleOutputCP(CP_UTF8);
 
-    // ★ 전체화면 설정 (Alt+Enter 효과)
-    // Windows 10 이상에서는 SendInput으로 Alt+Enter 키 입력 시뮬레이션
-    keybd_event(VK_MENU, 0x38, 0, 0);  // Alt 누름
-    keybd_event(VK_RETURN, 0x1c, 0, 0);  // Enter 누름
-    keybd_event(VK_RETURN, 0x1c, KEYEVENTF_KEYUP, 0);  // Enter 뗌
-    keybd_event(VK_MENU, 0x38, KEYEVENTF_KEYUP, 0);  // Alt 뗌
+    // Fullscreen setup (Alt+Enter simulation)
+    keybd_event(VK_MENU, 0x38, 0, 0);
+    keybd_event(VK_RETURN, 0x1c, 0, 0);
+    keybd_event(VK_RETURN, 0x1c, KEYEVENTF_KEYUP, 0);
+    keybd_event(VK_MENU, 0x38, KEYEVENTF_KEYUP, 0);
+    Sleep(100);
 
-    // 커서 숨기기
+    // 2. Allocate Buffer
+    bufferWidth = 168; 
+    bufferHeight = 42; 
+    screenBuffer = (Cell*)malloc(sizeof(Cell) * bufferWidth * bufferHeight);
+    
+    // Hide Cursor
     CONSOLE_CURSOR_INFO info;
     info.dwSize = 1;
     info.bVisible = FALSE;
-    SetConsoleCursorInfo(GetStdHandle(STD_OUTPUT_HANDLE), &info);
+    SetConsoleCursorInfo(hOut, &info);
+
+    ui_clear_buffer();
+}
+
+void ui_clear_buffer(void) {
+    if (!screenBuffer) return;
+    for (int i = 0; i < bufferWidth * bufferHeight; i++) {
+        strcpy(screenBuffer[i].ch, " ");
+        strcpy(screenBuffer[i].color, "\033[0m"); 
+        screenBuffer[i].isDoubleWidth = 0;
+    }
+    strcpy(globalColor, "\033[0m"); // Reset global color state
+}
+
+void ui_present(void) {
+    if (!screenBuffer) return;
+
+    // Estimate buffer size: Width * Height * (Char(4) + Color(12)) + Newlines
+    static char* outBuf = NULL;
+    static int outBufSize = 0;
+    int requiredSize = bufferWidth * bufferHeight * 20; 
+    
+    if (outBuf == NULL || outBufSize < requiredSize) {
+        free(outBuf);
+        outBuf = (char*)malloc(requiredSize);
+        outBufSize = requiredSize;
+    }
+
+    char* p = outBuf;
+    
+    // Reset cursor to top-left
+    p += sprintf(p, "\033[H"); 
+    
+    char lastColor[32] = "";
+    
+    for (int y = 0; y < bufferHeight; y++) {
+        for (int x = 0; x < bufferWidth; x++) {
+            int idx = y * bufferWidth + x;
+            Cell* c = &screenBuffer[idx];
+            
+            if (c->isDoubleWidth == -1) continue; // Skip padding
+            
+            // Only print color if changed
+            if (strcmp(c->color, lastColor) != 0) {
+                p += sprintf(p, "\033[0m%s", c->color); // Reset before applying new color to avoid BG bleed
+                strcpy(lastColor, c->color);
+            }
+            
+            p += sprintf(p, "%s", c->ch);
+        }
+        if (y < bufferHeight - 1) {
+             p += sprintf(p, "\n");
+        }
+    }
+    
+    // Write whole frame at once
+    DWORD written;
+    WriteConsoleA(GetStdHandle(STD_OUTPUT_HANDLE), outBuf, (DWORD)(p - outBuf), &written, NULL);
+}
+
+void ui_draw_char_at(int x, int y, const char* c, const char* color) {
+    if (x < 0 || x >= bufferWidth || y < 0 || y >= bufferHeight) return;
+    
+    int index = y * bufferWidth + x;
+    
+    // If double width, need check? Assuming single char is single width for now
+    // But caller might pass multibyte char.
+    // ui_draw_char_at is usually used for single glyphs like borders.
+    
+    strncpy(screenBuffer[index].ch, c, 4);
+    screenBuffer[index].ch[4] = '\0';
+    
+    if (color) strcpy(screenBuffer[index].color, color);
+    else strcpy(screenBuffer[index].color, "\033[0m");
+    
+    screenBuffer[index].isDoubleWidth = 0; 
+}
+
+void ui_draw_str_at(int x, int y, const char* str, const char* color) {
+    if (y < 0 || y >= bufferHeight) return;
+
+    // Priority: Argument color > Embedded ANSI > Default
+    // If 'color' arg is provided, use it.
+    // If 'color' is NULL, we continue using globalColor (stateful).
+    if (color) strcpy(globalColor, color);
+
+    const char* s = str;
+    int cx = x;
+
+    while (*s) {
+        if (cx >= bufferWidth) break;
+
+        // ANSI Processing
+        if (*s == '\033') {
+            const char* end = strchr(s, 'm');
+            if (end) {
+                int len = (int)(end - s) + 1;
+                if (len < 32) {
+                    strncpy(globalColor, s, len);
+                    globalColor[len] = '\0';
+                }
+                s = end + 1;
+                continue;
+            }
+        }
+
+        // Determine Byte Length & Width
+        int byteLen = 1;
+        int width = 1;
+        
+        unsigned char c = (unsigned char)*s;
+        
+        if (c < 128) {
+            byteLen = 1;
+            width = 1;
+        }
+        else if ((c & 0xE0) == 0xC0) {
+            byteLen = 2; 
+            width = 1; // Most 2-byte UTF8 are 1 width? Greek/Cyrillic etc.
+        }
+        else if ((c & 0xF0) == 0xE0) {
+            byteLen = 3;
+            // Asian chars (Korean/Chinese/Japanese) are usually here and Width 2
+            // Box Drawing are also here (E2 94 xx) but Width 1
+            if (c == 0xE2) {
+                // U+25xx Box Drawing: E2 94 xx / E2 95 xx -> Width 1
+                if (*(s+1) >= 0x94 && *(s+1) <= 0x95) width = 1;
+                // U+2591 Light Shade (░): E2 96 91 -> Width 1 (Fix for HP bar)
+                else if (*(s+1) == 0x96 && *(s+2) == 0x91) width = 1;
+                else width = 2; 
+            }
+            else width = 2; 
+        }
+        else if ((c & 0xF8) == 0xF0) {
+            byteLen = 4;
+            width = 2; // Emojis
+        }
+        
+        // Write to Cell
+        int index = y * bufferWidth + cx;
+        
+        strncpy(screenBuffer[index].ch, s, byteLen);
+        screenBuffer[index].ch[byteLen] = '\0';
+        strcpy(screenBuffer[index].color, globalColor);
+        
+        if (width == 2) {
+            screenBuffer[index].isDoubleWidth = 1;
+            cx++;
+            if (cx < bufferWidth) {
+                screenBuffer[index+1].isDoubleWidth = -1; // Padding
+                screenBuffer[index+1].ch[0] = '\0';
+                cx++;
+            }
+        } else {
+            screenBuffer[index].isDoubleWidth = 0;
+            cx++;
+        }
+        
+        s += byteLen;
+    }
+}
+
+// Old functions wrapper or replacement
+void ui_init(void) {
+    ui_init_buffer();
 }
 
 void console_clear_fast(void) {
@@ -98,12 +291,15 @@ int display_width(const char* str) {
             continue;
         }
         if (*s < 128) { width += 1; s += 1; }
-        else if ((*s & 0xE0) == 0xC0) { width += 2; s += 2; }
+        else if ((*s & 0xE0) == 0xC0) { width += 1; s += 2; } // 2-bytes are usually width 1
         else if ((*s & 0xF0) == 0xE0) {
             if (*s == 0xE2) {
                 unsigned char c2 = *(s + 1);
-                if ((c2 >= 0x94 && c2 <= 0x9B) || c2 == 0x80) width += 1;
-                else if (c2 == 0x86) width += 1; // 화살표 (U+21xx -> E2 86 xx)
+                // U+21xx Arrow (E2 86 xx): Treat as Width 2 (User Feedback)
+                // U+25xx Box Drawing (E2 94/95 xx): Width 1
+                if (c2 >= 0x94 && c2 <= 0x95) width += 1;
+                // U+2591 Light Shade (E2 96 91): Width 1
+                else if (c2 == 0x96 && *(s+2) == 0x91) width += 1;
                 else width += 2;
             } else width += 2;
             s += 3;
@@ -114,9 +310,145 @@ int display_width(const char* str) {
     return width;
 }
 
+void ui_draw_text_clipped(int x, int y, int maxWidth, const char* text, const char* color) {
+    if (!text) return;
+    
+    // Using a temp buffer to accumulate valid chars that fit in maxWidth
+    // But direct drawing is easier with our char-by-char system
+    
+    int currentWidth = 0;
+    const unsigned char* s = (const unsigned char*)text;
+    int curX = x;
+    
+    // If color provided, set it once
+    // (Actual ui_draw_str_at handles color parsing per char, but we can just pass base color)
+    // We will leverage ui_draw_str_at for chunks, but we need width checks.
+    
+    // Easier: Implement a version of ui_draw_str_at that stops at width limit.
+    // Or just parse here and call ui_draw_str_at for fitting substrings? 
+    // No, character fragmentation issues.
+    
+    // Let's iterate and call ui_draw_str_at for small chunks or single chars if needed, 
+    // OR just modify ui_draw_str_at to take a limit? 
+    // ui_draw_str_at checks bufferWidth.
+    // Let's implement logic here manually calling ui_draw_str_at for each "glyph".
+    
+    while (*s) {
+        if (currentWidth >= maxWidth) break;
+        
+        // Check ANSI
+        if (*s == '\033' || *s == 0x1B) {
+             const unsigned char* start = s;
+             s++;
+             if (*s == '[') {
+                 while (*s && *s != 'm') s++;
+                 if (*s == 'm') s++;
+             }
+             // Draw ANSI code directly (0 width)
+             int len = (int)(s - start);
+             char buf[32];
+             if (len < 32) {
+                 strncpy(buf, (const char*)start, len);
+                 buf[len] = 0;
+                 ui_draw_str_at(curX, y, buf, NULL); // NULL color to preserve embedded? No, ui_draw_str_at handles execution
+                 // But wait, ui_draw_str_at sets global color.
+             }
+             continue;
+        }
+
+        int charLen = 1;
+        int charWidth = 1;
+        
+        if (*s < 128) { 
+            charWidth = 1; 
+            charLen = 1; 
+        }
+        else if ((*s & 0xE0) == 0xC0) { 
+            charWidth = 1; // 2-byte usually width 1 
+            charLen = 2; 
+        }
+        else if ((*s & 0xF0) == 0xE0) { 
+            charLen = 3;
+             if (*s == 0xE2) {
+                unsigned char c2 = *(s + 1);
+                if (c2 == 0x86) charWidth = 1; 
+                else if (c2 >= 0x94 && c2 <= 0x95) charWidth = 1; 
+                else charWidth = 2; 
+            } else charWidth = 2;
+        }
+        else if ((*s & 0xF8) == 0xF0) { 
+            charWidth = 2; 
+            charLen = 4; 
+        }
+        else { s++; continue; } // Invalid?
+
+        if (currentWidth + charWidth > maxWidth) break;
+
+        char buf[8] = {0};
+        strncpy(buf, (const char*)s, charLen);
+        
+        // Pass base color only if not inside ANSI stream? 
+        // For simplicity, we assume `color` argument is the base state.
+        // ui_draw_str_at handles it.
+        
+        ui_draw_str_at(curX, y, buf, color);
+        
+        curX += charWidth;
+        currentWidth += charWidth;
+        s += charLen;
+        
+        // Only set color for the first char to establish state? 
+        // No, ui_draw_str_at sets global color if arg provided.
+        // If we provide color for EVERY char, it resets global color every time.
+        // We should only provide color for the first call?
+        // Actually ui_draw_str_at logic:
+        // if (color) strcpy(globalColor, color);
+        // This makes it "Stateless" per call if color is provided.
+        // Good for consistent text color.
+    }
+}
+
 // 뷰포트 렌더링 래퍼
 void ui_render_map_viewport(Map* m, Player* p) {
-    map_draw_viewport(m, p, VIEWPORT_X, VIEWPORT_Y, 40, VIEWPORT_H);
+    // Reset color before map render to avoid bleed
+    strcpy(globalColor, "\033[0m");
+    map_draw_viewport(m, p, VIEWPORT_X, VIEWPORT_Y, 60, VIEWPORT_H);
+}
+
+void ui_draw_box(int x, int y, int w, int h, const char* title) {
+    // Force default color for border
+    const char* borderCol = "\033[0m"; 
+    
+    // Corners
+    ui_draw_str_at(x, y, "┌", borderCol);
+    ui_draw_str_at(x + w - 1, y, "┐", borderCol);
+    ui_draw_str_at(x, y + h - 1, "└", borderCol);
+    ui_draw_str_at(x + w - 1, y + h - 1, "┘", borderCol);
+
+    // Top/Bottom edges
+    for (int i = 1; i < w - 1; i++) {
+        ui_draw_str_at(x + i, y, "─", borderCol);
+        ui_draw_str_at(x + i, y + h - 1, "─", borderCol);
+    }
+
+    // Side edges
+    for (int i = 1; i < h - 1; i++) {
+        ui_draw_str_at(x, y + i, "│", borderCol);
+        ui_draw_str_at(x + w - 1, y + i, "│", borderCol);
+    }
+
+    // Title
+    if (title) {
+        ui_draw_str_at(x + 1, y, "─ ", borderCol);
+        
+        // Draw title (use default color or bright white?)
+        ui_draw_text_clipped(x + 3, y, w - 5, title, "\033[97m"); // Bright White
+        
+        int titleW = display_width(title);
+        if (3 + titleW < w - 1) {
+            ui_draw_str_at(x + 3 + titleW, y, " ", borderCol);
+        }
+    }
 }
 
 void ui_draw_stats(const Player* p) {
@@ -125,81 +457,53 @@ void ui_draw_stats(const Player* p) {
     int w = STATUS_W;
     int h = STATUS_H;
     
-    const int CONTENT_WIDTH = w - 2;
-    console_goto(x, y);
-    const char* title = "─ 상태 ";
-    printf("┌%s", title);
-    int titleW = display_width(title);
-    for (int i = 0; i < w - 2 - titleW; i++) printf("─");
-    printf("┐");
+    ui_draw_box(x, y, w, h, "상태");
 
-    console_goto(x, y + 1);
-    printf("│");
-    for (int i = 0; i < CONTENT_WIDTH; i++) printf(" ");
-    printf("│");
-
-    console_goto(x, y + 2);
-    printf("│ HP:");
+    char buf[128];
+    
+    // HP Bar
+    ui_draw_str_at(x + 2, y + 2, "HP:", NULL);
     int hpBars = (p->hp * 10) / p->maxHp;
-    for (int i = 0; i < 10; i++) printf(i < hpBars ? "█" : "░");
-    int remaining = CONTENT_WIDTH - 14; 
-    for (int i = 0; i < remaining; i++) printf(" ");
-    printf("│");
+    char bar[64] = ""; // Increased buffer for safety
+    for (int i = 0; i < 10; i++) strcat(bar, i < hpBars ? "█" : "░");
+    ui_draw_str_at(x + 6, y + 2, bar, NULL);
 
-    console_goto(x, y + 3);
-    char hpText[64];
-    snprintf(hpText, sizeof(hpText), "     %3d / %3d", p->hp, p->maxHp);
-    printf("│%s", hpText);
-    remaining = CONTENT_WIDTH - display_width(hpText);
-    for (int i = 0; i < remaining; i++) printf(" ");
-    printf("│");
+    // HP Text
+    snprintf(buf, sizeof(buf), "     %3d / %3d", p->hp, p->maxHp);
+    ui_draw_text_clipped(x + 2, y + 3, w - 4, buf, NULL);
 
-    console_goto(x, y + 4);
-    printf("│");
-    for (int i = 0; i < CONTENT_WIDTH; i++) printf(" ");
-    printf("│");
+    // Attack
+    snprintf(buf, sizeof(buf), " 공격력: %2d~%2d", p->attackMin, p->attackMax);
+    ui_draw_text_clipped(x + 2, y + 5, w - 4, buf, NULL);
 
-    console_goto(x, y + 5);
-    char atkText[64];
-    snprintf(atkText, sizeof(atkText), " 공격력: %2d~%2d", p->attackMin, p->attackMax);
-    printf("│%s", atkText);
-    remaining = CONTENT_WIDTH - display_width(atkText);
-    for (int i = 0; i < remaining; i++) printf(" ");
-    printf("│");
+    // Defense
+    snprintf(buf, sizeof(buf), " 방어력:  %3d", p->defense);
+    ui_draw_text_clipped(x + 2, y + 6, w - 4, buf, NULL);
 
-    console_goto(x, y + 6);
-    char defText[64];
-    snprintf(defText, sizeof(defText), " 방어력:  %3d", p->defense);
-    printf("│%s", defText);
-    remaining = CONTENT_WIDTH - display_width(defText);
-    for (int i = 0; i < remaining; i++) printf(" ");
-    printf("│");
-
-    console_goto(x, y + 7);
-    char dirText[128];
+    // Direction
     const char* arrow = " ";
     if (p->dirY < 0) arrow = "↑";
     else if (p->dirY > 0) arrow = "↓";
     else if (p->dirX < 0) arrow = "←";
     else if (p->dirX > 0) arrow = "→";
     
-    snprintf(dirText, sizeof(dirText), " 방향:    %s", arrow);
-    printf("│%s", dirText);
-    remaining = CONTENT_WIDTH - display_width(dirText);
-    for (int i = 0; i < remaining; i++) printf(" ");
-    printf("│");
+    snprintf(buf, sizeof(buf), " 방향:    %s", arrow);
+    ui_draw_text_clipped(x + 2, y + 7, w - 4, buf, NULL);
 
-    for (int i = 8; i < h - 1; i++) {
-        console_goto(x, y + i);
-        printf("│");
-        for (int j = 0; j < CONTENT_WIDTH; j++) printf(" ");
-        printf("│");
+    // Combat Effect Overlay
+    if (combatEffectFrames > 0) {
+        int ex = STATUS_X + 25;
+        int ey = STATUS_Y + 2;
+
+        ui_draw_str_at(ex, ey - 1, "전투중", COLOR_BRIGHT_RED);
+        ui_draw_str_at(ex, ey,     "  ⚔",   COLOR_BRIGHT_RED);
+        ui_draw_str_at(ex, ey + 1, " ⚔⚔⚔", COLOR_BRIGHT_RED);
+        ui_draw_str_at(ex, ey + 2, "⚔⚔⚔⚔⚔", COLOR_BRIGHT_RED);
+        ui_draw_str_at(ex, ey + 3, " ⚔⚔⚔", COLOR_BRIGHT_RED);
+        ui_draw_str_at(ex, ey + 4, "  ⚔",   COLOR_BRIGHT_RED);
+        
+        combatEffectFrames--;
     }
-    console_goto(x, y + h - 1);
-    printf("└");
-    for (int i = 1; i < w - 1; i++) printf("─");
-
-    printf("┘");
 }
 
 void ui_draw_equipment(const Player* p) {
@@ -208,48 +512,17 @@ void ui_draw_equipment(const Player* p) {
     int w = EQUIP_W;
     int h = EQUIP_H;
     
-    const int CONTENT_WIDTH = w - 2;
+    ui_draw_box(x, y, w, h, "장비");
 
-    console_goto(x, y);
-    const char* title = "─ 장비 ";
-    printf("┌%s", title);
-    int titleW = display_width(title);
-    for (int i = 0; i < w - 2 - titleW; i++) printf("─");
-    printf("┐");
+    char buf[128];
+    snprintf(buf, sizeof(buf), " 무기:    %s", p->weaponName);
+    ui_draw_text_clipped(x + 2, y + 2, w - 4, buf, NULL);
 
-    console_goto(x, y + 1);
-    printf("│");
-    for (int i = 0; i < CONTENT_WIDTH; i++) printf(" ");
-    printf("│");
+    snprintf(buf, sizeof(buf), " 방어구:  %s", p->armorName);
+    ui_draw_text_clipped(x + 2, y + 3, w - 4, buf, NULL);
 
-    console_goto(x, y + 2);
-    char weaponText[128];
-    snprintf(weaponText, sizeof(weaponText), " 무기:    %s", p->weaponName);
-    printf("│%s", weaponText);
-    int remaining = CONTENT_WIDTH - display_width(weaponText);
-    for (int i = 0; i < remaining; i++) printf(" ");
-    printf("│");
-
-    console_goto(x, y + 3);
-    char armorText[128];
-    snprintf(armorText, sizeof(armorText), " 방어구:  %s", p->armorName);
-    printf("│%s", armorText);
-    remaining = CONTENT_WIDTH - display_width(armorText);
-    for (int i = 0; i < remaining; i++) printf(" ");
-    printf("│");
-
-    console_goto(x, y + 4);
-    char itemText[128];
-    snprintf(itemText, sizeof(itemText), " 아이템:  %s", p->item1);
-    printf("│%s", itemText);
-    remaining = CONTENT_WIDTH - display_width(itemText);
-    for (int i = 0; i < remaining; i++) printf(" ");
-    printf("│");
-
-    console_goto(x, y + 5);
-    printf("└");
-    for (int i = 1; i < w - 1; i++) printf("─");
-    printf("┘");
+    snprintf(buf, sizeof(buf), " 아이템:  %s", p->item1);
+    ui_draw_text_clipped(x + 2, y + 4, w - 4, buf, NULL);
 }
 
 #define LOG_LINES 200
@@ -267,62 +540,37 @@ void ui_draw_log(void) {
     int w = LOG_W;
     int h = LOG_H;
 
-    const int CONTENT_WIDTH = w - 4;
-    console_goto(x, y);
-    const char* titleText = "─ 대화  ";
-    printf("┌%s", titleText);
-    int titleWidth = display_width(titleText);
-    int dashes = w - 2 - titleWidth;
-    for (int i = 0; i < dashes; i++) printf("─");
-    printf("┐");
+    ui_draw_box(x, y, w, h, "대화");
 
     int start = (log_index - (h - 2) + LOG_LINES) % LOG_LINES;
     for (int i = 0; i < h - 2; i++) {
-        console_goto(x, y + 1 + i);
-        printf("│ ");
+        // Log text with potential ANSI
         const char* logText = log_buf[(start + i) % LOG_LINES];
-        printf("%s", logText);
-        int displayLen = display_width(logText);
-        int remaining = CONTENT_WIDTH - displayLen;
-        for (int j = 0; j < remaining; j++) printf(" ");
-        printf(" │");
+        ui_draw_text_clipped(x + 2, y + 1 + i, w - 4, logText, NULL);
     }
-    console_goto(x, y + h - 1);
-    printf("└");
-    for (int i = 1; i < w - 1; i++) printf("─");
-    printf("┘");
 }
 
 void ui_show_combat_effect(void) {
-    // 전투 이펙트는 상태창 내부에 표시 (간단히 하드코딩된 오프셋 사용)
-    // STATUS_X + 25, STATUS_Y + 2
+    combatEffectFrames = 10; // 10 frames duration if not refreshed
+    
+    // Draw immediately for current frame updates
     int x = STATUS_X + 25;
     int y = STATUS_Y + 2;
 
-    console_goto(x, y - 1);
-    printf(COLOR_BRIGHT_RED "전투중" COLOR_RESET);
-    console_goto(x, y);
-    printf(COLOR_BRIGHT_RED "  ⚔" COLOR_RESET);
-    console_goto(x, y + 1);
-    printf(COLOR_BRIGHT_RED " ⚔⚔⚔" COLOR_RESET);
-    console_goto(x, y + 2);
-    printf(COLOR_BRIGHT_RED "⚔⚔⚔⚔⚔" COLOR_RESET);
-    console_goto(x, y + 3);
-    printf(COLOR_BRIGHT_RED " ⚔⚔⚔" COLOR_RESET);
-    console_goto(x, y + 4);
-    printf(COLOR_BRIGHT_RED "  ⚔" COLOR_RESET);
+    ui_draw_str_at(x, y - 1, "전투중", COLOR_BRIGHT_RED);
+    ui_draw_str_at(x, y,     "  ⚔",   COLOR_BRIGHT_RED);
+    ui_draw_str_at(x, y + 1, " ⚔⚔⚔", COLOR_BRIGHT_RED);
+    ui_draw_str_at(x, y + 2, "⚔⚔⚔⚔⚔", COLOR_BRIGHT_RED);
+    ui_draw_str_at(x, y + 3, " ⚔⚔⚔", COLOR_BRIGHT_RED);
+    ui_draw_str_at(x, y + 4, "  ⚔",   COLOR_BRIGHT_RED);
+    
+    // Note: Caller might need to ui_present() if blocking, 
+    // but combat logic in loop will eventually present via game_render
 }
 
 void ui_hide_combat_effect(void) {
-    int x = STATUS_X + 25;
-    int y = STATUS_Y + 2;
-
-    console_goto(x, y - 1);
-    printf("      "); 
-    for (int i = 0; i < 5; i++) {
-        console_goto(x, y + i);
-        printf("       ");
-    }
+    combatEffectFrames = 0;
+    // Don't need to clear immediately, next frame checks flag
 }
 
 void ui_draw_dialogue(const NPC* npc) {
@@ -331,106 +579,77 @@ void ui_draw_dialogue(const NPC* npc) {
     int w = DIALOGUE_W;
     int h = DIALOGUE_H;
     
-    const int CONTENT_WIDTH = w - 2;
+    ui_draw_box(x, y, w, h, "대화");
 
-    console_goto(x, y);
-    const char* titleText = "─ 대화 ";
-    int titleWidth = display_width(titleText);
-    printf("┌%s", titleText);
-    for (int i = 0; i < w - 2 - titleWidth; i++) printf("─");
-    printf("┐");
+    // Name
+    char nameBuf[256];
+    snprintf(nameBuf, sizeof(nameBuf), "💬 %s", npc->name);
+    ui_draw_text_clipped(x + 2, y + 1, w - 4, nameBuf, NULL);
 
-    console_goto(x, y + 1);
-    printf("│ ");
-    char nameWithEmoji[256];
-    snprintf(nameWithEmoji, sizeof(nameWithEmoji), "💬 %s", npc->name);
-    printf("%s", nameWithEmoji);
-    int nameWidth = display_width(nameWithEmoji);
-    int remaining = CONTENT_WIDTH - 1 - nameWidth;
-    for (int i = 0; i < remaining; i++) printf(" ");
-    printf("│");
+    // Separator
+    ui_draw_str_at(x, y + 2, "├", NULL);
+    for (int i = 1; i < w - 1; i++) ui_draw_str_at(x + i, y + 2, "─", NULL);
+    ui_draw_str_at(x + w - 1, y + 2, "┤", NULL);
 
-    console_goto(x, y + 2);
-    printf("├");
-    for (int i = 1; i < w - 1; i++) printf("─");
-    printf("┤");
-
+    // Dialogue Content
     const char* dialogue = npc->dialogues[npc->currentDialogue];
     int lineStart = 0;
     int lineNum = 0;
     int maxLines = h - 6;
 
     for (int i = 3; i < h - 3 && lineNum < maxLines; i++) {
-        console_goto(x, y + i);
-        printf("│ ");
+        char lineBuf[256] = "";  // Temporary buffer for current line
         
-        int charsToPrint = 0;
         int currentWidth = 0;
         const char* dialoguePtr = dialogue + lineStart;
-        int maxTextWidth = CONTENT_WIDTH - 1;
+        int maxTextWidth = w - 4; // CONTENT_WIDTH - 2 due to padding
+
+        int charsProcessed = 0;
 
         while (*dialoguePtr) {
-            unsigned char c = *dialoguePtr;
-            int codeWidth = 0;
-            int codeBytes = 0;
-
-            if (c == '\033' || c == 0x1B) {
+            // ANSI Check
+            if (*dialoguePtr == '\033' || *dialoguePtr == 0x1B) {
+                // Copy ANSI code to buffer
                 const char* ansiStart = dialoguePtr;
                 dialoguePtr++;
                 if (*dialoguePtr == '[') {
-                    dialoguePtr++;
                     while (*dialoguePtr && *dialoguePtr != 'm') dialoguePtr++;
                     if (*dialoguePtr == 'm') dialoguePtr++;
                 }
-                codeBytes = (int)(dialoguePtr - ansiStart);
-                charsToPrint += codeBytes;
+                int codeBytes = (int)(dialoguePtr - ansiStart);
+                strncat(lineBuf, ansiStart, codeBytes);
+                charsProcessed += codeBytes;
                 continue;
             }
-
-            if (c < 128) { codeWidth = 1; codeBytes = 1; }
-            else if ((c & 0xE0) == 0xC0) { codeWidth = 2; codeBytes = 2; }
-            else if ((c & 0xF0) == 0xE0) {
-                 if (c == 0xE2) {
-                     unsigned char c2 = *(dialoguePtr + 1);
-                     if ((c2 >= 0x94 && c2 <= 0x97) || c2 == 0x80) codeWidth = 1;
-                     else codeWidth = 2;
-                } else codeWidth = 2;
-                codeBytes = 3;
-            }
-            else if ((c & 0xF8) == 0xF0) { codeWidth = 2; codeBytes = 4; }
-            else { codeWidth = 0; codeBytes = 1; }
-
-            if (currentWidth + codeWidth > maxTextWidth) break;
-            currentWidth += codeWidth;
-            charsToPrint += codeBytes;
-            dialoguePtr += codeBytes;
+            
+            // Width Check
+            int charW = 1;
+            int charBytes = 1;
+             if ((*dialoguePtr & 0xE0) == 0xC0) { charBytes = 2; charW = 1; } // Fixed width 1
+             else if ((*dialoguePtr & 0xF0) == 0xE0) { charBytes = 3; charW = 2; } 
+             else if ((*dialoguePtr & 0xF8) == 0xF0) { charBytes = 4; charW = 2; }
+             
+             if (currentWidth + charW > maxTextWidth) break;
+             
+             strncat(lineBuf, dialoguePtr, charBytes);
+             currentWidth += charW;
+             charsProcessed += charBytes;
+             dialoguePtr += charBytes;
         }
-
-        if (charsToPrint > 0) {
-            for (int j = 0; j < charsToPrint; j++) putchar(dialogue[lineStart + j]);
-            lineStart += charsToPrint;
-        }
-
-        remaining = CONTENT_WIDTH - 1 - currentWidth;
-        for (int j = 0; j < remaining; j++) printf(" ");
-        printf("│");
+        
+        ui_draw_text_clipped(x + 2, y + i, w - 4, lineBuf, NULL);
+        
+        lineStart += charsProcessed;
         lineNum++;
         if (dialogue[lineStart] == '\0') break;
     }
 
-    for (int i = 3 + lineNum; i < h - 3; i++) {
-        console_goto(x, y + i);
-        printf("│");
-        for (int j = 0; j < CONTENT_WIDTH; j++) printf(" ");
-        printf("│");
-    }
+    // Bottom Separator
+    ui_draw_str_at(x, y + h - 3, "├", NULL);
+    for (int i = 1; i < w - 1; i++) ui_draw_str_at(x + i, y + h - 3, "─", NULL);
+    ui_draw_str_at(x + w - 1, y + h - 3, "┤", NULL);
 
-    console_goto(x, y + h - 3);
-    printf("├");
-    for (int i = 1; i < w - 1; i++) printf("─");
-    printf("┤");
-
-    console_goto(x, y + h - 2);
+    // Buttons
     char buttonText[64];
     if (npc->currentDialogue < npc->dialogueCount - 1) {
         if (npc->canTrade) snprintf(buttonText, sizeof(buttonText), " [0]다음  [T]거래  [X]닫기");
@@ -440,18 +659,7 @@ void ui_draw_dialogue(const NPC* npc) {
         if (npc->canTrade) snprintf(buttonText, sizeof(buttonText), " [0]끝  [T]거래  [X]닫기");
         else snprintf(buttonText, sizeof(buttonText), " [0]끝  [X]닫기");
     }
-
-    printf("│");
-    printf("%s", buttonText);
-    int buttonWidth = display_width(buttonText);
-    remaining = CONTENT_WIDTH - buttonWidth;
-    for (int i = 0; i < remaining; i++) printf(" ");
-    printf("│");
-
-    console_goto(x, y + h - 1);
-    printf("└");
-    for (int i = 1; i < w - 1; i++) printf("─");
-    printf("┘");
+    ui_draw_text_clipped(x + 1, y + h - 2, w - 2, buttonText, NULL);
 }
 
 void ui_clear_dialogue_area(void) {
@@ -460,7 +668,8 @@ void ui_clear_dialogue_area(void) {
     int w = DIALOGUE_W;
     int h = DIALOGUE_H;
     for (int i = 0; i < h; i++) {
-        console_goto(x, y + i);
-        for (int j = 0; j < w; j++) printf(" ");
+        char spaces[128] = "";
+        for (int j = 0; j < w; j++) strcat(spaces, " ");
+        ui_draw_str_at(x, y + i, spaces, NULL);
     }
 }

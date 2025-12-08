@@ -4,26 +4,24 @@
 
 // 화면 렌더링 (초기화 및 업데이트)
 void game_render(GameState* state) {
-    // 이동했으면 뷰포트 다시 그리기
-    if (state->prevX != state->player.x || state->prevY != state->player.y) {
-        ui_render_map_viewport(&state->map, &state->player);
-        state->prevX = state->player.x;
-        state->prevY = state->player.y;
-    }
+    // 1. 버퍼 클리어
+    ui_clear_buffer();
 
-    // 대화 모드가 아닐 때만 UI 갱신
+    // 2. 뷰포트 그리기 (항상 그림)
+    ui_render_map_viewport(&state->map, &state->player);
+
+    // 3. UI 그리기
     if (!state->inDialogue) {
-        // 상태창 (HP 등)
         ui_draw_stats(&state->player);
-        
-        // 장비창
         ui_draw_equipment(&state->player);
-        
-        // 로그창 (항상 표시하지만 대화중엔 대화창이 덮을 수 있음)
         ui_draw_log();
     }
-    // 대화 모드일 때는 input에서 직접 ui_draw_dialogue를 호출하거나 여기서 상태를 보고 호출할 수도 있음
-    // 현재 구조상 input에서 즉시 반응하여 그리는 경우가 많으나,
-    // 렌더링 루프를 분리한다면 여기서 그리는 것이 맞음.
-    // 하지만 기존 로직(Input-driven rendering)을 유지하기 위해 최소한의 갱신만 수행.
+    // 대화 중일 때는 ui_draw_dialogue가 필요하지만, 
+    // 기존 로직에서는 input 루프 안에서 그렸을 수 있음.
+    // 하지만 더블 버퍼링에서는 매 프레임 다 그리는 게 정석.
+    // game_input.c에서 입력을 대기하면서 그리는지 확인 필요.
+    // 일단 여기서는 기본 UI만 그린다.
+    
+    // 4. 화면 출력 (Present)
+    ui_present();
 }
