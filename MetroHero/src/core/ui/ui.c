@@ -310,32 +310,33 @@ int display_width(const char* str) {
     return width;
 }
 
-void ui_draw_text_clipped(int x, int y, int maxWidth, const char* text, const char* color) {
-    if (!text) return;
-    
+// ★ Returns the actual display width used (number of columns)
+int ui_draw_text_clipped(int x, int y, int maxWidth, const char* text, const char* color) {
+    if (!text) return 0;
+
     // Using a temp buffer to accumulate valid chars that fit in maxWidth
     // But direct drawing is easier with our char-by-char system
-    
+
     int currentWidth = 0;
     const unsigned char* s = (const unsigned char*)text;
     int curX = x;
-    
+
     // If color provided, set it once
     // (Actual ui_draw_str_at handles color parsing per char, but we can just pass base color)
     // We will leverage ui_draw_str_at for chunks, but we need width checks.
-    
+
     // Easier: Implement a version of ui_draw_str_at that stops at width limit.
-    // Or just parse here and call ui_draw_str_at for fitting substrings? 
+    // Or just parse here and call ui_draw_str_at for fitting substrings?
     // No, character fragmentation issues.
-    
-    // Let's iterate and call ui_draw_str_at for small chunks or single chars if needed, 
-    // OR just modify ui_draw_str_at to take a limit? 
+
+    // Let's iterate and call ui_draw_str_at for small chunks or single chars if needed,
+    // OR just modify ui_draw_str_at to take a limit?
     // ui_draw_str_at checks bufferWidth.
     // Let's implement logic here manually calling ui_draw_str_at for each "glyph".
-    
+
     while (*s) {
         if (currentWidth >= maxWidth) break;
-        
+
         // Check ANSI
         if (*s == '\033' || *s == 0x1B) {
              const unsigned char* start = s;
@@ -358,27 +359,27 @@ void ui_draw_text_clipped(int x, int y, int maxWidth, const char* text, const ch
 
         int charLen = 1;
         int charWidth = 1;
-        
-        if (*s < 128) { 
-            charWidth = 1; 
-            charLen = 1; 
+
+        if (*s < 128) {
+            charWidth = 1;
+            charLen = 1;
         }
-        else if ((*s & 0xE0) == 0xC0) { 
-            charWidth = 1; // 2-byte usually width 1 
-            charLen = 2; 
+        else if ((*s & 0xE0) == 0xC0) {
+            charWidth = 1; // 2-byte usually width 1
+            charLen = 2;
         }
-        else if ((*s & 0xF0) == 0xE0) { 
+        else if ((*s & 0xF0) == 0xE0) {
             charLen = 3;
              if (*s == 0xE2) {
                 unsigned char c2 = *(s + 1);
-                if (c2 == 0x86) charWidth = 1; 
-                else if (c2 >= 0x94 && c2 <= 0x95) charWidth = 1; 
-                else charWidth = 2; 
+                if (c2 == 0x86) charWidth = 1;
+                else if (c2 >= 0x94 && c2 <= 0x95) charWidth = 1;
+                else charWidth = 2;
             } else charWidth = 2;
         }
-        else if ((*s & 0xF8) == 0xF0) { 
-            charWidth = 2; 
-            charLen = 4; 
+        else if ((*s & 0xF8) == 0xF0) {
+            charWidth = 2;
+            charLen = 4;
         }
         else { s++; continue; } // Invalid?
 
@@ -386,18 +387,18 @@ void ui_draw_text_clipped(int x, int y, int maxWidth, const char* text, const ch
 
         char buf[8] = {0};
         strncpy(buf, (const char*)s, charLen);
-        
-        // Pass base color only if not inside ANSI stream? 
+
+        // Pass base color only if not inside ANSI stream?
         // For simplicity, we assume `color` argument is the base state.
         // ui_draw_str_at handles it.
-        
+
         ui_draw_str_at(curX, y, buf, color);
-        
+
         curX += charWidth;
         currentWidth += charWidth;
         s += charLen;
-        
-        // Only set color for the first char to establish state? 
+
+        // Only set color for the first char to establish state?
         // No, ui_draw_str_at sets global color if arg provided.
         // If we provide color for EVERY char, it resets global color every time.
         // We should only provide color for the first call?
@@ -406,6 +407,8 @@ void ui_draw_text_clipped(int x, int y, int maxWidth, const char* text, const ch
         // This makes it "Stateless" per call if color is provided.
         // Good for consistent text color.
     }
+
+    return currentWidth; // ★ 실제 사용된 표시 폭 반환
 }
 
 // 뷰포트 렌더링 래퍼
@@ -440,15 +443,20 @@ void ui_draw_box(int x, int y, int w, int h, const char* title) {
     // Title
     if (title) {
         ui_draw_str_at(x + 1, y, "─ ", borderCol);
-        
+
         // Draw title (use default color or bright white?)
-        ui_draw_text_clipped(x + 3, y, w - 5, title, "\033[97m"); // Bright White
-        
-        int titleW = display_width(title);
-        if (3 + titleW < w - 1) {
-            ui_draw_str_at(x + 3 + titleW, y, " ", borderCol);
+        int titleActualWidth = ui_draw_text_clipped(x + 3, y, w - 5, title, "\033[97m"); // Bright White
+
+        if (3 + titleActualWidth < w - 1) {
+            ui_draw_str_at(x + 3 + titleActualWidth, y, " ─", borderCol);
         }
+
+        // ★ 오른쪽 위 모서리 보호
+        ui_draw_str_at(x + w - 1, y, "┐", borderCol);
     }
+
+    // ★ 오른쪽 아래 모서리 보호
+    ui_draw_str_at(x + w - 1, y + h - 1, "┘", borderCol);
 }
 
 void ui_draw_stats(const Player* p) {
@@ -460,13 +468,20 @@ void ui_draw_stats(const Player* p) {
     ui_draw_box(x, y, w, h, "상태");
 
     char buf[128];
-    
-    // HP Bar
-    ui_draw_str_at(x + 2, y + 2, "HP:", NULL);
+
+    // ★ HP Bar - 개별 문자로 그리기 (정확한 폭 제어)
+    ui_draw_str_at(x + 2, y + 2, "HP: ", NULL);
     int hpBars = (p->hp * 10) / p->maxHp;
-    char bar[64] = ""; // Increased buffer for safety
-    for (int i = 0; i < 10; i++) strcat(bar, i < hpBars ? "█" : "░");
-    ui_draw_str_at(x + 6, y + 2, bar, NULL);
+    if (hpBars > 10) hpBars = 10;
+    int barX = x + 2 + 4;  // "HP: " = 4칸
+    for (int i = 0; i < 10; i++) {
+        ui_draw_str_at(barX + i * 2, y + 2, i < hpBars ? "█" : "░", NULL);
+    }
+    // HP 바 뒤 공간 채우기
+    int barEndX = barX + 10 * 2;  // 10개 블록 * 2칸
+    for (int i = barEndX; i < x + w - 2; i++) {
+        ui_draw_str_at(i, y + 2, " ", NULL);
+    }
 
     // HP Text
     snprintf(buf, sizeof(buf), "     %3d / %3d", p->hp, p->maxHp);
@@ -480,15 +495,20 @@ void ui_draw_stats(const Player* p) {
     snprintf(buf, sizeof(buf), " 방어력:  %3d", p->defense);
     ui_draw_text_clipped(x + 2, y + 6, w - 4, buf, NULL);
 
-    // Direction
+    // ★ Direction - 개별 출력 + 공백 채우기
     const char* arrow = " ";
     if (p->dirY < 0) arrow = "↑";
     else if (p->dirY > 0) arrow = "↓";
     else if (p->dirX < 0) arrow = "←";
     else if (p->dirX > 0) arrow = "→";
-    
-    snprintf(buf, sizeof(buf), " 방향:    %s", arrow);
-    ui_draw_text_clipped(x + 2, y + 7, w - 4, buf, NULL);
+
+    ui_draw_str_at(x + 2, y + 7, " 방향:    ", NULL);
+    ui_draw_str_at(x + 2 + 10, y + 7, arrow, NULL);
+    // 방향 뒤 공간 채우기
+    int dirEndX = x + 2 + 10 + 2;  // " 방향:    " (10칸) + 화살표 (2칸)
+    for (int i = dirEndX; i < x + w - 2; i++) {
+        ui_draw_str_at(i, y + 7, " ", NULL);
+    }
 
     // Combat Effect Overlay
     if (combatEffectFrames > 0) {
@@ -501,9 +521,16 @@ void ui_draw_stats(const Player* p) {
         ui_draw_str_at(ex, ey + 2, "⚔⚔⚔⚔⚔", COLOR_BRIGHT_RED);
         ui_draw_str_at(ex, ey + 3, " ⚔⚔⚔", COLOR_BRIGHT_RED);
         ui_draw_str_at(ex, ey + 4, "  ⚔",   COLOR_BRIGHT_RED);
-        
+
         combatEffectFrames--;
     }
+
+    // ★ 테두리 모서리 보호
+    const char* borderCol = "\033[0m";
+    ui_draw_str_at(x, y, "┌", borderCol);
+    ui_draw_str_at(x + w - 1, y, "┐", borderCol);
+    ui_draw_str_at(x, y + h - 1, "└", borderCol);
+    ui_draw_str_at(x + w - 1, y + h - 1, "┘", borderCol);
 }
 
 void ui_draw_equipment(const Player* p) {
@@ -511,7 +538,7 @@ void ui_draw_equipment(const Player* p) {
     int y = EQUIP_Y;
     int w = EQUIP_W;
     int h = EQUIP_H;
-    
+
     ui_draw_box(x, y, w, h, "장비");
 
     char buf[128];
@@ -523,6 +550,13 @@ void ui_draw_equipment(const Player* p) {
 
     snprintf(buf, sizeof(buf), " 아이템:  %s", p->item1);
     ui_draw_text_clipped(x + 2, y + 4, w - 4, buf, NULL);
+
+    // ★ 테두리 모서리 보호
+    const char* borderCol = "\033[0m";
+    ui_draw_str_at(x, y, "┌", borderCol);
+    ui_draw_str_at(x + w - 1, y, "┐", borderCol);
+    ui_draw_str_at(x, y + h - 1, "└", borderCol);
+    ui_draw_str_at(x + w - 1, y + h - 1, "┘", borderCol);
 }
 
 #define LOG_LINES 200
@@ -546,8 +580,23 @@ void ui_draw_log(void) {
     for (int i = 0; i < h - 2; i++) {
         // Log text with potential ANSI
         const char* logText = log_buf[(start + i) % LOG_LINES];
-        ui_draw_text_clipped(x + 2, y + 1 + i, w - 4, logText, NULL);
+
+        // ★ 텍스트 그리기 - 실제 사용된 표시 폭을 반환받음
+        int actualWidth = ui_draw_text_clipped(x + 2, y + 1 + i, w - 4, logText, NULL);
+
+        // ★ 남은 공간 명시적으로 공백으로 채우기 (오른쪽 테두리 정렬)
+        int textEndX = x + 2 + actualWidth;
+        for (int j = textEndX; j < x + w - 2; j++) {
+            ui_draw_str_at(j, y + 1 + i, " ", NULL);
+        }
     }
+
+    // ★ 테두리 모서리 보호
+    const char* borderCol = "\033[0m";
+    ui_draw_str_at(x, y, "┌", borderCol);
+    ui_draw_str_at(x + w - 1, y, "┐", borderCol);
+    ui_draw_str_at(x, y + h - 1, "└", borderCol);
+    ui_draw_str_at(x + w - 1, y + h - 1, "┘", borderCol);
 }
 
 void ui_show_combat_effect(void) {
