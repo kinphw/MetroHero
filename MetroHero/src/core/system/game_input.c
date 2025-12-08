@@ -70,7 +70,16 @@ void game_process_input(GameState* state) {
     cmd = tolower(cmd);
 
     if (cmd == 'q') {
-        state->isRunning = 0;
+        ui_add_log(COLOR_BRIGHT_RED "정말 종료하시겠습니까? (Y: 종료, 그 외: 취소)" COLOR_RESET);
+        ui_draw_log();
+
+        int confirm = _getch();
+        confirm = tolower(confirm);
+        if (confirm == 'y') {
+            state->isRunning = 0;
+        } else {
+            ui_add_log("종료를 취소했습니다.");
+        }
         return;
     }
 
