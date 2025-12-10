@@ -254,48 +254,129 @@ void console_goto(int x, int y) {
 // ============================================
 // 유니코드 문자 정보 (중앙 집중식 로직)
 // ============================================
+//void ui_get_glyph_info(const char* s, int* byteLen, int* displayWidth) {
+//    unsigned char c = (unsigned char)*s;
+//    
+//    if (c < 128) {
+//        *byteLen = 1;
+//        *displayWidth = 1;
+//    }
+//    else if ((c & 0xE0) == 0xC0) {
+//        *byteLen = 2;
+//        // *displayWidth = 1; // 2-byte UTF-8 is usually 1 width (Latin Extended, etc)
+//        *displayWidth = 2;
+//    }
+//    else if ((c & 0xF0) == 0xE0) {
+//        *byteLen = 3;
+//        // 3-byte characters
+//        if (c == 0xE2) {
+//            unsigned char c2 = (unsigned char)*(s + 1);
+//            // 체크 로직:
+//            // Arrows (2190-21FF -> E2 86 xx): Width 2 (User Preference)
+//            // Box Drawing (2500-257F -> E2 94/95 xx): Width 1
+//            // Block Elements (2580-259F -> E2 96 8x/9x): Width 1
+//            // Geom Shapes (25A0-25FF -> E2 96 Ax/Bx .. E2 97 xx): Width 1
+//            
+//             if ((c2 >= 0x94 && c2 <= 0x9B) || c2 == 0x80) {
+//                 *displayWidth = 1;  // Box Drawing, Misc Symbols (⚔ 포함)
+//             }
+//             else if (c2 == 0x86) {
+//                 *displayWidth = 2; // Arrows
+//             }
+//
+//             else if (c2 == 0x96) {
+//                 *displayWidth = 2;
+//             }
+//
+//             else if (c2 >= 0x94 && c2 <= 0x97) {
+//                 *displayWidth = 1; // Box Drawing, Blocks, Geom Shapes
+//            }
+//
+//            // Box Drawing (E2 94/95): ─│┌┐└┘ 등 - 폭 1
+//            //if (c2 == 0x94 || c2 == 0x95) {
+//            //    *displayWidth = 2;
+//            //}
+//            //// Miscellaneous Symbols (E2 9A/9B): ⚔ 등 - 폭 1
+//            //else if (c2 == 0x9A || c2 == 0x9B) {
+//            //    *displayWidth = 2;
+//            //}
+//            //// 화살표 (E2 86): ↑↓←→ - 폭 2
+//            //else if (c2 == 0x86) {
+//            //    *displayWidth = 2;
+//            //}
+//            //// Block Elements (E2 96): █░ - 폭 2
+//
+//            // 기타 E2 xx - 폭 2
+//            else {
+//                *displayWidth = 2;
+//            }
+//        } else {
+//            *displayWidth = 2; // Korean/Chinese/Japanese etc.
+//        }
+//    }
+//    else if ((c & 0xF8) == 0xF0) {
+//        *byteLen = 4;
+//        *displayWidth = 2; // Emojis
+//    }
+//    else {
+//        *byteLen = 1; // Invalid? Treat as 1 byte 1 width
+//        *displayWidth = 1; 
+//    }
+//}
+
 void ui_get_glyph_info(const char* s, int* byteLen, int* displayWidth) {
     unsigned char c = (unsigned char)*s;
-    
+
     if (c < 128) {
         *byteLen = 1;
         *displayWidth = 1;
     }
     else if ((c & 0xE0) == 0xC0) {
         *byteLen = 2;
-        *displayWidth = 1; // 2-byte UTF-8 is usually 1 width (Latin Extended, etc)
+        *displayWidth = 2;
     }
     else if ((c & 0xF0) == 0xE0) {
         *byteLen = 3;
-        // 3-byte characters
         if (c == 0xE2) {
             unsigned char c2 = (unsigned char)*(s + 1);
-            // 체크 로직:
-            // Arrows (2190-21FF -> E2 86 xx): Width 2 (User Preference)
-            // Box Drawing (2500-257F -> E2 94/95 xx): Width 1
-            // Block Elements (2580-259F -> E2 96 8x/9x): Width 1
-            // Geom Shapes (25A0-25FF -> E2 96 Ax/Bx .. E2 97 xx): Width 1
-            
-            if (c2 == 0x86) {
-                *displayWidth = 2; // Arrows
+
+            // Block Elements (E2 96): █░ - 폭 2 ★ 먼저 체크!
+            if (c2 == 0x96) {
+                //*displayWidth = 2;
+				*displayWidth = 1;
             }
-            else if (c2 >= 0x94 && c2 <= 0x97) {
-                *displayWidth = 1; // Box Drawing, Blocks, Geom Shapes
+            // Box Drawing (E2 94/95): ─│┌┐ - 폭 1
+            else if (c2 == 0x94 || c2 == 0x95) {
+                *displayWidth = 1;
             }
+            // Arrows (E2 86): →↑↓← - 폭 1
+            else if (c2 == 0x86) {
+                *displayWidth = 1;
+            }
+            // Misc Symbols (E2 98/9A/9B): ☠⚔ 등 - 폭 1
+            else if (c2 == 0x98 || c2 == 0x9A || c2 == 0x9B) {
+                *displayWidth = 1;
+            }
+            // General Punctuation (E2 80) - 폭 1
+            else if (c2 == 0x80) {
+                *displayWidth = 1;
+            }
+            // 기타 - 폭 2
             else {
-                *displayWidth = 2; // Default for other 3-byte (Asian chars etc)
+                *displayWidth = 2;
             }
-        } else {
-            *displayWidth = 2; // Korean/Chinese/Japanese etc.
+        }
+        else {
+            *displayWidth = 2;
         }
     }
     else if ((c & 0xF8) == 0xF0) {
         *byteLen = 4;
-        *displayWidth = 2; // Emojis
+        *displayWidth = 2;
     }
     else {
-        *byteLen = 1; // Invalid? Treat as 1 byte 1 width
-        *displayWidth = 1; 
+        *byteLen = 1;
+        *displayWidth = 1;
     }
 }
 
@@ -372,28 +453,7 @@ int ui_draw_text_clipped(int x, int y, int maxWidth, const char* text, const cha
         int charLen = 1;
         int charWidth = 1;
 
-        if (*s < 128) {
-            charWidth = 1;
-            charLen = 1;
-        }
-        else if ((*s & 0xE0) == 0xC0) {
-            charWidth = 1; // 2-byte usually width 1
-            charLen = 2;
-        }
-        else if ((*s & 0xF0) == 0xE0) {
-            charLen = 3;
-             if (*s == 0xE2) {
-                unsigned char c2 = *(s + 1);
-                if (c2 == 0x86) charWidth = 1;
-                else if (c2 >= 0x94 && c2 <= 0x95) charWidth = 1;
-                else charWidth = 2;
-            } else charWidth = 2;
-        }
-        else if ((*s & 0xF8) == 0xF0) {
-            charWidth = 2;
-            charLen = 4;
-        }
-        else { s++; continue; } // Invalid?
+        ui_get_glyph_info((const char*)s, &charLen, &charWidth);
 
         if (currentWidth + charWidth > maxWidth) break;
 
@@ -486,11 +546,21 @@ void ui_draw_stats(const Player* p) {
     int hpBars = (p->hp * 10) / p->maxHp;
     if (hpBars > 10) hpBars = 10;
     int barX = x + 2 + 4;  // "HP: " = 4칸
+
+    //for (int i = 0; i < 10; i++) {
+    //    ui_draw_str_at(barX + i * 2, y + 2, i < hpBars ? "█" : "░", NULL);
+    //}
+    //// HP 바 뒤 공간 채우기
+    //int barEndX = barX + 10 * 2;  // 10개 블록 * 2칸
+
+    // 수정 - 문자열로 한 번에 그리기
+    char hpBarStr[64] = "";
     for (int i = 0; i < 10; i++) {
-        ui_draw_str_at(barX + i * 2, y + 2, i < hpBars ? "█" : "░", NULL);
+        strcat(hpBarStr, i < hpBars ? "█" : "░");
     }
-    // HP 바 뒤 공간 채우기
-    int barEndX = barX + 10 * 2;  // 10개 블록 * 2칸
+    ui_draw_str_at(barX, y + 2, hpBarStr, NULL);
+    int barEndX = barX + display_width(hpBarStr);  // 동적 계산
+
     for (int i = barEndX; i < x + w - 2; i++) {
         ui_draw_str_at(i, y + 2, " ", NULL);
     }
@@ -514,11 +584,18 @@ void ui_draw_stats(const Player* p) {
     else if (p->dirX < 0) arrow = "←";
     else if (p->dirX > 0) arrow = "→";
 
-    ui_draw_str_at(x + 2, y + 7, " 방향:    ", NULL);
-    ui_draw_str_at(x + 2 + 10, y + 7, arrow, NULL);
+    //ui_draw_str_at(x + 2, y + 7, " 방향:    ", NULL);
+    //ui_draw_str_at(x + 2 + 10, y + 7, arrow, NULL);
     // 방향 뒤 공간 채우기
-    int dirEndX = x + 2 + 10 + 2;  // " 방향:    " (10칸) + 화살표 (2칸)
-    for (int i = dirEndX; i < x + w - 2; i++) {
+    //int dirEndX = x + 2 + 10 + 2;  // " 방향:    " (10칸) + 화살표 (2칸)
+
+    // 수정 - 한 문자열로 그리고 동적 계산
+    char dirLine[64];
+    snprintf(dirLine, sizeof(dirLine), " 방향:    %s", arrow);
+    ui_draw_str_at(x + 2, y + 7, dirLine, NULL);
+    // 방향 뒤 공백 (동적 계산)
+    int dirEndX = x + 2 + display_width(dirLine);
+    for (int i = dirEndX; i < x + w - 1; i++) {
         ui_draw_str_at(i, y + 7, " ", NULL);
     }
 
@@ -686,9 +763,8 @@ void ui_draw_dialogue(const NPC* npc) {
             // Width Check
             int charW = 1;
             int charBytes = 1;
-             if ((*dialoguePtr & 0xE0) == 0xC0) { charBytes = 2; charW = 1; } // Fixed width 1
-             else if ((*dialoguePtr & 0xF0) == 0xE0) { charBytes = 3; charW = 2; } 
-             else if ((*dialoguePtr & 0xF8) == 0xF0) { charBytes = 4; charW = 2; }
+            
+            ui_get_glyph_info(dialoguePtr, &charBytes, &charW);
              
              if (currentWidth + charW > maxTextWidth) break;
              
