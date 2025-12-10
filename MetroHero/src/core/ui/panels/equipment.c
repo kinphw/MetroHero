@@ -4,10 +4,7 @@
 #include "../widgets/box.h"
 #include <stdio.h>
 
-#define EQUIP_X 120
-#define EQUIP_Y 14
-#define EQUIP_W 48
-#define EQUIP_H 16
+#include "../layout.h"
 
 void ui_draw_equipment(const Player* p) {
     int x = EQUIP_X;

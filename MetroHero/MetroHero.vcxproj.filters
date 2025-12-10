@@ -197,5 +197,8 @@
     <ClInclude Include="src\core\ui\widgets\box.h">
       <Filter>src\core\ui\widgets</Filter>
     </ClInclude>
+    <ClInclude Include="src\core\ui\layout.h">
+      <Filter>src\core\ui</Filter>
+    </ClInclude>
   </ItemGroup>
 </Project>

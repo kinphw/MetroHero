@@ -50,6 +50,7 @@
     <ClInclude Include="src\core\system\game_internal.h" />
     <ClInclude Include="src\core\ui\backend\buffer.h" />
     <ClInclude Include="src\core\ui\backend\console.h" />
+    <ClInclude Include="src\core\ui\layout.h" />
     <ClInclude Include="src\core\ui\panels\dialogue.h" />
     <ClInclude Include="src\core\ui\panels\effect.h" />
     <ClInclude Include="src\core\ui\panels\equipment.h" />

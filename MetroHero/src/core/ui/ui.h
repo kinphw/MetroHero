@@ -1,10 +1,8 @@
 #ifndef UI_H
 #define UI_H
 
-#define SCREEN_W 120
-#define SCREEN_H 30
-
 // Backend
+#include "layout.h"
 #include "backend/buffer.h"
 #include "backend/console.h"
 

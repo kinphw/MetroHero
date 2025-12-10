@@ -8,11 +8,9 @@
 #include <stdio.h>
 #include <string.h>
 
-// Layout constants - Localized
-#define STATUS_X 120
-#define STATUS_Y 0
-#define STATUS_W 48
-#define STATUS_H 14
+#include "../layout.h"
+
+// Layout constants - Localized (removed)
 
 extern int combatEffectFrames; // Accessed from effect.c ... wait, cyclic dependency or shared state?
 // combatEffectFrames was static in ui.c. Now it belongs to effect module.

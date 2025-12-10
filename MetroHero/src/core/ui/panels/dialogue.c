@@ -7,17 +7,7 @@
 #include <stdio.h>
 #include <string.h>
 
-#define DIALOGUE_X 120
-#define DIALOGUE_Y 0
-#define DIALOGUE_W 48
-#define DIALOGUE_H 30
-
-#define LOG_X 0
-#define LOG_Y 30
-#define LOG_W 168
-#define LOG_H 12
-
-#define LOG_LINES 200
+#include "../layout.h"
 static char log_buf[LOG_LINES][256];
 static int log_index = 0;
 
