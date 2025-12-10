@@ -40,5 +40,6 @@ void ui_clear_buffer(void);
 void ui_present(void);
 void ui_draw_char_at(int x, int y, const char* c, const char* color);
 void ui_draw_str_at(int x, int y, const char* str, const char* color);
+void ui_get_glyph_info(const char* s, int* byteLen, int* displayWidth);
 
 #endif

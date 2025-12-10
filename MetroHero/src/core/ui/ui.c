@@ -197,37 +197,11 @@ void ui_draw_str_at(int x, int y, const char* str, const char* color) {
             }
         }
 
-        // Determine Byte Length & Width
+        // Determine Byte Length & Width using Helper
         int byteLen = 1;
         int width = 1;
         
-        unsigned char c = (unsigned char)*s;
-        
-        if (c < 128) {
-            byteLen = 1;
-            width = 1;
-        }
-        else if ((c & 0xE0) == 0xC0) {
-            byteLen = 2; 
-            width = 1; // Most 2-byte UTF8 are 1 width? Greek/Cyrillic etc.
-        }
-        else if ((c & 0xF0) == 0xE0) {
-            byteLen = 3;
-            // Asian chars (Korean/Chinese/Japanese) are usually here and Width 2
-            // Box Drawing are also here (E2 94 xx) but Width 1
-            if (c == 0xE2) {
-                // U+25xx Box Drawing: E2 94 xx / E2 95 xx -> Width 1
-                if (*(s+1) >= 0x94 && *(s+1) <= 0x95) width = 1;
-                // U+2591 Light Shade (░): E2 96 91 -> Width 1 (Fix for HP bar)
-                else if (*(s+1) == 0x96 && *(s+2) == 0x91) width = 1;
-                else width = 2; 
-            }
-            else width = 2; 
-        }
-        else if ((c & 0xF8) == 0xF0) {
-            byteLen = 4;
-            width = 2; // Emojis
-        }
+        ui_get_glyph_info(s, &byteLen, &width);
         
         // Write to Cell
         int index = y * bufferWidth + cx;
@@ -277,9 +251,59 @@ void console_goto(int x, int y) {
     SetConsoleCursorPosition(GetStdHandle(STD_OUTPUT_HANDLE), pos);
 }
 
+// ============================================
+// 유니코드 문자 정보 (중앙 집중식 로직)
+// ============================================
+void ui_get_glyph_info(const char* s, int* byteLen, int* displayWidth) {
+    unsigned char c = (unsigned char)*s;
+    
+    if (c < 128) {
+        *byteLen = 1;
+        *displayWidth = 1;
+    }
+    else if ((c & 0xE0) == 0xC0) {
+        *byteLen = 2;
+        *displayWidth = 1; // 2-byte UTF-8 is usually 1 width (Latin Extended, etc)
+    }
+    else if ((c & 0xF0) == 0xE0) {
+        *byteLen = 3;
+        // 3-byte characters
+        if (c == 0xE2) {
+            unsigned char c2 = (unsigned char)*(s + 1);
+            // 체크 로직:
+            // Arrows (2190-21FF -> E2 86 xx): Width 2 (User Preference)
+            // Box Drawing (2500-257F -> E2 94/95 xx): Width 1
+            // Block Elements (2580-259F -> E2 96 8x/9x): Width 1
+            // Geom Shapes (25A0-25FF -> E2 96 Ax/Bx .. E2 97 xx): Width 1
+            
+            if (c2 == 0x86) {
+                *displayWidth = 2; // Arrows
+            }
+            else if (c2 >= 0x94 && c2 <= 0x97) {
+                *displayWidth = 1; // Box Drawing, Blocks, Geom Shapes
+            }
+            else {
+                *displayWidth = 2; // Default for other 3-byte (Asian chars etc)
+            }
+        } else {
+            *displayWidth = 2; // Korean/Chinese/Japanese etc.
+        }
+    }
+    else if ((c & 0xF8) == 0xF0) {
+        *byteLen = 4;
+        *displayWidth = 2; // Emojis
+    }
+    else {
+        *byteLen = 1; // Invalid? Treat as 1 byte 1 width
+        *displayWidth = 1; 
+    }
+}
+
 int display_width(const char* str) {
     int width = 0;
-    const unsigned char* s = (const unsigned char*)str;
+    const char* s = str;
+    int byteLen, padding;
+    
     while (*s) {
         if (*s == '\033' || *s == 0x1B) {
             s++;
@@ -290,22 +314,10 @@ int display_width(const char* str) {
             }
             continue;
         }
-        if (*s < 128) { width += 1; s += 1; }
-        else if ((*s & 0xE0) == 0xC0) { width += 1; s += 2; } // 2-bytes are usually width 1
-        else if ((*s & 0xF0) == 0xE0) {
-            if (*s == 0xE2) {
-                unsigned char c2 = *(s + 1);
-                // U+21xx Arrow (E2 86 xx): Treat as Width 2 (User Feedback)
-                // U+25xx Box Drawing (E2 94/95 xx): Width 1
-                if (c2 >= 0x94 && c2 <= 0x95) width += 1;
-                // U+2591 Light Shade (E2 96 91): Width 1
-                else if (c2 == 0x96 && *(s+2) == 0x91) width += 1;
-                else width += 2;
-            } else width += 2;
-            s += 3;
-        }
-        else if ((*s & 0xF8) == 0xF0) { width += 2; s += 4; }
-        else { s += 1; }
+        
+        ui_get_glyph_info(s, &byteLen, &padding); // Use padding as temp width var
+        width += padding;
+        s += byteLen;
     }
     return width;
 }

@@ -138,13 +138,11 @@ void cinematic_print_typewriter(int x, int y, const char* text, const char* colo
              continue;
         }
 
-        // UTF-8 문자 처리 & Width calc
+        // UTF-8 문자 처리 & Width calc (Use Centered Helper)
         int charLen = 1;
         int charWidth = 1;
-        if (*s < 128) { charLen = 1; }
-        else if ((*s & 0xE0) == 0xC0) { charLen = 2; charWidth = 2; }
-        else if ((*s & 0xF0) == 0xE0) { charLen = 3; charWidth = 2; }
-        else if ((*s & 0xF8) == 0xF0) { charLen = 4; charWidth = 2; }
+        
+        ui_get_glyph_info((const char*)s, &charLen, &charWidth);
         
         char buf[8] = {0};
         strncpy(buf, (const char*)s, charLen);
