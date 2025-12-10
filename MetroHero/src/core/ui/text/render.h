@@ -1,0 +1,7 @@
+#ifndef UI_RENDER_H
+#define UI_RENDER_H
+
+void ui_draw_str_at(int x, int y, const char* str, const char* color);
+int ui_draw_text_clipped(int x, int y, int maxWidth, const char* text, const char* color);
+
+#endif

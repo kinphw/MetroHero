@@ -31,6 +31,21 @@
     <Filter Include="src\core\ui">
       <UniqueIdentifier>{0e90d8f3-d035-4fde-a358-7466a2a35ae1}</UniqueIdentifier>
     </Filter>
+    <Filter Include="src\core\ui\backend">
+      <UniqueIdentifier>{a284e0c4-38ce-4da1-9134-1949c3b9400c}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="src\core\ui\panels">
+      <UniqueIdentifier>{de7d0e58-b75e-4584-92d2-8ff5aae567d7}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="src\core\ui\text">
+      <UniqueIdentifier>{15365da9-a36c-4f6b-8545-ee834568135e}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="src\core\ui\view">
+      <UniqueIdentifier>{667d7a0b-cd0f-4a4b-a2ab-65dffc863d5f}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="src\core\ui\widgets">
+      <UniqueIdentifier>{5eb11585-4414-4043-9358-37fc8ae44407}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="src\main.c">
@@ -66,9 +81,6 @@
     <ClCompile Include="src\core\logic\combat.c">
       <Filter>src\core\logic</Filter>
     </ClCompile>
-    <ClCompile Include="src\core\ui\ui.c">
-      <Filter>src\core\ui</Filter>
-    </ClCompile>
     <ClCompile Include="src\core\system\game_input.c">
       <Filter>src\core\system</Filter>
     </ClCompile>
@@ -77,6 +89,36 @@
     </ClCompile>
     <ClCompile Include="src\core\system\game_render.c">
       <Filter>src\core\system</Filter>
+    </ClCompile>
+    <ClCompile Include="src\core\ui\backend\buffer.c">
+      <Filter>src\core\ui\backend</Filter>
+    </ClCompile>
+    <ClCompile Include="src\core\ui\backend\console.c">
+      <Filter>src\core\ui\backend</Filter>
+    </ClCompile>
+    <ClCompile Include="src\core\ui\panels\dialogue.c">
+      <Filter>src\core\ui\panels</Filter>
+    </ClCompile>
+    <ClCompile Include="src\core\ui\panels\effect.c">
+      <Filter>src\core\ui\panels</Filter>
+    </ClCompile>
+    <ClCompile Include="src\core\ui\panels\equipment.c">
+      <Filter>src\core\ui\panels</Filter>
+    </ClCompile>
+    <ClCompile Include="src\core\ui\panels\stats.c">
+      <Filter>src\core\ui\panels</Filter>
+    </ClCompile>
+    <ClCompile Include="src\core\ui\text\glyph.c">
+      <Filter>src\core\ui\text</Filter>
+    </ClCompile>
+    <ClCompile Include="src\core\ui\text\render.c">
+      <Filter>src\core\ui\text</Filter>
+    </ClCompile>
+    <ClCompile Include="src\core\ui\view\viewport.c">
+      <Filter>src\core\ui\view</Filter>
+    </ClCompile>
+    <ClCompile Include="src\core\ui\widgets\box.c">
+      <Filter>src\core\ui\widgets</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -124,6 +166,36 @@
     </ClInclude>
     <ClInclude Include="src\core\system\game_internal.h">
       <Filter>src\core\system</Filter>
+    </ClInclude>
+    <ClInclude Include="src\core\ui\backend\buffer.h">
+      <Filter>src\core\ui\backend</Filter>
+    </ClInclude>
+    <ClInclude Include="src\core\ui\backend\console.h">
+      <Filter>src\core\ui\backend</Filter>
+    </ClInclude>
+    <ClInclude Include="src\core\ui\panels\dialogue.h">
+      <Filter>src\core\ui\panels</Filter>
+    </ClInclude>
+    <ClInclude Include="src\core\ui\panels\effect.h">
+      <Filter>src\core\ui\panels</Filter>
+    </ClInclude>
+    <ClInclude Include="src\core\ui\panels\equipment.h">
+      <Filter>src\core\ui\panels</Filter>
+    </ClInclude>
+    <ClInclude Include="src\core\ui\panels\stats.h">
+      <Filter>src\core\ui\panels</Filter>
+    </ClInclude>
+    <ClInclude Include="src\core\ui\text\glyph.h">
+      <Filter>src\core\ui\text</Filter>
+    </ClInclude>
+    <ClInclude Include="src\core\ui\text\render.h">
+      <Filter>src\core\ui\text</Filter>
+    </ClInclude>
+    <ClInclude Include="src\core\ui\view\viewport.h">
+      <Filter>src\core\ui\view</Filter>
+    </ClInclude>
+    <ClInclude Include="src\core\ui\widgets\box.h">
+      <Filter>src\core\ui\widgets</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>
