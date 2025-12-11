@@ -9,21 +9,29 @@
 #include "../data/story.h"
 
 // ============================================
-// 내부 상수
+// 내부 상수 (Layout.h 기반 동적 조정)
 // ============================================
 
-#define CINE_WIDTH  120
-#define CINE_HEIGHT 30
+// ============================================
+// 내부 상수 (Layout.h 기반 동적 조정)
+// ============================================
 
-// 텍스트 표시 영역 (테두리 제외)
-#define CONTENT_X       4
-#define CONTENT_Y       3
-#define CONTENT_WIDTH   112
-#define CONTENT_HEIGHT  24
+#define CINE_X      SCREEN_PADDING_LEFT
+#define CINE_Y      SCREEN_PADDING_TOP
 
-// 하단 안내 메시지 위치 (CINE_HEIGHT - 3 = 27)
-// 컨텐츠는 이 위치보다 2칸 위까지만 사용 가능 (여유 공간 확보)
-#define CONTENT_MAX_Y   (CINE_HEIGHT - 5)  // = 25
+// 테두리가 그려질 실제 크기 (화면 전체 덮지 않고 패딩 감안)
+// 우측/하단 여백도 좌측/상단과 비슷하게 줌
+#define CINE_WIDTH  (SCREEN_W - CINE_X - 4) 
+#define CINE_HEIGHT (SCREEN_H - CINE_Y - 2)
+
+// 텍스트 표시 영역 (테두리 내부)
+#define CONTENT_X       (CINE_X + 4)
+#define CONTENT_Y       (CINE_Y + 3)
+#define CONTENT_WIDTH   (CINE_WIDTH - 8)
+#define CONTENT_HEIGHT  (CINE_HEIGHT - 6)
+
+// 하단 안내 메시지 위치
+#define CONTENT_MAX_Y   (CONTENT_Y + CONTENT_HEIGHT - 1)
 
 // ============================================
 // 유틸리티 함수
@@ -63,21 +71,24 @@ void cinematic_draw_frame(const char* borderColor) {
 
     cinematic_clear();
 
+    int right = CINE_X + CINE_WIDTH - 1;
+    int bottom = CINE_Y + CINE_HEIGHT - 1;
+
     // 상단 테두리
-    ui_draw_str_at(0, 0, "╔", color);
-    for (int i = 1; i < CINE_WIDTH - 1; i++) ui_draw_str_at(i, 0, "═", color);
-    ui_draw_str_at(CINE_WIDTH - 1, 0, "╗", color);
+    ui_draw_str_at(CINE_X, CINE_Y, "╔", color);
+    for (int i = CINE_X + 1; i < right; i++) ui_draw_str_at(i, CINE_Y, "═", color);
+    ui_draw_str_at(right, CINE_Y, "╗", color);
 
     // 좌우 테두리
-    for (int y = 1; y < CINE_HEIGHT - 1; y++) {
-        ui_draw_str_at(0, y, "║", color);
-        ui_draw_str_at(CINE_WIDTH - 1, y, "║", color);
+    for (int y = CINE_Y + 1; y < bottom; y++) {
+        ui_draw_str_at(CINE_X, y, "║", color);
+        ui_draw_str_at(right, y, "║", color);
     }
 
     // 하단 테두리
-    ui_draw_str_at(0, CINE_HEIGHT - 1, "╚", color);
-    for (int i = 1; i < CINE_WIDTH - 1; i++) ui_draw_str_at(i, CINE_HEIGHT - 1, "═", color);
-    ui_draw_str_at(CINE_WIDTH - 1, CINE_HEIGHT - 1, "╝", color);
+    ui_draw_str_at(CINE_X, bottom, "╚", color);
+    for (int i = CINE_X + 1; i < right; i++) ui_draw_str_at(i, bottom, "═", color);
+    ui_draw_str_at(right, bottom, "╝", color);
     
     ui_present(); // 기본 프레임 그림
 }
@@ -88,7 +99,7 @@ void cinematic_draw_frame(const char* borderColor) {
 
 void cinematic_print_centered(int y, const char* text, const char* color) {
     int textWidth = display_width(text);
-    int x = (CINE_WIDTH - textWidth) / 2;
+    int x = CINE_X + (CINE_WIDTH - textWidth) / 2; // Add global offset
     if (x < CONTENT_X) x = CONTENT_X;
 
     ui_draw_str_at(x, y, text, color);
@@ -172,8 +183,8 @@ void cinematic_print_typewriter(int x, int y, const char* text, const char* colo
 
 void cinematic_scroll_text(const char** lines, int lineCount, int speed) {
     // 스크롤 영역: 화면 중앙 부분
-    int scrollTop = 6;
-    int scrollBottom = CINE_HEIGHT - 6;
+    int scrollTop = CINE_Y + 6;
+    int scrollBottom = CINE_Y + CINE_HEIGHT - 6;
     int scrollHeight = scrollBottom - scrollTop;
 
     // 모든 라인을 아래에서 위로 스크롤
@@ -308,13 +319,13 @@ void cinematic_play(const Cinematic* cine) {
 
     // 제목 표시
     if (cine->title) {
-        cinematic_print_centered(2, cine->title, COLOR_BRIGHT_YELLOW);
+        cinematic_print_centered(CINE_Y + 2, cine->title, COLOR_BRIGHT_YELLOW);
 
         // 제목 아래 구분선
         char sep[1024] = "";
         for (int i = 0; i < CONTENT_WIDTH; i++) strcat(sep, "─");
         
-        ui_draw_str_at(CONTENT_X, 3, sep, COLOR_YELLOW);
+        ui_draw_str_at(CONTENT_X, CINE_Y + 3, sep, COLOR_YELLOW);
         ui_present();
     }
 
@@ -325,7 +336,7 @@ void cinematic_play(const Cinematic* cine) {
     }
 
     // 각 라인 처리
-    int currentY = cine->title ? 5 : 3;
+    int currentY = cine->title ? (CONTENT_Y + 2) : CONTENT_Y;
     int skipped = 0;
 
     for (int i = 0; i < cine->lineCount && !skipped; i++) {
@@ -360,7 +371,7 @@ void cinematic_play(const Cinematic* cine) {
 
             case STYLE_TYPEWRITER: {
                 int textWidth = display_width(line->text);
-                int x = (CINE_WIDTH - textWidth) / 2;
+                int x = CINE_X + (CINE_WIDTH - textWidth) / 2;
                 if (x < CONTENT_X) x = CONTENT_X;
 
                 const char* color = cine->textColor ? cine->textColor : COLOR_WHITE;

@@ -1,5 +1,6 @@
 #define _CRT_SECURE_NO_WARNINGS
 #include "buffer.h"
+#include "../layout.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -28,8 +29,8 @@ void ui_init_buffer(void) {
     Sleep(100);
 
     // 2. Allocate Buffer
-    bufferWidth = 168; 
-    bufferHeight = 42; 
+    bufferWidth = SCREEN_W; 
+    bufferHeight = SCREEN_H; 
     screenBuffer = (Cell*)malloc(sizeof(Cell) * bufferWidth * bufferHeight);
     
     // Hide Cursor
