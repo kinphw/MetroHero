@@ -52,7 +52,7 @@ static const char* DIALOGUES_B[] = {
 
 static const EnemyConfig ENEMIES[] = {
     {
-        'b', "경비로봇",
+        'b', "경비로봇", COLOR_RED "🤖" COLOR_RESET,
         10,
         100, 100,
         0,

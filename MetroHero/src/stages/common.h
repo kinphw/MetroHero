@@ -18,6 +18,7 @@ typedef struct {
 typedef struct {
     char tile;              // 'a', 'b'... (맵상의 문자)
     const char* name;       // 몬스터 이름
+    const char* glyph;      // e.g. "🐈"
     int maxHp;
     int attackMin;
     int attackMax;

@@ -12,6 +12,7 @@ typedef struct {
 
 	// 스탯
 	const char* name;
+    const char* glyph;
 	int maxHp;
 	int hp;
 	//int attack;

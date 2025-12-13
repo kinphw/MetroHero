@@ -66,16 +66,16 @@
 // 엔티티
 #define GLYPH_PLAYER   COLOR_BRIGHT_GREEN "옷" COLOR_RESET
 
-// ★ 몹 (소문자 a-z)
-#define GLYPH_MOB_CAT      "🐈"
-#define GLYPH_MOB_ROBOT    COLOR_RED "🤖" COLOR_RESET
-#define GLYPH_MOB_GENERIC  COLOR_YELLOW "몹" COLOR_RESET
+// ★ 몹 (소문자 a-z) - Stage Data로 이전됨
+// #define GLYPH_MOB_CAT      "🐈"
+// #define GLYPH_MOB_ROBOT    COLOR_RED "🤖" COLOR_RESET
+// #define GLYPH_MOB_GENERIC  COLOR_YELLOW "몹" COLOR_RESET
 
-// ★ NPC (대문자 A-Z)
-#define GLYPH_NPC_MERCHANT COLOR_BRIGHT_BLUE "읏" COLOR_RESET
-#define GLYPH_NPC_GUARD    COLOR_BRIGHT_BLUE "경" COLOR_RESET
-#define GLYPH_NPC_CITIZEN  COLOR_BRIGHT_WHITE "민" COLOR_RESET
-#define GLYPH_NPC_GENERIC  COLOR_CYAN "N" COLOR_RESET
+// ★ NPC (대문자 A-Z) - Stage Data로 이전됨
+// #define GLYPH_NPC_MERCHANT COLOR_BRIGHT_BLUE "읏" COLOR_RESET
+// #define GLYPH_NPC_GUARD    COLOR_BRIGHT_BLUE "경" COLOR_RESET
+// #define GLYPH_NPC_CITIZEN  COLOR_BRIGHT_WHITE "민" COLOR_RESET
+// #define GLYPH_NPC_GENERIC  COLOR_CYAN "N" COLOR_RESET
 
 // ★ 상자 (숫자 0-9)
 #define GLYPH_CHEST        "📦"

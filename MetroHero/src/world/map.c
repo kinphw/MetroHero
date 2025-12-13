@@ -27,17 +27,6 @@ const char* tile_to_glyph(char t) {
     }
 }
 
-// ★ 적 타일을 렌더링 문자로 변환
-const char* enemy_to_glyph(char type) {
-    switch (type) {
-    case 'a':
-        return GLYPH_MOB_CAT;
-    case 'b':
-        return GLYPH_MOB_ROBOT;
-    default:
-        return "??";
-    }
-}
 
 // ★ 스폰 포인트 찾기
 void map_find_spawn(Map* m) {
@@ -308,7 +297,7 @@ void map_draw_viewport(const Map* m, const Player* p,
             // 적 출력
             Enemy* enemy = map_get_enemy_at((Map*)m, mx, my);
             if (enemy != NULL) {
-                ui_draw_str_at(screenX, screenY, enemy_to_glyph(enemy->type), NULL);
+                ui_draw_str_at(screenX, screenY, enemy->glyph, NULL);
                 continue;
             }
 

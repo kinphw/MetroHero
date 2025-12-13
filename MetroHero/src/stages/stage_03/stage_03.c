@@ -42,7 +42,7 @@ static const char* DIALOGUES_M[] = {
 
 static const EnemyConfig ENEMIES[] = {
     {
-        'm', "몬스터", // 'm' is assumed for generic monster
+        'm', "몬스터", COLOR_YELLOW "몹" COLOR_RESET,
         3,
         1, 2,
         0,

@@ -112,7 +112,7 @@ static const char* DIALOGUES_B[] = {
 
 static const EnemyConfig ENEMIES[] = {
     {
-        'a', "맹혹한고양이",
+        'a', "맹혹한고양이", "🐈",
         5,              // maxHp
         1, 3,           // attackMin, Max
         0,              // defense
@@ -121,7 +121,7 @@ static const EnemyConfig ENEMIES[] = {
         COLOR_BRIGHT_CYAN
     },
     {
-        'b', "경비로봇",
+        'b', "경비로봇", COLOR_RED "🤖" COLOR_RESET,
         10,
         100, 100,
         0,
@@ -154,12 +154,12 @@ static const char* NPC_DIALOGUES_C[] = {
 
 static const NPCConfig NPCS[] = {
     {
-        'A', "우건박", GLYPH_NPC_MERCHANT,
+        'A', "우건박", COLOR_BRIGHT_BLUE "읏" COLOR_RESET,
         NPC_DIALOGUES_A, sizeof(NPC_DIALOGUES_A)/sizeof(NPC_DIALOGUES_A[0]),
         0, "general", 1 // canTrade=0 currently but shopType set? Original code had canTrade=0.
     },
     {
-        'C', "시민", GLYPH_NPC_CITIZEN,
+        'C', "시민", COLOR_BRIGHT_WHITE "민" COLOR_RESET,
         NPC_DIALOGUES_C, sizeof(NPC_DIALOGUES_C)/sizeof(NPC_DIALOGUES_C[0]),
         0, NULL, 0
     }

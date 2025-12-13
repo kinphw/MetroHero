@@ -11,6 +11,7 @@ void enemy_init(Enemy* e, const EnemyConfig* config, int x, int y) {
     e->isAlive = 1;
 
     e->name = config->name;
+    e->glyph = config->glyph;
     e->maxHp = config->maxHp;
     e->hp = config->maxHp;
     
