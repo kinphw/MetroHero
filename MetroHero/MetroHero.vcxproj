@@ -43,6 +43,9 @@
     <ClCompile Include="src\main.c" />
     <ClCompile Include="src\world\map.c" />
     <ClCompile Include="src\entity\player.c" />
+    <ClCompile Include="src\stages\stage_01\stage_01.c" />
+    <ClCompile Include="src\stages\stage_02\stage_02.c" />
+    <ClCompile Include="src\stages\stage_03\stage_03.c" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="src\core\logic\combat.h" />
@@ -63,7 +66,6 @@
     <ClInclude Include="src\entity\npc.h" />
     <ClInclude Include="src\entity\chest.h" />
     <ClInclude Include="src\cinematic\cinematic.h" />
-    <ClInclude Include="src\data\story.h" />
     <ClInclude Include="src\entity\enemy.h" />
     <ClInclude Include="src\world\glyph.h" />
     <ClInclude Include="src\world\map_data.h" />
@@ -71,6 +73,10 @@
     <ClInclude Include="src\core\game.h" />
     <ClInclude Include="src\world\map.h" />
     <ClInclude Include="src\entity\player.h" />
+    <ClInclude Include="src\stages\common.h" />
+    <ClInclude Include="src\stages\stage_01\stage_01.h" />
+    <ClInclude Include="src\stages\stage_02\stage_02.h" />
+    <ClInclude Include="src\stages\stage_03\stage_03.h" />
   </ItemGroup>
   <PropertyGroup Label="Globals">
     <VCProjectVersion>18.0</VCProjectVersion>

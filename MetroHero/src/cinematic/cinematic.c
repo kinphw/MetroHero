@@ -6,11 +6,81 @@
 #include "cinematic.h"
 #include "../core/ui/ui.h"
 #include "../world/glyph.h"
-#include "../data/story.h"
+// #include "../data/story.h" // Removed
+#include "../world/map_data.h" // For get_stage_data
 
 // ============================================
-// 내부 상수 (Layout.h 기반 동적 조정)
+// Global Cinematics (Moved from story.h)
 // ============================================
+
+// --- Intro ---
+static const CinematicLine INTRO_LINES[] = {
+	{ "", STYLE_NORMAL, 500 },
+	{ "갑자기 당신은 눈을 떴다...", STYLE_TYPEWRITER, 800 },
+	{ "", STYLE_NORMAL, 300 },
+	{ "이곳은...", STYLE_TYPEWRITER, 800 },
+	{ "", STYLE_NORMAL, 300 },
+	{ "성균관대역....?", STYLE_TYPEWRITER, 1000 },
+	{ "", STYLE_NORMAL, 300 },
+	{ "당신은 몸을 일으켜 주위를 둘러본다...", STYLE_TYPEWRITER, 0 },
+};
+
+static const Cinematic STORY_INTRO = {
+    "★  M E T R O   H E R O  ★",
+    INTRO_LINES,
+    sizeof(INTRO_LINES) / sizeof(INTRO_LINES[0]),
+    30,     // 타이핑 속도
+    1,      // 스킵 힌트 표시
+    COLOR_BRIGHT_CYAN,
+    COLOR_WHITE
+};
+
+// --- Good Ending ---
+static const CinematicLine ENDING_GOOD_LINES[] = {
+    { "", STYLE_NORMAL, 500 },
+    { "당신은 해냈다.", STYLE_TYPEWRITER, 1000 },
+    { "", STYLE_NORMAL, 500 },
+    { "지하철의 어둠은 물러가고,", STYLE_TYPEWRITER, 800 },
+    { "시민들은 다시 안전하게 이동할 수 있게 되었다.", STYLE_TYPEWRITER, 1000 },
+    { "", STYLE_NORMAL, 500 },
+    { "하지만 영웅의 이야기는", STYLE_TYPEWRITER, 600 },
+    { "누구에게도 알려지지 않았다...", STYLE_TYPEWRITER, 1000 },
+    { "", STYLE_NORMAL, 800 },
+    { "그것이 진정한 영웅의 길.", STYLE_TYPEWRITER, 0 },
+};
+
+static const Cinematic STORY_ENDING_GOOD = {
+    "★  T H E   E N D  ★",
+    ENDING_GOOD_LINES,
+    sizeof(ENDING_GOOD_LINES) / sizeof(ENDING_GOOD_LINES[0]),
+    35,
+    1,
+    COLOR_BRIGHT_YELLOW,
+    COLOR_WHITE
+};
+
+// --- Bad Ending ---
+static const CinematicLine ENDING_BAD_LINES[] = {
+    { "", STYLE_NORMAL, 500 },
+    { "어둠이 당신을 삼켰다...", STYLE_TYPEWRITER, 1000 },
+    { "", STYLE_NORMAL, 500 },
+    { "지하철의 수호자는 쓰러졌고,", STYLE_TYPEWRITER, 800 },
+    { "도시는 영원한 어둠 속에 남겨졌다.", STYLE_TYPEWRITER, 1000 },
+    { "", STYLE_NORMAL, 800 },
+    { "하지만 희망은 사라지지 않는다.", STYLE_TYPEWRITER, 600 },
+    { "언젠가 새로운 영웅이 나타날 것이다...", STYLE_TYPEWRITER, 0 },
+};
+
+static const Cinematic STORY_ENDING_BAD = {
+    "G A M E   O V E R",
+    ENDING_BAD_LINES,
+    sizeof(ENDING_BAD_LINES) / sizeof(ENDING_BAD_LINES[0]),
+    40,
+    1,
+    COLOR_BRIGHT_RED,
+    COLOR_GRAY
+};
+
 
 // ============================================
 // 내부 상수 (Layout.h 기반 동적 조정)
@@ -134,12 +204,7 @@ void cinematic_print_typewriter(int x, int y, const char* text, const char* colo
                 while (*s && *s != 'm') s++;
                 if (*s == 'm') s++;
             }
-             // ANSI color in string is handled by ui_draw_str_at if passed as part of string.
-             // But here we split char by char.
-             // If we just skip it, color is lost.
-             // If `color` param is used, it overrides.
-             // Simple approach: skip ANSI codes in typewriter string, assume `color` param controls it.
-             // OR copy ANSI code to `buf` and print it? ui_draw_str_at handles it.
+             
              int len = (int)((const unsigned char*)s - (const unsigned char*)start);
              char buf[32];
              strncpy(buf, start, len);
@@ -168,14 +233,6 @@ void cinematic_print_typewriter(int x, int y, const char* text, const char* colo
         cinematic_delay(charDelay);
     }
 }
-// Wait, `ui_draw_str_at` with NULL color resets to white.
-// If the text had ANSI codes effectively, I need to pass them.
-// `cinematic_print_typewriter` argument doesn't seem to take a base color, but `cinematic_play` passes `cine->textColor` which might be ANSI.
-// But `cinematic_play` logic: `printf("%s", color); cinematic_print_typewriter(...); printf(RESET);`
-// `printf` changes terminal state. `ui_draw_str_at` does NOT rely on terminal state.
-// So `cinematic_print_typewriter` needs to accept `color`.
-// I will modify `cinematic_print_typewriter` signature to take `const char* color`.
-// And `cinematic_play` calls it with `cine->textColor`.
 
 // ============================================
 // 스크롤 텍스트 (스타워즈 스타일)
@@ -205,10 +262,6 @@ void cinematic_scroll_text(const char** lines, int lineCount, int speed) {
             int screenY = scrollTop + offset + i;
 
             if (screenY >= scrollTop && screenY < scrollBottom) {
-                // 중앙에서 멀어질수록 어두운 색상
-                // ... (생략된 색상 로직은 그대로 유지됨, chunk 범위 밖이면)
-                // 하지만 chunk가 for문을 포함하므로 색상 로직도 포함해야 함.
-                // Re-writing the color logic to be safe or use wider context.
                 
                 int distFromCenter = abs(screenY - (scrollTop + scrollHeight / 2));
                 const char* fadeColor;
@@ -234,10 +287,6 @@ void cinematic_scroll_text(const char** lines, int lineCount, int speed) {
         cinematic_delay(speed);
     }
 }
-
-// ============================================
-// 키 입력 대기
-// ============================================
 
 // ============================================
 // 키 입력 대기 (깜빡임 효과 포함)
@@ -292,9 +341,6 @@ int cinematic_wait_key(int showHint) {
 void cinematic_fade_in(int duration) {
     // 단계별 페이드 인 (3단계)
     int stepDelay = duration / 3;
-
-    // 어두운 상태에서 시작
-    // (실제 구현은 전체 화면 색상 변경이 어려우므로 간단히 딜레이만)
     cinematic_delay(stepDelay);
     cinematic_delay(stepDelay);
     cinematic_delay(stepDelay);
@@ -384,16 +430,7 @@ void cinematic_play(const Cinematic* cine) {
             }
 
             case STYLE_SCROLL_UP:
-                cinematic_scroll_text((const char**)line->text, 10, cine->scrollSpeed); // Simple casting assumption from original code structure? 
-                // Wait, original code had:
-                // case STYLE_SCROLL_UP:
-                //      // 스크롤은 별도 처리 필요 (라인 배열 전체 전달)
-                //      break;
-                // It seems STYLE_SCROLL_UP wasn't fully implemented in the switch I viewed?
-                // Let's look at Step 546 content again.
-                // It was empty! 
-                // "case STYLE_SCROLL_UP: break;"
-                // So I don't need to change it, but I need to update the others.
+                cinematic_scroll_text((const char**)line->text, 10, cine->scrollSpeed); 
                 break;
 
             case STYLE_FADE_IN:
@@ -449,7 +486,7 @@ void cinematic_play(const Cinematic* cine) {
 }
 
 // ============================================
-// 미리 정의된 시네마틱
+// 미리 정의된 시네마틱 (Using StageData or Globals)
 // ============================================
 
 void cinematic_play_intro(void) {
@@ -457,14 +494,16 @@ void cinematic_play_intro(void) {
 }
 
 void cinematic_play_stage_start(int stageNum) {
-    if (stageNum >= 1 && stageNum <= 3) {
-        cinematic_play(&STORY_STAGES[stageNum - 1]);
+    const StageData* data = get_stage_data(stageNum);
+    if (data && data->intro) {
+        cinematic_play(data->intro);
     }
 }
 
 void cinematic_play_stage_clear(int stageNum) {
-    if (stageNum >= 1 && stageNum <= 3) {
-        cinematic_play(&STORY_STAGE_CLEAR[stageNum - 1]);
+    const StageData* data = get_stage_data(stageNum);
+    if (data && data->outro) {
+        cinematic_play(data->outro);
     }
 }
 

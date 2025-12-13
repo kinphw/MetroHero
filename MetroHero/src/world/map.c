@@ -64,21 +64,28 @@ int is_enemy_tile(char t) {
 }
 
 // ★ 맵에서 적 찾아서 초기화
+// ★ 맵에서 적 찾아서 초기화
 void map_load_enemies(Map* m) {
     m->enemyCount = 0;
+    
+    const StageData* stageData = get_stage_data(m->stageNumber);
+    if (!stageData) return;
 
     for (int y = 0; y < m->height; y++) {
         for (int x = 0; x < m->width; x++) {
             char tile = m->tiles[y][x];
 
-            // a~z 범위의 적 타일 찾기
-            if (is_enemy_tile(tile)) {
-                if (m->enemyCount < MAX_ENEMIES) {
-                    enemy_init(&m->enemies[m->enemyCount], tile, x, y);
-                    m->enemyCount++;
+            // Check against defined enemies for this stage
+            for (int i = 0; i < stageData->enemyCount; i++) {
+                if (stageData->enemies[i].tile == tile) {
+                     if (m->enemyCount < MAX_ENEMIES) {
+                        enemy_init(&m->enemies[m->enemyCount], &stageData->enemies[i], x, y);
+                        m->enemyCount++;
 
-                    // 적이 있던 자리는 바닥으로 변경
-                    m->tiles[y][x] = '.';
+                        // 적이 있던 자리는 바닥으로 변경
+                        m->tiles[y][x] = '.';
+                    }
+                    break;
                 }
             }
         }
@@ -322,26 +329,27 @@ void map_draw_viewport(const Map* m, const Player* p,
 
 // 기존 코드 유지하고 아래 함수들 추가
 
-// ★ NPC 타일 체크
-int is_npc_tile(char t) {
-    return (t >= 'A' && t <= 'Z');
-}
-
 // ★ 맵에서 NPC 찾아서 초기화
 void map_load_npcs(Map* m) {
     m->npcCount = 0;
+    
+    const StageData* stageData = get_stage_data(m->stageNumber);
+    if (!stageData) return;
 
     for (int y = 0; y < m->height; y++) {
         for (int x = 0; x < m->width; x++) {
             char tile = m->tiles[y][x];
 
-            if (is_npc_tile(tile)) {
-                if (m->npcCount < MAX_NPCS) {
-                    npc_init(&m->npcs[m->npcCount], tile, x, y);
-                    m->npcCount++;
+            for (int i = 0; i < stageData->npcCount; i++) {
+                if (stageData->npcs[i].tile == tile) {
+                    if (m->npcCount < MAX_NPCS) {
+                        npc_init(&m->npcs[m->npcCount], &stageData->npcs[i], x, y);
+                        m->npcCount++;
 
-                    // NPC가 있던 자리는 바닥으로 변경
-                    m->tiles[y][x] = '.';
+                        // NPC가 있던 자리는 바닥으로 변경
+                        m->tiles[y][x] = '.';
+                    }
+                    break;
                 }
             }
         }

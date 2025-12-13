@@ -74,7 +74,7 @@ void cinematic_scroll_text(const char** lines, int lineCount, int speed);
 
 // 키 입력 대기 (SPACE: 계속, ESC: 스킵)
 // 반환값: 0 = 계속, 1 = 스킵
-int cinematic_wait_key(void);
+int cinematic_wait_key(int showHint);
 
 // 페이드 효과 (밝기 조절)
 void cinematic_fade_in(int duration);

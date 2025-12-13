@@ -4,6 +4,8 @@
 #ifndef NPC_H
 #define NPC_H
 
+#include "../stages/common.h"
+
 #define MAX_NPCS 20
 #define MAX_NPC_DIALOGUES 10
 
@@ -25,8 +27,8 @@ typedef struct {
 	int canTrade;          // 거래 가능 여부
 	const char* shopType;  // "weapon", "armor", "item" 등
 } NPC;
-
-void npc_init(NPC* npc , char type , int x , int y);
+// 초기화
+void npc_init(NPC* npc, const NPCConfig* config, int x, int y);
 int npc_is_at(const NPC* npc , int x , int y);
 const char* npc_get_dialogue(NPC* npc);
 void npc_next_dialogue(NPC* npc);
