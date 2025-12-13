@@ -56,63 +56,26 @@
 #define COMBAT_DETECT    COLOR_CYAN
 
 // 맵 타일
-#define GLYPH_FLOOR    "  "
-#define GLYPH_WALL     "\033[48;5;220m  \033[0m"
-#define GLYPH_RAIL     "=="
-#define GLYPH_EMPTY    "  "
-#define GLYPH_DOOR     "++"
-#define GLYPH_STAIRS   "▼▼"
+// ========================
+// 맵 타일 (배경/구조물) -> map_data.c 로 이동됨 global palette 사용
 
-// 엔티티
+// 5. 상자 (Chests - map.c 로직에서 사용)
+#define GLYPH_CHEST_CLOSED   "📦"
+#define GLYPH_CHEST_OPEN     "📭"
+
+// 6. 엔티티 (Entities)
 #define GLYPH_PLAYER   COLOR_BRIGHT_GREEN "옷" COLOR_RESET
 
-// ★ 몹 (소문자 a-z) - Stage Data로 이전됨
-// #define GLYPH_MOB_CAT      "🐈"
-// #define GLYPH_MOB_ROBOT    COLOR_RED "🤖" COLOR_RESET
-// #define GLYPH_MOB_GENERIC  COLOR_YELLOW "몹" COLOR_RESET
-
-// ★ NPC (대문자 A-Z) - Stage Data로 이전됨
-// #define GLYPH_NPC_MERCHANT COLOR_BRIGHT_BLUE "읏" COLOR_RESET
-// #define GLYPH_NPC_GUARD    COLOR_BRIGHT_BLUE "경" COLOR_RESET
-// #define GLYPH_NPC_CITIZEN  COLOR_BRIGHT_WHITE "민" COLOR_RESET
-// #define GLYPH_NPC_GENERIC  COLOR_CYAN "N" COLOR_RESET
-
-// ★ 상자 (숫자 0-9)
-#define GLYPH_CHEST        "📦"
-
-// 기타
-#define GLYPH_TREE     "♣♣"
-#define GLYPH_WATER    "≈≈"
+// ========================
+// 호환성 (Compatibility)
+// ========================
+// (Moved to map_data.c)
+#define GLYPH_EMPTY    "  "  // Still used as default fallback in code
 
 // ========================
 // 타일 문자 (맵 데이터용)
 // ========================
 #define TILE_FLOOR     '.'
-#define TILE_WALL      '#'
-#define TILE_RAIL      '='
-#define TILE_DOOR      '+'
-#define TILE_SPAWN     '@'
-
-// ★ Entity 타일 분류
-// 몹: 소문자 a-z
-#define TILE_MOB_CAT    'a'
-#define TILE_MOB_ROBOT  'b'
-
-// NPC: 대문자 A-Z
-#define TILE_NPC_MERCHANT 'A'
-#define TILE_NPC_GUARD    'B'
-#define TILE_NPC_CITIZEN  'C'
-
-// 상자: 숫자 0-9
-#define TILE_CHEST_0    '0'
-#define TILE_CHEST_1    '1'
-#define TILE_CHEST_2    '2'
-#define TILE_CHEST_3    '3'
-#define TILE_CHEST_4    '4'
-#define TILE_CHEST_5    '5'
-#define TILE_CHEST_6    '6'
-#define TILE_CHEST_7    '7'
-#define TILE_CHEST_8    '8'
-#define TILE_CHEST_9    '9'
+// ... (Keep existing TILE_ definitions if useful, or remove if unused)
 
 #endif

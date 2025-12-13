@@ -7,24 +7,23 @@
 #include "map_data.h"  // ★ 추가
 #include "glyph.h"  // ★ 추가
 
+// ★ 타일 정의 조회 Helper
+const TileDef* map_get_tile_def(char symbol) {
+    for (int i = 0; i < GLOBAL_TILE_PALETTE_COUNT; i++) {
+        if (GLOBAL_TILE_PALETTE[i].symbol == symbol) {
+            return &GLOBAL_TILE_PALETTE[i];
+        }
+    }
+    return NULL;
+}
+
 // 타일 문자를 렌더링 문자로 변환
 const char* tile_to_glyph(char t) {
-    switch (t) {
-    case '.':
-        return GLYPH_FLOOR;
-    //case '#':
-    //    return GLYPH_WALL;
-    case '#':
-        return GLYPH_WALL;  // 단일 패턴
-    case '=':
-        return GLYPH_RAIL;
-    case '+':
-        return GLYPH_DOOR;
-    case 'S':
-        return GLYPH_STAIRS;
-    default:
-        return GLYPH_EMPTY;
+    const TileDef* def = map_get_tile_def(t);
+    if (def) {
+        return def->glyph;
     }
+    return GLYPH_EMPTY;
 }
 
 
@@ -114,6 +113,7 @@ void map_load_chests(Map* m) {
                     chest_init(
                         &m->chests[m->chestCount],
                         x, y,
+                        tile,  // ★ Pass the tile character
                         cfg[i].itemType,
                         cfg[i].itemName
                     );
@@ -171,7 +171,13 @@ int map_is_walkable(const Map* m, int x, int y) {
             return 0;
     }
 
-    return (t == '.');
+    // 기본 타일 이동 가능 여부 확인
+    const TileDef* def = map_get_tile_def(t);
+    if (def) {
+        return def->walkable;
+    }
+
+    return 0;
 }
 
 
@@ -209,9 +215,7 @@ const char* map_get_enemy_direction(Map* m, int px, int py, Enemy* enemy) {
 
 Chest* map_get_chest_at(Map* m, int x, int y) {
     for (int i = 0; i < m->chestCount; i++) {
-        if (!m->chests[i].isOpened &&
-            m->chests[i].x == x && m->chests[i].y == y) {
-
+        if (m->chests[i].x == x && m->chests[i].y == y) {
             return &m->chests[i];
         }
     }
@@ -302,9 +306,20 @@ void map_draw_viewport(const Map* m, const Player* p,
             }
 
             // 상자 출력
+            // 상자 출력
             Chest* chest = map_get_chest_at((Map*)m, mx, my);
-            if (chest != NULL && !chest->isOpened) {
-                ui_draw_str_at(screenX, screenY, GLYPH_CHEST, NULL);
+            if (chest != NULL) {
+                if (chest->isOpened) {
+                     ui_draw_str_at(screenX, screenY, GLYPH_CHEST_OPEN, NULL);
+                } else {
+                    // Use the tile stored in the chest to look up the glyph
+                    const TileDef* def = map_get_tile_def(chest->tile);
+                    if (def) {
+                        ui_draw_str_at(screenX, screenY, def->glyph, NULL);
+                    } else {
+                        ui_draw_str_at(screenX, screenY, GLYPH_CHEST_CLOSED, NULL); // Fallback
+                    }
+                }
                 continue;
             }
 

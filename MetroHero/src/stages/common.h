@@ -7,6 +7,14 @@
 // 공통 데이터 구조체 정의
 // ============================================
 
+// --- Tile Definition (Global Palette) ---
+typedef struct {
+    char symbol;          // 맵 문자 (예: '#')
+    const char* glyph;    // 글리프 문자열 (예: GLYPH_WALL_GRAY)
+    int walkable;         // 1 = 이동 가능, 0 = 이동 불가
+    const char* desc;     // 설명 (디버깅용)
+} TileDef;
+
 // --- Chest Definition ---
 typedef struct {
     char tile;              // '0', '1', '2' ... (맵상의 숫자)
