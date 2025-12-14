@@ -116,7 +116,7 @@ static void cinematic_goto(int x, int y) {
     // console_goto(x, y); // Not needed for buffer
 }
 
-// ms 단위 대기
+// ms 단위 대기 helper that handles window closing
 static void cinematic_delay(int ms) {
     if (ms <= 0) return;
     
@@ -171,9 +171,10 @@ static int cinematic_get_key(void) {
 // ============================================
 
 void cinematic_draw_frame(const char* borderColor) {
-    const char* color = borderColor ? borderColor : COLOR_WHITE;
+    ui_begin_texture_mode();
+    ClearBackground(BLACK);
 
-    cinematic_clear();
+    const char* color = borderColor ? borderColor : COLOR_WHITE;
 
     int right = CINE_X + CINE_WIDTH - 1;
     int bottom = CINE_Y + CINE_HEIGHT - 1;
@@ -194,7 +195,8 @@ void cinematic_draw_frame(const char* borderColor) {
     for (int i = CINE_X + 1; i < right; i++) ui_draw_str_at(i, bottom, "═", color);
     ui_draw_str_at(right, bottom, "╝", color);
     
-    ui_present(); // 기본 프레임 그림
+    ui_end_texture_mode();
+    ui_present();
 }
 
 // ============================================
@@ -202,11 +204,18 @@ void cinematic_draw_frame(const char* borderColor) {
 // ============================================
 
 void cinematic_print_centered(int y, const char* text, const char* color) {
+    // This function is usually called and then presented by caller, OR should present itself?
+    // In legacy it just drew to buffer.
+    // To support immediate mode:
+    ui_begin_texture_mode();
+    
     int textWidth = display_width(text);
     int x = CINE_X + (CINE_WIDTH - textWidth) / 2; // Add global offset
     if (x < CONTENT_X) x = CONTENT_X;
 
     ui_draw_str_at(x, y, text, color);
+    
+    ui_end_texture_mode();
     // ui_present(); // 제거: 호출자가 제어
 }
 
@@ -257,8 +266,11 @@ void cinematic_print_typewriter(int x, int y, const char* text, const char* colo
         char buf[8] = {0};
         strncpy(buf, (const char*)s, charLen);
         
-        // Draw
+        // Draw (Batched per char is fine basically, but need begin/end)
+        ui_begin_texture_mode();
         ui_draw_str_at(curX, y, buf, color);
+        ui_end_texture_mode();
+        
         ui_present();
         
         s += charLen;
@@ -287,9 +299,12 @@ void cinematic_scroll_text(const char** lines, int lineCount, int speed) {
         }
 
         // 스크롤 영역 지우기
+        ui_begin_texture_mode();
         for (int y = scrollTop; y < scrollBottom; y++) {
              ui_draw_str_at(CONTENT_X, y, "                                                                                                                ", NULL); 
         }
+        ui_end_texture_mode();
+        // Don't present yet, draw lines first
 
         // 현재 보이는 라인들 출력
         for (int i = 0; i < lineCount; i++) {
@@ -313,6 +328,15 @@ void cinematic_scroll_text(const char** lines, int lineCount, int speed) {
                     fadeColor = COLOR_DARK_GRAY;
                 }
 
+                // Actually cinematic_print_centered now batches internally!
+                // This is problematic if we want to batch whole frame.
+                // We should unwrap print_centered or just let it happen (slight overhead but okay for 10 lines)
+                // Wait, print_centered does Begin/End.
+                // If we do Begin here, nested Begin is invalid in Raylib?
+                // Raylib supports nested texture mode? ALLOWED but warnings/perf issues if targeting same?
+                // Actually Raylib: EndTextureMode() pops from stack? No, it just ends current.
+                // Safe bet: Don't nest.
+                // Let print_centered handle its own drawing.
                 cinematic_print_centered(screenY, lines[i], fadeColor);
             }
         }
@@ -340,6 +364,7 @@ int cinematic_wait_key(int showHint) {
             if (showHint) {
                 cinematic_print_centered(CINE_HEIGHT - 3,
                     "[SPACE] 계속    [ESC] 스킵", COLOR_GRAY);
+                ui_present(); // Explicit present mostly needed after updates
             }
 
             if (key == ' ' || key == 13) {  // SPACE 또는 ENTER

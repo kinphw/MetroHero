@@ -42,7 +42,9 @@ void game_run(void) {
     game_render(&state);
 
     // 입력 안내
+    ui_begin_texture_mode();
     ui_draw_str_at(0, SCREEN_H - 1, "[화살표/WASD] 이동 | [0] 상호작용 | [Q] 종료", NULL);
+    ui_end_texture_mode();
     ui_present();
 
     // 2. 메인 루프 실행

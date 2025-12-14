@@ -54,14 +54,14 @@ void ui_draw_tile(int x, int y, const char* imagePath) {
     int px = x * 8;
     int py = y * 16;
 
-    ui_begin_texture_mode();
+    // ui_begin_texture_mode(); // Optimization: Caller provides batch
     if (tex.id != 0) {
         DrawTexture(tex, px, py, WHITE);
     } else {
         // Fallback: Magenta square
         DrawRectangle(px, py, 16, 16, MAGENTA);
     }
-    ui_end_texture_mode();
+    // ui_end_texture_mode();
 }
 
 // Helper to map ANSI color codes roughly to Raylib colors
@@ -134,7 +134,7 @@ void ui_draw_str_at(int x, int y, const char* str, const char* color) {
     
     Color c = GetColorFromAnsi(color);
     
-    ui_begin_texture_mode();
+    // ui_begin_texture_mode(); // Optimization: Caller provides batch
     if (globalFont.baseSize > 0) {
         // Use custom font
         // Position correction might be needed depending on the font baseline
@@ -144,7 +144,7 @@ void ui_draw_str_at(int x, int y, const char* str, const char* color) {
         // Fallback
         DrawText(str, px, py, 20, c);
     }
-    ui_end_texture_mode();
+    // ui_end_texture_mode();
 }
 
 int ui_draw_text_clipped(int x, int y, int maxWidth, const char* text, const char* color) {
