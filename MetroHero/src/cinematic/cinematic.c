@@ -118,17 +118,52 @@ static void cinematic_goto(int x, int y) {
 
 // ms 단위 대기
 static void cinematic_delay(int ms) {
-    Sleep(ms);
+    if (ms <= 0) return;
+    
+    // Break delay into small chunks to keep window responsive
+    int chunks = ms / 50; 
+    if (chunks < 1) chunks = 1;
+    
+    for (int i = 0; i < chunks; i++) {
+        if (WindowShouldClose()) {
+            CloseWindow();
+            exit(0); // Force exit on close request during cinematic
+        }
+        WaitTime(0.05f); // 50ms wait
+    }
 }
 
-// 키 입력 체크 (논블로킹)
+// Key buffering for peeking
+static int HACK_bufferedKey = 0;
+
+static int internal_poll_key(void) {
+    if (HACK_bufferedKey == 0) {
+        int k = GetKeyPressed();
+        if (k != 0) HACK_bufferedKey = k;
+    }
+    return HACK_bufferedKey;
+}
+
+// 키 입력 체크 (논블로킹) - Peeks
 static int cinematic_key_pressed(void) {
-    return _kbhit();
+    if (WindowShouldClose()) {
+        CloseWindow();
+        exit(0);
+    }
+    return internal_poll_key() != 0;
 }
 
-// 키 입력 읽기
+// 키 입력 읽기 - Consumes and Maps
 static int cinematic_get_key(void) {
-    return _getch();
+    int k = internal_poll_key();
+    HACK_bufferedKey = 0; // Consume
+
+    // Map Raylib keys to legacy ASCII/Scancodes
+    if (k == KEY_SPACE) return ' ';
+    if (k == KEY_ENTER || k == KEY_KP_ENTER) return 13;
+    if (k == KEY_ESCAPE) return 27;
+    
+    return k;
 }
 
 // ============================================

@@ -15,25 +15,51 @@ int bufferWidth = 0;
 int bufferHeight = 0;
 char globalColor[32] = "";
 
+static RenderTexture2D target;
+
+#include "../text/render.h" // For ui_load_font
+
 void ui_init_buffer(void) {
     const int screenWidth = SCREEN_W * 8;   // 210 * 8 = 1680
     const int screenHeight = SCREEN_H * 16; // 55 * 16 = 880
 
     InitWindow(screenWidth, screenHeight, "MetroHero");
+    SetExitKey(0); // Disable ESC to exit (handled manually)
     SetTargetFPS(60);
     
-    // Load default font? GetFontDefault() is used by DrawText
+    // Load custom font for Korean support
+    ui_load_font();
+    
+    target = LoadRenderTexture(screenWidth, screenHeight);
+    SetTextureFilter(target.texture, TEXTURE_FILTER_POINT);
+}
+
+void ui_begin_texture_mode(void) {
+    BeginTextureMode(target);
+}
+
+void ui_end_texture_mode(void) {
+    EndTextureMode();
 }
 
 void ui_clear_buffer(void) {
-    if (WindowShouldClose()) {
-        // Handle exit elsewhere or flag?
-    }
-    BeginDrawing();
+    BeginTextureMode(target);
     ClearBackground(BLACK);
+    EndTextureMode();
 }
 
 void ui_present(void) {
+    BeginDrawing();
+    ClearBackground(BLACK);
+    
+    // Draw the backing texture to the screen
+    // Note: RenderTextures are Y-flipped in default OpenGL coordinates
+    Rectangle src = { 0, 0, (float)target.texture.width, (float)-target.texture.height };
+    Rectangle dst = { 0, 0, (float)GetScreenWidth(), (float)GetScreenHeight() };
+    Vector2 origin = { 0, 0 };
+    
+    DrawTexturePro(target.texture, src, dst, origin, 0.0f, WHITE);
+
     // Draw FPS for debug
     DrawText(TextFormat("%i FPS", GetFPS()), 10, 10, 20, GREEN);
     EndDrawing();

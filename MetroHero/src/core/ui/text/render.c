@@ -1,8 +1,10 @@
 #define _CRT_SECURE_NO_WARNINGS
 #include "render.h"
+#include "../backend/buffer.h" // For ui_begin_texture_mode
 #include "raylib.h"
 #include <string.h>
 #include <stdio.h>
+#include <stdlib.h>
 
 #define MAX_TEXTURES 64
 
@@ -52,12 +54,14 @@ void ui_draw_tile(int x, int y, const char* imagePath) {
     int px = x * 8;
     int py = y * 16;
 
+    ui_begin_texture_mode();
     if (tex.id != 0) {
         DrawTexture(tex, px, py, WHITE);
     } else {
         // Fallback: Magenta square
         DrawRectangle(px, py, 16, 16, MAGENTA);
     }
+    ui_end_texture_mode();
 }
 
 // Helper to map ANSI color codes roughly to Raylib colors
@@ -75,6 +79,35 @@ static Color GetColorFromAnsi(const char* ansi) {
     return WHITE;
 }
 
+static Font globalFont = { 0 };
+
+void ui_load_font(void) {
+    // Generate codepoints for ASCII (32-126) and Hangul Syllables (0xAC00-0xD7A3)
+    int codepointCount = (126 - 32 + 1) + (0xD7A3 - 0xAC00 + 1);
+    int* codepoints = (int*)malloc(codepointCount * sizeof(int));
+    
+    int index = 0;
+    // ASCII
+    for (int i = 32; i <= 126; i++) {
+        codepoints[index++] = i;
+    }
+    // Korean Hangul Syllables
+    for (int i = 0xAC00; i <= 0xD7A3; i++) {
+        codepoints[index++] = i;
+    }
+
+    // Load font
+    globalFont = LoadFontEx("assets/fonts/DNFBitBitv2.ttf", 20, codepoints, codepointCount);
+    
+    // Set texture filter to point for crisp scaling if needed, 
+    // though usually Font textures need bilinear if not perfectly 1:1. 
+    // Given the retro style, let's try bilinear first for smoother text or point for crispness.
+    // Let's stick to default for now or POINT for pixel art style.
+    SetTextureFilter(globalFont.texture, TEXTURE_FILTER_POINT);
+
+    free(codepoints);
+}
+
 void ui_draw_str_at(int x, int y, const char* str, const char* color) {
     if (!str) return;
 
@@ -83,10 +116,17 @@ void ui_draw_str_at(int x, int y, const char* str, const char* color) {
     
     Color c = GetColorFromAnsi(color);
     
-    // Raylib default font size is 10? 20 is good readability
-    // Note: This won't perfectly match the grid like a monospaced console font
-    // unless we load a monospaced font. For now, we use default.
-    DrawText(str, px, py, 20, c);
+    ui_begin_texture_mode();
+    if (globalFont.baseSize > 0) {
+        // Use custom font
+        // Position correction might be needed depending on the font baseline
+        Vector2 pos = { (float)px, (float)py };
+        DrawTextEx(globalFont, str, pos, 20, 0, c);
+    } else {
+        // Fallback
+        DrawText(str, px, py, 20, c);
+    }
+    ui_end_texture_mode();
 }
 
 int ui_draw_text_clipped(int x, int y, int maxWidth, const char* text, const char* color) {

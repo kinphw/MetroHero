@@ -21,4 +21,7 @@ void ui_present(void);
 // Basic low-level drawing (often used internally but exposed if needed)
 void ui_draw_char_at(int x, int y, const char* c, const char* color);
 
+void ui_begin_texture_mode(void);
+void ui_end_texture_mode(void);
+
 #endif
