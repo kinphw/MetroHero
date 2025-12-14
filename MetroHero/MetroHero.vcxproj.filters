@@ -46,6 +46,18 @@
     <Filter Include="src\core\ui\widgets">
       <UniqueIdentifier>{5eb11585-4414-4043-9358-37fc8ae44407}</UniqueIdentifier>
     </Filter>
+    <Filter Include="src\stages">
+      <UniqueIdentifier>{68780e1e-6a08-4495-8dc9-11fd6757e751}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="src\stages\stage_01">
+      <UniqueIdentifier>{fea71e33-f298-45fc-8e89-2a353ca34481}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="src\stages\stage_02">
+      <UniqueIdentifier>{dae576af-174b-49db-b67a-33898d859ba1}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="src\stages\stage_03">
+      <UniqueIdentifier>{8fe6919d-0b0b-49c5-9b9c-ae815436879d}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="src\main.c">
@@ -120,6 +132,15 @@
     <ClCompile Include="src\core\ui\widgets\box.c">
       <Filter>src\core\ui\widgets</Filter>
     </ClCompile>
+    <ClCompile Include="src\stages\stage_01\stage_01.c">
+      <Filter>src\stages\stage_01</Filter>
+    </ClCompile>
+    <ClCompile Include="src\stages\stage_02\stage_02.c">
+      <Filter>src\stages\stage_02</Filter>
+    </ClCompile>
+    <ClCompile Include="src\stages\stage_03\stage_03.c">
+      <Filter>src\stages\stage_03</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="src\core\game.h">
@@ -151,9 +172,6 @@
     </ClInclude>
     <ClInclude Include="src\cinematic\cinematic.h">
       <Filter>src\cinematic</Filter>
-    </ClInclude>
-    <ClInclude Include="src\data\story.h">
-      <Filter>src\data</Filter>
     </ClInclude>
     <ClInclude Include="src\core\logic\combat.h">
       <Filter>src\core\logic</Filter>
@@ -199,6 +217,18 @@
     </ClInclude>
     <ClInclude Include="src\core\ui\layout.h">
       <Filter>src\core\ui</Filter>
+    </ClInclude>
+    <ClInclude Include="src\stages\stage_01\stage_01.h">
+      <Filter>src\stages\stage_01</Filter>
+    </ClInclude>
+    <ClInclude Include="src\stages\stage_02\stage_02.h">
+      <Filter>src\stages\stage_02</Filter>
+    </ClInclude>
+    <ClInclude Include="src\stages\stage_03\stage_03.h">
+      <Filter>src\stages\stage_03</Filter>
+    </ClInclude>
+    <ClInclude Include="src\stages\common.h">
+      <Filter>src\stages</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>
