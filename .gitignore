@@ -364,3 +364,6 @@ FodyWeavers.xsd
 
 *.exe
 !/MetroHero/src/debug/
+
+#external library
+libs/

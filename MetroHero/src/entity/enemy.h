@@ -13,6 +13,7 @@ typedef struct {
 	// 스탯
 	const char* name;
     const char* glyph;
+    const char* imagePath; // ★ Add Raylib Image Path
 	int maxHp;
 	int hp;
 	//int attack;

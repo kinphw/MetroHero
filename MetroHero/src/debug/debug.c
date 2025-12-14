@@ -1,37 +1,11 @@
-#include <windows.h>
 #include <stdio.h>
-#include <conio.h>
+// #include <windows.h> // Removed
+// #include <conio.h>   // Removed
 #include "debug.h"
 #include "../core/ui/text/glyph.h"
 
 void debug_console_info(void) {
-    HANDLE hOut = GetStdHandle(STD_OUTPUT_HANDLE);
-
-    // ★ UTF-8 설정 먼저!
-    SetConsoleOutputCP(CP_UTF8);
-    SetConsoleCP(CP_UTF8);
-
-    CONSOLE_SCREEN_BUFFER_INFO csbi;
-    GetConsoleScreenBufferInfo(hOut, &csbi);
-
-    printf("╔════════════════════════════════════╗\n");
-    printf("║     콘솔 상태 디버깅 정보          ║\n");
-    printf("╚════════════════════════════════════╝\n\n");
-
-    printf("버퍼 크기:   %d x %d\n", csbi.dwSize.X, csbi.dwSize.Y);
-    printf("윈도우 크기: %d x %d\n",
-        csbi.srWindow.Right - csbi.srWindow.Left + 1,
-        csbi.srWindow.Bottom - csbi.srWindow.Top + 1);
-    printf("커서 위치:   (%d, %d)\n",
-        csbi.dwCursorPosition.X, csbi.dwCursorPosition.Y);
-    printf("\n윈도우 좌표:\n");
-    printf("  Left=%d, Top=%d\n", csbi.srWindow.Left, csbi.srWindow.Top);
-    printf("  Right=%d, Bottom=%d\n", csbi.srWindow.Right, csbi.srWindow.Bottom);
-
-    printf("\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n");
-    printf("아무 키나 누르면 계속...");
-    _getch();
-    printf("\n");
+    printf("Console debug info disabled for Raylib mode.\n");
 }
 
 // Helper struct for test cases

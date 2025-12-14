@@ -12,6 +12,7 @@ void enemy_init(Enemy* e, const EnemyConfig* config, int x, int y) {
 
     e->name = config->name;
     e->glyph = config->glyph;
+    e->imagePath = config->imagePath; // ★ Add
     e->maxHp = config->maxHp;
     e->hp = config->maxHp;
     

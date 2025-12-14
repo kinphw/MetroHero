@@ -1,8 +1,13 @@
 // core/combat.c
 #include <stdio.h>
-#include <windows.h>  // Sleep 사용
+// #include <windows.h>  // Removed for Raylib
 
 #include "combat.h"
+#include "../ui/ui.h"
+#include "../../world/map.h"
+#include "../../world/glyph.h" 
+
+// ... (rest of code logic is same, commented out Sleep calls are fine to remain commented or be removed)
 #include "../ui/ui.h"
 #include "../../world/map.h"
 #include "../../world/glyph.h"  // ★ 추가

@@ -1,5 +1,5 @@
 #include <stdio.h>
-#include <windows.h>
+// #include <windows.h> // Removed for Raylib
 #include "map.h"
 #include "../entity/player.h"
 #include "../entity/enemy.h"  // ★ 추가
@@ -115,7 +115,8 @@ void map_load_chests(Map* m) {
                         x, y,
                         tile,  // ★ Pass the tile character
                         cfg[i].itemType,
-                        cfg[i].itemName
+                        cfg[i].itemName,
+                        cfg[i].imagePath
                     );
                     m->chestCount++;
 
@@ -285,46 +286,64 @@ void map_draw_viewport(const Map* m, const Player* p,
                 continue;
             }
 
-            // 플레이어 출력
+            // 플레이어 출력 (항상 존재, 방향별 처리는 나중으로 미룸)
             if (mx == p->x && my == p->y) {
-                ui_draw_str_at(screenX, screenY, GLYPH_PLAYER, NULL);
+                // TODO: p->direction based images
+                ui_draw_tile(screenX, screenY, "assets/person_down.png");
                 continue;
             }
 
             // ★ NPC 출력 (우선순위 높음)
             NPC* npc = map_get_npc_at((Map*)m, mx, my);
             if (npc != NULL) {
-                ui_draw_str_at(screenX, screenY, npc->glyph, NULL);
+                if (npc->imagePath) {
+                    ui_draw_tile(screenX, screenY, npc->imagePath);
+                } else {
+                    ui_draw_str_at(screenX, screenY, npc->glyph, NULL);
+                }
                 continue;
             }
 
             // 적 출력
             Enemy* enemy = map_get_enemy_at((Map*)m, mx, my);
             if (enemy != NULL) {
-                ui_draw_str_at(screenX, screenY, enemy->glyph, NULL);
+                if (enemy->imagePath) {
+                    ui_draw_tile(screenX, screenY, enemy->imagePath);
+                } else {
+                    ui_draw_str_at(screenX, screenY, enemy->glyph, NULL);
+                }
                 continue;
             }
 
             // 상자 출력
-            // 상자 출력
             Chest* chest = map_get_chest_at((Map*)m, mx, my);
             if (chest != NULL) {
                 if (chest->isOpened) {
-                     ui_draw_str_at(screenX, screenY, GLYPH_CHEST_OPEN, NULL);
+                     ui_draw_tile(screenX, screenY, "assets/chest_open.png");
                 } else {
-                    // Use the tile stored in the chest to look up the glyph
-                    const TileDef* def = map_get_tile_def(chest->tile);
-                    if (def) {
-                        ui_draw_str_at(screenX, screenY, def->glyph, NULL);
+                    // Try chest specific image?
+                    if (chest->imagePath) {
+                         ui_draw_tile(screenX, screenY, chest->imagePath);
                     } else {
-                        ui_draw_str_at(screenX, screenY, GLYPH_CHEST_CLOSED, NULL); // Fallback
+                        // Fallback to palette logic based on tile char?
+                        // Or general chest closed image
+                         ui_draw_tile(screenX, screenY, "assets/chest_closed.png");
                     }
                 }
                 continue;
             }
 
             // 기본 타일 출력
-            ui_draw_str_at(screenX, screenY, tile_to_glyph(m->tiles[my][mx]), NULL);
+            // tile_to_glyph returns const char* glyph string.
+            // We need TileDef to get imagePath.
+            const TileDef* def = map_get_tile_def(m->tiles[my][mx]);
+            if (def && def->imagePath) {
+                ui_draw_tile(screenX, screenY, def->imagePath);
+            } else if (def) {
+                ui_draw_str_at(screenX, screenY, def->glyph, NULL);
+            } else {
+                ui_draw_str_at(screenX, screenY, "  ", NULL);
+            }
         }
     }
 }

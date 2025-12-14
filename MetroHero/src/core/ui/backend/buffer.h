@@ -1,7 +1,7 @@
 #ifndef UI_BUFFER_H
 #define UI_BUFFER_H
 
-#include <windows.h>
+// #include <windows.h> // Removed for Raylib
 
 typedef struct {
     char ch[5];        // UTF-8 char (max 4 bytes + null)

@@ -1,24 +1,14 @@
 #include "console.h"
 #include "buffer.h"
-#include <windows.h>
+
+// Console specific functions are disabled for Raylib build
 
 void console_clear_fast(void) {
-    HANDLE hOut = GetStdHandle(STD_OUTPUT_HANDLE);
-    CONSOLE_SCREEN_BUFFER_INFO csbi;
-    GetConsoleScreenBufferInfo(hOut, &csbi);
-
-    DWORD cellCount = csbi.dwSize.X * csbi.dwSize.Y;
-    DWORD count;
-    COORD homeCoords = { 0, 0 };
-
-    FillConsoleOutputCharacter(hOut, ' ', cellCount, homeCoords, &count);
-    FillConsoleOutputAttribute(hOut, csbi.wAttributes, cellCount, homeCoords, &count);
-    SetConsoleCursorPosition(hOut, homeCoords);
+    // No-op
 }
 
 void console_goto(int x, int y) {
-    COORD pos = { x, y };
-    SetConsoleCursorPosition(GetStdHandle(STD_OUTPUT_HANDLE), pos);
+    // No-op
 }
 
 void ui_init(void) {

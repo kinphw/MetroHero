@@ -10,7 +10,8 @@
 // --- Tile Definition (Global Palette) ---
 typedef struct {
     char symbol;          // 맵 문자 (예: '#')
-    const char* glyph;    // 글리프 문자열 (예: GLYPH_WALL_GRAY)
+    const char* glyph;    // 글리프 문자열 (예: GLYPH_WALL_GRAY) - Debug/Legacy용
+    const char* imagePath;// 이미지 경로 (예: "assets/wall.png") - Raylib용
     int walkable;         // 1 = 이동 가능, 0 = 이동 불가
     const char* desc;     // 설명 (디버깅용)
 } TileDef;
@@ -20,6 +21,7 @@ typedef struct {
     char tile;              // '0', '1', '2' ... (맵상의 숫자)
     const char* itemType;   // "weapon", "armor", "item"
     const char* itemName;   // 아이템 이름
+    const char* imagePath;  // ★ 추가 (필요하다면)
 } ChestConfig;
 
 // --- Enemy Definition ---
@@ -27,6 +29,7 @@ typedef struct {
     char tile;              // 'a', 'b'... (맵상의 문자)
     const char* name;       // 몬스터 이름
     const char* glyph;      // e.g. "🐈"
+    const char* imagePath;  // ★ 추가
     int maxHp;
     int attackMin;
     int attackMax;
@@ -43,6 +46,7 @@ typedef struct {
     char tile;              // 'A', 'B', 'C'...
     const char* name;
     const char* glyph;      // e.g. GLYPH_NPC_MERCHANT
+    const char* imagePath;  // ★ 추가
     
     const char** dialogues;
     int dialogueCount;

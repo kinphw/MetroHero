@@ -1,13 +1,12 @@
 #define _CRT_SECURE_NO_WARNINGS
-#include <windows.h>
-#include <stdio.h>
-#include <string.h>
-#include <conio.h>
 #include "cinematic.h"
 #include "../core/ui/ui.h"
 #include "../world/glyph.h"
-// #include "../data/story.h" // Removed
 #include "../world/map_data.h" // For get_stage_data
+#include "raylib.h"
+#include <stdio.h>
+#include <string.h>
+
 
 // ============================================
 // Global Cinematics (Moved from story.h)

@@ -9,8 +9,9 @@ typedef struct {
 
 	const char* itemType;  // "weapon", "armor", "item"
 	const char* itemName;  // 획득할 아이템 이름
+    const char* imagePath; // ★ Add Raylib Image Path
 } Chest;
 
-void chest_init(Chest* c , int x , int y , char tile, const char* itemType , const char* itemName);
+void chest_init(Chest* c , int x , int y , char tile, const char* itemType , const char* itemName, const char* imagePath);
 
 #endif

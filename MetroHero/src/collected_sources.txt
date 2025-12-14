@@ -1,7 +1,7 @@
 === Source Collection Start ===
 
 ------------------------------------------------------------
-[FILE PATH] C:\projects\MetroHero\MetroHero\src\main.c
+[FILE PATH] c:\projects\MetroHero\MetroHero\src\main.c
 [FILE NAME] main.c
 ------------------------------------------------------------
 
@@ -19,7 +19,691 @@ int main(void) {
 
 
 ------------------------------------------------------------
-[FILE PATH] C:\projects\MetroHero\MetroHero\src\core\combat.c
+[FILE PATH] c:\projects\MetroHero\MetroHero\src\cinematic\cinematic.c
+[FILE NAME] cinematic.c
+------------------------------------------------------------
+
+#define _CRT_SECURE_NO_WARNINGS
+#include <windows.h>
+#include <stdio.h>
+#include <string.h>
+#include <conio.h>
+#include "cinematic.h"
+#include "../core/ui/ui.h"
+#include "../world/glyph.h"
+// #include "../data/story.h" // Removed
+#include "../world/map_data.h" // For get_stage_data
+
+// ============================================
+// Global Cinematics (Moved from story.h)
+// ============================================
+
+// --- Intro ---
+static const CinematicLine INTRO_LINES[] = {
+	{ "", STYLE_NORMAL, 500 },
+	{ "갑자기 당신은 눈을 떴다...", STYLE_TYPEWRITER, 800 },
+	{ "", STYLE_NORMAL, 300 },
+	{ "이곳은...", STYLE_TYPEWRITER, 800 },
+	{ "", STYLE_NORMAL, 300 },
+	{ "성균관대역....?", STYLE_TYPEWRITER, 1000 },
+	{ "", STYLE_NORMAL, 300 },
+	{ "당신은 몸을 일으켜 주위를 둘러본다...", STYLE_TYPEWRITER, 0 },
+};
+
+static const Cinematic STORY_INTRO = {
+    "★  M E T R O   H E R O  ★",
+    INTRO_LINES,
+    sizeof(INTRO_LINES) / sizeof(INTRO_LINES[0]),
+    30,     // 타이핑 속도
+    1,      // 스킵 힌트 표시
+    COLOR_BRIGHT_CYAN,
+    COLOR_WHITE
+};
+
+// --- Good Ending ---
+static const CinematicLine ENDING_GOOD_LINES[] = {
+    { "", STYLE_NORMAL, 500 },
+    { "당신은 해냈다.", STYLE_TYPEWRITER, 1000 },
+    { "", STYLE_NORMAL, 500 },
+    { "지하철의 어둠은 물러가고,", STYLE_TYPEWRITER, 800 },
+    { "시민들은 다시 안전하게 이동할 수 있게 되었다.", STYLE_TYPEWRITER, 1000 },
+    { "", STYLE_NORMAL, 500 },
+    { "하지만 영웅의 이야기는", STYLE_TYPEWRITER, 600 },
+    { "누구에게도 알려지지 않았다...", STYLE_TYPEWRITER, 1000 },
+    { "", STYLE_NORMAL, 800 },
+    { "그것이 진정한 영웅의 길.", STYLE_TYPEWRITER, 0 },
+};
+
+static const Cinematic STORY_ENDING_GOOD = {
+    "★  T H E   E N D  ★",
+    ENDING_GOOD_LINES,
+    sizeof(ENDING_GOOD_LINES) / sizeof(ENDING_GOOD_LINES[0]),
+    35,
+    1,
+    COLOR_BRIGHT_YELLOW,
+    COLOR_WHITE
+};
+
+// --- Bad Ending ---
+static const CinematicLine ENDING_BAD_LINES[] = {
+    { "", STYLE_NORMAL, 500 },
+    { "어둠이 당신을 삼켰다...", STYLE_TYPEWRITER, 1000 },
+    { "", STYLE_NORMAL, 500 },
+    { "지하철의 수호자는 쓰러졌고,", STYLE_TYPEWRITER, 800 },
+    { "도시는 영원한 어둠 속에 남겨졌다.", STYLE_TYPEWRITER, 1000 },
+    { "", STYLE_NORMAL, 800 },
+    { "하지만 희망은 사라지지 않는다.", STYLE_TYPEWRITER, 600 },
+    { "언젠가 새로운 영웅이 나타날 것이다...", STYLE_TYPEWRITER, 0 },
+};
+
+static const Cinematic STORY_ENDING_BAD = {
+    "G A M E   O V E R",
+    ENDING_BAD_LINES,
+    sizeof(ENDING_BAD_LINES) / sizeof(ENDING_BAD_LINES[0]),
+    40,
+    1,
+    COLOR_BRIGHT_RED,
+    COLOR_GRAY
+};
+
+
+// ============================================
+// 내부 상수 (Layout.h 기반 동적 조정)
+// ============================================
+
+#define CINE_X      SCREEN_PADDING_LEFT
+#define CINE_Y      SCREEN_PADDING_TOP
+
+// 테두리가 그려질 실제 크기 (화면 전체 덮지 않고 패딩 감안)
+// 우측/하단 여백도 좌측/상단과 비슷하게 줌
+#define CINE_WIDTH  (SCREEN_W - CINE_X - 4) 
+#define CINE_HEIGHT (SCREEN_H - CINE_Y - 2)
+
+// 텍스트 표시 영역 (테두리 내부)
+#define CONTENT_X       (CINE_X + 4)
+#define CONTENT_Y       (CINE_Y + 3)
+#define CONTENT_WIDTH   (CINE_WIDTH - 8)
+#define CONTENT_HEIGHT  (CINE_HEIGHT - 6)
+
+// 하단 안내 메시지 위치
+#define CONTENT_MAX_Y   (CONTENT_Y + CONTENT_HEIGHT - 1)
+
+// ============================================
+// 유틸리티 함수
+// ============================================
+
+// 화면 전체 지우기
+static void cinematic_clear(void) {
+    ui_clear_buffer();
+}
+
+// 지정 위치로 커서 이동 (더미 - 실제로는 draw함수가 좌표 받음)
+static void cinematic_goto(int x, int y) {
+    // console_goto(x, y); // Not needed for buffer
+}
+
+// ms 단위 대기
+static void cinematic_delay(int ms) {
+    Sleep(ms);
+}
+
+// 키 입력 체크 (논블로킹)
+static int cinematic_key_pressed(void) {
+    return _kbhit();
+}
+
+// 키 입력 읽기
+static int cinematic_get_key(void) {
+    return _getch();
+}
+
+// ============================================
+// 테두리 그리기
+// ============================================
+
+void cinematic_draw_frame(const char* borderColor) {
+    const char* color = borderColor ? borderColor : COLOR_WHITE;
+
+    cinematic_clear();
+
+    int right = CINE_X + CINE_WIDTH - 1;
+    int bottom = CINE_Y + CINE_HEIGHT - 1;
+
+    // 상단 테두리
+    ui_draw_str_at(CINE_X, CINE_Y, "╔", color);
+    for (int i = CINE_X + 1; i < right; i++) ui_draw_str_at(i, CINE_Y, "═", color);
+    ui_draw_str_at(right, CINE_Y, "╗", color);
+
+    // 좌우 테두리
+    for (int y = CINE_Y + 1; y < bottom; y++) {
+        ui_draw_str_at(CINE_X, y, "║", color);
+        ui_draw_str_at(right, y, "║", color);
+    }
+
+    // 하단 테두리
+    ui_draw_str_at(CINE_X, bottom, "╚", color);
+    for (int i = CINE_X + 1; i < right; i++) ui_draw_str_at(i, bottom, "═", color);
+    ui_draw_str_at(right, bottom, "╝", color);
+    
+    ui_present(); // 기본 프레임 그림
+}
+
+// ============================================
+// 중앙 정렬 텍스트 출력
+// ============================================
+
+void cinematic_print_centered(int y, const char* text, const char* color) {
+    int textWidth = display_width(text);
+    int x = CINE_X + (CINE_WIDTH - textWidth) / 2; // Add global offset
+    if (x < CONTENT_X) x = CONTENT_X;
+
+    ui_draw_str_at(x, y, text, color);
+    // ui_present(); // 제거: 호출자가 제어
+}
+
+// ============================================
+// 타이핑 효과 텍스트 출력
+// ============================================
+
+void cinematic_print_typewriter(int x, int y, const char* text, const char* color, int charDelay) {
+    const unsigned char* s = (const unsigned char*)text;
+    int curX = x;
+
+    while (*s) {
+        // ESC 스킵 체크
+        if (cinematic_key_pressed()) {
+            int key = cinematic_get_key();
+            if (key == 27) {  // ESC
+                // 남은 텍스트 한번에 출력
+                ui_draw_str_at(curX, y, (const char*)s, color);
+                ui_present();
+                return;
+            }
+        }
+
+        // ANSI 이스케이프 시퀀스 처리
+        if (*s == '\033' || *s == 0x1B) {
+            const char* start = (const char*)s;
+            s++;
+            if (*s == '[') {
+                while (*s && *s != 'm') s++;
+                if (*s == 'm') s++;
+            }
+             
+             int len = (int)((const unsigned char*)s - (const unsigned char*)start);
+             char buf[32];
+             strncpy(buf, start, len);
+             buf[len] = 0;
+             ui_draw_str_at(curX, y, buf, color);
+             // Don't advance curX for ANSI
+             continue;
+        }
+
+        // UTF-8 문자 처리 & Width calc (Use Centered Helper)
+        int charLen = 1;
+        int charWidth = 1;
+        
+        ui_get_glyph_info((const char*)s, &charLen, &charWidth);
+        
+        char buf[8] = {0};
+        strncpy(buf, (const char*)s, charLen);
+        
+        // Draw
+        ui_draw_str_at(curX, y, buf, color);
+        ui_present();
+        
+        s += charLen;
+        curX += charWidth;
+
+        cinematic_delay(charDelay);
+    }
+}
+
+// ============================================
+// 스크롤 텍스트 (스타워즈 스타일)
+// ============================================
+
+void cinematic_scroll_text(const char** lines, int lineCount, int speed) {
+    // 스크롤 영역: 화면 중앙 부분
+    int scrollTop = CINE_Y + 6;
+    int scrollBottom = CINE_Y + CINE_HEIGHT - 6;
+    int scrollHeight = scrollBottom - scrollTop;
+
+    // 모든 라인을 아래에서 위로 스크롤
+    for (int offset = scrollHeight; offset > -lineCount; offset--) {
+        // ESC 스킵 체크
+        if (cinematic_key_pressed()) {
+            int key = cinematic_get_key();
+            if (key == 27) return;
+        }
+
+        // 스크롤 영역 지우기
+        for (int y = scrollTop; y < scrollBottom; y++) {
+             ui_draw_str_at(CONTENT_X, y, "                                                                                                                ", NULL); 
+        }
+
+        // 현재 보이는 라인들 출력
+        for (int i = 0; i < lineCount; i++) {
+            int screenY = scrollTop + offset + i;
+
+            if (screenY >= scrollTop && screenY < scrollBottom) {
+                
+                int distFromCenter = abs(screenY - (scrollTop + scrollHeight / 2));
+                const char* fadeColor;
+
+                if (distFromCenter < 3) {
+                    fadeColor = COLOR_BRIGHT_WHITE;
+                }
+                else if (distFromCenter < 5) {
+                    fadeColor = COLOR_WHITE;
+                }
+                else if (distFromCenter < 7) {
+                    fadeColor = COLOR_GRAY;
+                }
+                else {
+                    fadeColor = COLOR_DARK_GRAY;
+                }
+
+                cinematic_print_centered(screenY, lines[i], fadeColor);
+            }
+        }
+
+        ui_present();
+        cinematic_delay(speed);
+    }
+}
+
+// ============================================
+// 키 입력 대기 (깜빡임 효과 포함)
+// ============================================
+
+int cinematic_wait_key(int showHint) {
+    // showHint가 참이면 하단 안내 메시지를 깜빡임
+    int blinkState = 0;
+    int elapsed = 0;
+    const int BLINK_INTERVAL = 500; // 0.5초
+
+    while (1) {
+        if (cinematic_key_pressed()) {
+            int key = cinematic_get_key();
+            
+            // 키 입력 시 안내 메시지를 원래 색(회색)으로 복구
+            if (showHint) {
+                cinematic_print_centered(CINE_HEIGHT - 3,
+                    "[SPACE] 계속    [ESC] 스킵", COLOR_GRAY);
+            }
+
+            if (key == ' ' || key == 13) {  // SPACE 또는 ENTER
+                return 0;  // 계속
+            }
+            else if (key == 27) {  // ESC
+                return 1;  // 스킵
+            }
+        }
+
+        // 깜빡임 처리
+        if (showHint) {
+            elapsed += 50;
+            if (elapsed >= BLINK_INTERVAL) {
+                elapsed = 0;
+                blinkState = !blinkState;
+                
+                const char* blinkColor = blinkState ? COLOR_BRIGHT_WHITE : COLOR_GRAY;
+                cinematic_print_centered(CINE_HEIGHT - 3,
+                    "[SPACE] 계속    [ESC] 스킵", blinkColor);
+            }
+        }
+
+        ui_present();
+        cinematic_delay(50);
+    }
+}
+
+// ============================================
+// 페이드 효과
+// ============================================
+
+void cinematic_fade_in(int duration) {
+    // 단계별 페이드 인 (3단계)
+    int stepDelay = duration / 3;
+    cinematic_delay(stepDelay);
+    cinematic_delay(stepDelay);
+    cinematic_delay(stepDelay);
+}
+
+void cinematic_fade_out(int duration) {
+    int stepDelay = duration / 3;
+    cinematic_delay(stepDelay);
+    cinematic_delay(stepDelay);
+    cinematic_delay(stepDelay);
+}
+
+// ============================================
+// 메인 시네마틱 재생 함수
+// ============================================
+
+void cinematic_play(const Cinematic* cine) {
+    if (!cine || !cine->lines || cine->lineCount <= 0) return;
+
+    // 화면 준비
+    cinematic_draw_frame(cine->borderColor);
+
+    // 제목 표시
+    if (cine->title) {
+        cinematic_print_centered(CINE_Y + 2, cine->title, COLOR_BRIGHT_YELLOW);
+
+        // 제목 아래 구분선
+        char sep[1024] = "";
+        for (int i = 0; i < CONTENT_WIDTH; i++) strcat(sep, "─");
+        
+        ui_draw_str_at(CONTENT_X, CINE_Y + 3, sep, COLOR_YELLOW);
+        ui_present();
+    }
+
+    // ★ 하단 안내 메시지 표시 (처음부터 항상 표시)
+    if (cine->showSkipHint) {
+        cinematic_print_centered(CINE_HEIGHT - 3,
+            "[SPACE] 계속    [ESC] 스킵", COLOR_GRAY);
+    }
+
+    // 각 라인 처리
+    int currentY = cine->title ? (CONTENT_Y + 2) : CONTENT_Y;
+    int skipped = 0;
+
+    for (int i = 0; i < cine->lineCount && !skipped; i++) {
+        const CinematicLine* line = &cine->lines[i];
+
+        // ★ ESC 키로 언제든지 스킵 가능
+        if (cinematic_key_pressed()) {
+            int key = cinematic_get_key();
+            if (key == 27) {  // ESC
+                skipped = 1;
+                break;
+            }
+        }
+
+        // ★ 하단 안내 메시지 영역 보호: Y가 CONTENT_MAX_Y를 넘으면 출력 중단
+        if (currentY > CONTENT_MAX_Y) {
+            break;
+        }
+
+        switch (line->style) {
+            case STYLE_TITLE:
+                cinematic_print_centered(currentY, line->text, COLOR_BRIGHT_YELLOW);
+                ui_present();
+                currentY += 2;
+                break;
+
+            case STYLE_SUBTITLE:
+                cinematic_print_centered(currentY, line->text, COLOR_YELLOW);
+                ui_present();
+                currentY += 2;
+                break;
+
+            case STYLE_TYPEWRITER: {
+                int textWidth = display_width(line->text);
+                int x = CINE_X + (CINE_WIDTH - textWidth) / 2;
+                if (x < CONTENT_X) x = CONTENT_X;
+
+                const char* color = cine->textColor ? cine->textColor : COLOR_WHITE;
+                
+                cinematic_print_typewriter(x, currentY, line->text, color,
+                    cine->scrollSpeed > 0 ? cine->scrollSpeed : 30);
+                
+                currentY += 2;
+                break;
+            }
+
+            case STYLE_SCROLL_UP:
+                cinematic_scroll_text((const char**)line->text, 10, cine->scrollSpeed); 
+                break;
+
+            case STYLE_FADE_IN:
+                cinematic_fade_in(500);
+                cinematic_print_centered(currentY, line->text,
+                    cine->textColor ? cine->textColor : COLOR_WHITE);
+                ui_present();
+                currentY += 2;
+                break;
+
+            case STYLE_NORMAL:
+            default:
+                cinematic_print_centered(currentY, line->text,
+                    cine->textColor ? cine->textColor : COLOR_WHITE);
+                ui_present();
+                currentY += 1;
+                break;
+        }
+
+        // 라인 후 대기
+        if (line->delayAfter > 0) {
+            // ★ 딜레이 중에도 ESC로 스킵 가능하도록 짧은 단위로 나눠서 체크
+            int remainingDelay = line->delayAfter;
+            const int checkInterval = 50;  // 50ms마다 체크
+
+            while (remainingDelay > 0 && !skipped) {
+                int waitTime = (remainingDelay < checkInterval) ? remainingDelay : checkInterval;
+                cinematic_delay(waitTime);
+                remainingDelay -= waitTime;
+
+                if (cinematic_key_pressed()) {
+                    int key = cinematic_get_key();
+                    if (key == 27) {  // ESC
+                        skipped = 1;
+                        break;
+                    }
+                }
+            }
+        }
+        else if (line->delayAfter == 0 && line->style != STYLE_NORMAL) {
+            // 키 입력 대기 (힌트 깜빡임 적용)
+            skipped = cinematic_wait_key(cine->showSkipHint);
+        }
+    }
+
+    // 스킵하지 않았으면 최종 키 대기 (힌트 깜빡임 적용)
+    if (!skipped && cine->showSkipHint) {
+        cinematic_wait_key(cine->showSkipHint);
+    }
+
+    // 페이드 아웃
+    cinematic_fade_out(300);
+}
+
+// ============================================
+// 미리 정의된 시네마틱 (Using StageData or Globals)
+// ============================================
+
+void cinematic_play_intro(void) {
+    cinematic_play(&STORY_INTRO);
+}
+
+void cinematic_play_stage_start(int stageNum) {
+    const StageData* data = get_stage_data(stageNum);
+    if (data && data->intro) {
+        cinematic_play(data->intro);
+    }
+}
+
+void cinematic_play_stage_clear(int stageNum) {
+    const StageData* data = get_stage_data(stageNum);
+    if (data && data->outro) {
+        cinematic_play(data->outro);
+    }
+}
+
+void cinematic_play_ending(int endingType) {
+    if (endingType == 0) {
+        cinematic_play(&STORY_ENDING_GOOD);
+    }
+    else {
+        cinematic_play(&STORY_ENDING_BAD);
+    }
+}
+
+
+------------------------------------------------------------
+[FILE PATH] c:\projects\MetroHero\MetroHero\src\cinematic\cinematic.h
+[FILE NAME] cinematic.h
+------------------------------------------------------------
+
+#ifndef CINEMATIC_H
+#define CINEMATIC_H
+
+// ============================================
+// 시네마틱 시스템 - 스타워즈 스타일 풀스크린 대화창
+// ============================================
+
+// 시네마틱 타입
+typedef enum {
+    CINEMATIC_INTRO,        // 게임 시작 인트로
+    CINEMATIC_STAGE_CLEAR,  // 스테이지 클리어
+    CINEMATIC_STAGE_START,  // 스테이지 시작
+    CINEMATIC_ENDING_GOOD,  // 좋은 엔딩
+    CINEMATIC_ENDING_BAD,   // 나쁜 엔딩 (사망)
+    CINEMATIC_CUSTOM        // 커스텀 이벤트
+} CinematicType;
+
+// 텍스트 표시 스타일
+typedef enum {
+    STYLE_NORMAL,           // 일반 텍스트
+    STYLE_TITLE,            // 제목 (크게, 중앙 정렬)
+    STYLE_SUBTITLE,         // 부제목
+    STYLE_SCROLL_UP,        // 아래→위 스크롤 (스타워즈)
+    STYLE_TYPEWRITER,       // 타이핑 효과
+    STYLE_FADE_IN           // 페이드 인
+} TextStyle;
+
+// 시네마틱 라인 구조체
+typedef struct {
+    const char* text;       // 텍스트 내용
+    TextStyle style;        // 표시 스타일
+    int delayAfter;         // 이 라인 후 대기시간 (ms), 0이면 키 입력 대기
+} CinematicLine;
+
+// 시네마틱 구조체
+typedef struct {
+    const char* title;              // 상단 제목 (NULL이면 표시 안함)
+    const CinematicLine* lines;     // 텍스트 라인 배열
+    int lineCount;                  // 라인 수
+    int scrollSpeed;                // 스크롤 속도 (ms), 기본값 50
+    int showSkipHint;               // "[ESC] 스킵" 표시 여부
+    const char* borderColor;        // 테두리 색상 (ANSI 코드)
+    const char* textColor;          // 기본 텍스트 색상
+} Cinematic;
+
+// ============================================
+// 메인 함수
+// ============================================
+
+// 시네마틱 재생 (범용)
+void cinematic_play(const Cinematic* cine);
+
+// 미리 정의된 시네마틱 재생
+void cinematic_play_intro(void);
+void cinematic_play_stage_start(int stageNum);
+void cinematic_play_stage_clear(int stageNum);
+void cinematic_play_ending(int endingType);
+
+// ============================================
+// 유틸리티 함수
+// ============================================
+
+// 화면 전체 지우고 테두리 그리기
+void cinematic_draw_frame(const char* borderColor);
+
+// 중앙 정렬 텍스트 출력
+void cinematic_print_centered(int y, const char* text, const char* color);
+
+// 타이핑 효과로 텍스트 출력
+void cinematic_print_typewriter(int x, int y, const char* text, const char* color, int charDelay);
+
+// 스크롤 텍스트 (스타워즈 스타일)
+void cinematic_scroll_text(const char** lines, int lineCount, int speed);
+
+// 키 입력 대기 (SPACE: 계속, ESC: 스킵)
+// 반환값: 0 = 계속, 1 = 스킵
+int cinematic_wait_key(int showHint);
+
+// 페이드 효과 (밝기 조절)
+void cinematic_fade_in(int duration);
+void cinematic_fade_out(int duration);
+
+#endif
+
+
+------------------------------------------------------------
+[FILE PATH] c:\projects\MetroHero\MetroHero\src\core\game.c
+[FILE NAME] game.c
+------------------------------------------------------------
+
+#define _CRT_SECURE_NO_WARNINGS
+#include <stdio.h>
+#include <stdlib.h>
+#include "game.h"
+#include "system/game_internal.h"
+#include "ui/ui.h"
+#include "../cinematic/cinematic.h"
+#include "../world/map.h"
+#include "../entity/player.h"
+
+// 게임 실행 (진입점)
+void game_run(void) {
+    // 1. 상태 초기화
+    GameState state = { 0 };  // 모든 필드 0/NULL 초기화
+
+    ui_init();
+
+    // 인트로 시네마틱
+    cinematic_play_intro();
+
+    map_init(&state.map, 1);
+    player_init(&state.player);
+
+    // 스테이지 1 시작
+    cinematic_play_stage_start(1);
+
+    // 플레이어 배치
+    state.player.x = state.map.spawnX;
+    state.player.y = state.map.spawnY;
+    
+    // 초기 뷰포트 상태 설정 (강제 렌더링을 위해 다르게 설정)
+    state.prevX = -1;
+    state.prevY = -1;
+    state.isRunning = 1;
+    state.inDialogue = 0;
+    state.currentNPC = NULL;
+
+    // 초기 화면 그리기 (렌더링 모듈에서 일부 수행하지만, 전체 클리어는 여기서 하는게 깔끔할 수 있음)
+    ui_clear_buffer();
+    
+    // 뷰포트, UI 초기화 그리기
+    game_render(&state);
+
+    // 입력 안내
+    ui_draw_str_at(0, SCREEN_H - 1, "[화살표/WASD] 이동 | [0] 상호작용 | [Q] 종료", NULL);
+    ui_present();
+
+    // 2. 메인 루프 실행
+    game_loop(&state);
+}
+
+
+------------------------------------------------------------
+[FILE PATH] c:\projects\MetroHero\MetroHero\src\core\game.h
+[FILE NAME] game.h
+------------------------------------------------------------
+
+#ifndef GAME_H
+#define GAME_H
+
+void game_run(void);
+
+#endif
+
+
+------------------------------------------------------------
+[FILE PATH] c:\projects\MetroHero\MetroHero\src\core\logic\combat.c
 [FILE NAME] combat.c
 ------------------------------------------------------------
 
@@ -28,9 +712,9 @@ int main(void) {
 #include <windows.h>  // Sleep 사용
 
 #include "combat.h"
-#include "ui.h"
-#include "../world/map.h"
-#include "../world/glyph.h"  // ★ 추가
+#include "../ui/ui.h"
+#include "../../world/map.h"
+#include "../../world/glyph.h"  // ★ 추가
 
 
 // ★ 인접 적 체크 및 메시지 (체력 + 순환 대사 포함)
@@ -67,7 +751,7 @@ void combat_attack_enemy(Player* p, Enemy* e, Map* m) {
     char logMsg[128];
 
     // ★ 전투 이펙트 표시 (상태창 내부 오른쪽)
-    ui_draw_combat_effect(STATUS_X + 25, STATUS_Y + 2);
+    ui_show_combat_effect();
 
     // ★★★ 플레이어 공격 - 랜덤 데미지 ★★★
     int playerAttack = p->attackMin + rand() % (p->attackMax - p->attackMin + 1);
@@ -94,7 +778,7 @@ void combat_attack_enemy(Player* p, Enemy* e, Map* m) {
         ui_add_log(logMsg);
 
         // ★ 이펙트 제거
-        ui_clear_combat_effect(107, 2);
+        ui_hide_combat_effect();
         return;
     }
 
@@ -134,7 +818,7 @@ void combat_attack_enemy(Player* p, Enemy* e, Map* m) {
 }
 
 ------------------------------------------------------------
-[FILE PATH] C:\projects\MetroHero\MetroHero\src\core\combat.h
+[FILE PATH] c:\projects\MetroHero\MetroHero\src\core\logic\combat.h
 [FILE NAME] combat.h
 ------------------------------------------------------------
 
@@ -142,9 +826,9 @@ void combat_attack_enemy(Player* p, Enemy* e, Map* m) {
 #ifndef COMBAT_H
 #define COMBAT_H
 
-#include "../entity/player.h"
-#include "../entity/enemy.h"
-#include "../world/map.h"
+#include "../../entity/player.h"
+#include "../../entity/enemy.h"
+#include "../../world/map.h"
 
 // 인접 적 체크 및 메시지 생성
 void combat_check_nearby_enemy(Map* m , Player* p);
@@ -155,337 +839,544 @@ void combat_attack_enemy(Player* p , Enemy* e , Map* m);
 #endif
 
 ------------------------------------------------------------
-[FILE PATH] C:\projects\MetroHero\MetroHero\src\core\game.c
-[FILE NAME] game.c
+[FILE PATH] c:\projects\MetroHero\MetroHero\src\core\system\context.h
+[FILE NAME] context.h
 ------------------------------------------------------------
 
-#define _CRT_SECURE_NO_WARNINGS
-#include <stdio.h>
-#include <stdlib.h>
-#include <conio.h>   // _getch
-#include <ctype.h>   // tolower
-#include "game.h"
-#include "ui.h"
-#include "../world/map.h"
-#include "../entity/player.h"
-#include "../world/glyph.h"  // ★ 추가
-#include "combat.h"  // ★ 추가
+#ifndef CONTEXT_H
+#define CONTEXT_H
 
-void game_run(void) {
+#include "../../world/map.h"
+#include "../../entity/player.h"
+
+// 게임의 전체 상태를 담는 구조체
+typedef struct {
     Map map;
     Player player;
-    int prevX, prevY;  // ★ 이전 위치 저장
+    
+    int isRunning;      // 게임 루프 실행 여부
+    
+    // 이동 관련
+    int prevX;
+    int prevY;
 
-    // ★ 대화 모드 관련 변수
-    int inDialogue = 0;
-    NPC* currentNPC = NULL;
+    // 대화 모드 관련
+    int inDialogue;
+    NPC* currentNPC;
 
-    map_init(&map, 1);
-    player_init(&player);
-
-    // ★ 스폰 포인트에 플레이어 배치
-    player.x = map.spawnX;
-    player.y = map.spawnY;
-
-    ui_init();
-
-
-    // ★ 초기 화면은 한 번만 그리기
-    console_clear_fast();
-
-    // ★ 뷰포트 (왼쪽) - 40칸 너비로 제한
-    map_draw_viewport(&map, &player, VIEWPORT_X, VIEWPORT_Y, 40, VIEWPORT_H);
-
-    // ★ 상태창 (오른쪽 상단)
-    ui_draw_stats(&player, STATUS_X, STATUS_Y, STATUS_W, STATUS_H);
-
-    // ★ 장비창 (오른쪽 중단)
-    ui_draw_equipment(&player, EQUIP_X, EQUIP_Y, EQUIP_W, EQUIP_H);
-
-    // ★ 로그창 (하단)
-    ui_draw_log(LOG_X, LOG_Y, LOG_W, LOG_H);
-
-    // ★ 입력 안내 (최하단)
-    console_goto(0, SCREEN_H - 1);
-    printf("[화살표/WASD] 이동 | [E] 상자 열기 | [Q] 종료");
-
-    prevX = player.x;
-    prevY = player.y;
-
-    while (1) {
-
-        // ★ 대화 모드일 때
-        if (inDialogue && currentNPC != NULL) {
-            int cmd = _getch();
-            cmd = tolower(cmd);
-
-            if (cmd == '0') {
-                // 🔥 마지막 대사인지 체크
-                if (currentNPC->currentDialogue == currentNPC->dialogueCount - 1) {
-
-                    // 🔥 여기 추가
-                    currentNPC->currentDialogue = 0;
-
-                    // 🔥 대화 종료
-                    inDialogue = 0;
-                    currentNPC = NULL;
-
-                    // 🔥 대화창 영역 지우기
-                    ui_clear_dialogue_area(DIALOGUE_X, DIALOGUE_Y, DIALOGUE_W, DIALOGUE_H);
-
-                    // 🔥 원래 UI 복귀
-                    ui_draw_stats(&player, STATUS_X, STATUS_Y, STATUS_W, STATUS_H);
-                    ui_draw_equipment(&player, EQUIP_X, EQUIP_Y, EQUIP_W, EQUIP_H);
-                    ui_draw_log(0, LOG_Y, LOG_W, LOG_H);
-
-                }
-                else {
-                    // 🔥 아직 마지막이 아니면 다음 대사
-                    npc_next_dialogue(currentNPC);
-                    ui_draw_dialogue(currentNPC, DIALOGUE_X, DIALOGUE_Y, DIALOGUE_W, DIALOGUE_H);
-                }
-            }
-            else if (cmd == 't' && currentNPC->canTrade) {
-                // 거래 모드 (향후 구현)
-                ui_add_log(COLOR_YELLOW "거래 시스템은 곧 추가됩니다!" COLOR_RESET);
-                ui_draw_log(LOG_X, LOG_Y, LOG_W, LOG_H);
-            }
-            else if (cmd == 'x' || cmd == 27) {  // X 또는 ESC
-
-                // 🔥 여기 추가
-                currentNPC->currentDialogue = 0;
-
-                // 대화 종료
-                inDialogue = 0;
-                currentNPC = NULL;
-
-                // 대화창 지우고 원래 UI 복원
-                ui_clear_dialogue_area(DIALOGUE_X, DIALOGUE_Y, DIALOGUE_W, DIALOGUE_H);
-                ui_draw_stats(&player, STATUS_X, STATUS_Y, STATUS_W, STATUS_H);
-                ui_draw_equipment(&player, EQUIP_X, EQUIP_Y, EQUIP_W, EQUIP_H);
-            }
-
-            continue;  // 대화 모드에서는 다른 입력 무시
-        }
-
-        // ★ 플레이어 사망 체크
-        if (player.hp <= 0) {
-            ui_add_log("게임 오버!");
-            ui_draw_log(0, LOG_Y, LOG_W, LOG_H);
-            console_goto(0, SCREEN_H - 1);
-            printf("아무 키나 누르면 종료...");
-            _getch();
-            break;
-        }
-
-        int cmd = _getch();
-
-        // ★ 화살표 키 처리 (2바이트 입력)
-        if (cmd == 0 || cmd == 224) {  // 특수 키 감지
-            cmd = _getch();  // 실제 키 코드 읽기
-
-            switch (cmd) {
-            case 72: cmd = 'w'; break;  // 위쪽 화살표
-            case 80: cmd = 's'; break;  // 아래쪽 화살표
-            case 75: cmd = 'a'; break;  // 왼쪽 화살표
-            case 77: cmd = 'd'; break;  // 오른쪽 화살표
-            }
-        }
-
-        cmd = tolower(cmd);
-
-        if (cmd == 'q') break;
-
-        // ★ 행동 전에 이펙트 지우기
-        ui_clear_combat_effect(107, 2);
-
-        // ★ 이동 전에 목표 위치의 적 확인
-        int targetX = player.x;
-        int targetY = player.y;
-
-        switch (cmd) {
-        case 'w': targetY--; break;
-        case 's': targetY++; break;
-        case 'a': targetX--; break;
-        case 'd': targetX++; break;
-        }
-
-        Enemy* targetEnemy = map_get_enemy_at(&map, targetX, targetY);
-
-        player_move(&player, &map, cmd);
-
-        // ★ 전투가 발생했고 적이 죽었으면 화면에서 지우기
-        if (targetEnemy != NULL && !targetEnemy->isAlive) {
-            // 뷰포트 갱신으로 처리됨
-        }
-
-        // ★ 이동했으면 뷰포트만 다시 그리기
-        if (prevX != player.x || prevY != player.y) {
-            map_draw_viewport(&map, &player, VIEWPORT_X, VIEWPORT_Y, 40, VIEWPORT_H);
-            prevX = player.x;
-            prevY = player.y;
-        }
-
-
-        // ★ 상자 열기 처리 (E 키)
-        if (cmd == 'e') {
-            Chest* chest = map_get_adjacent_chest(&map, player.x, player.y);
-            if (chest != NULL && !chest->isOpened) {
-                chest->isOpened = 1;
-                player_apply_item(&player, chest->itemType, chest->itemName);
-
-                char msg[128];
-                snprintf(msg, sizeof(msg),
-                    COLOR_BRIGHT_YELLOW "📦 상자를 열었다! → %s 획득!" COLOR_RESET,
-                    chest->itemName);
-
-                ui_add_log(msg);
-
-                // 뷰포트 갱신
-                map_draw_viewport(&map, &player, VIEWPORT_X, VIEWPORT_Y, 40, VIEWPORT_H);
-
-                // 장비창 갱신
-                ui_draw_equipment(&player, EQUIP_X, EQUIP_Y, EQUIP_W, EQUIP_H);
-            }
-        }
-
-        // ★ NPC 대화 처리 (0 키) - 바로 대화창 표시
-        if (cmd == '0') {
-            NPC* npc = map_get_adjacent_npc(&map, player.x, player.y);
-            if (npc != NULL) {
-                if (npc->useDialogueBox) {
-                    // ★ 전용 대화창 모드 진입
-                    inDialogue = 1;
-                    currentNPC = npc;
-
-                    // ★ 먼저 기존 UI 영역 지우기
-                    ui_clear_dialogue_area(DIALOGUE_X, DIALOGUE_Y, DIALOGUE_W, DIALOGUE_H);
-
-                    // ★ 대화창 그리기
-                    ui_draw_dialogue(npc, DIALOGUE_X, DIALOGUE_Y, DIALOGUE_W, DIALOGUE_H);
-
-                    // 로그에도 기록
-                    char msg[128];
-                    snprintf(msg, sizeof(msg), "%s와 대화를 시작했다.", npc->name);
-                    ui_add_log(msg);
-                    ui_draw_log(LOG_X, LOG_Y, LOG_W, LOG_H);
-                }
-                else {
-                    // ★ 로그창 모드 (기존 방식)
-                    const char* dialogue = npc_get_dialogue(npc);
-
-                    char msg[256];
-                    snprintf(msg, sizeof(msg),
-                        COLOR_BRIGHT_CYAN "💬 %s: " COLOR_RESET "「%s」",
-                        npc->name, dialogue);
-
-                    ui_add_log(msg);
-                    npc_next_dialogue(npc);
-                }
-            }
-        }
-
-        // ★ 인접 적 체크
-        combat_check_nearby_enemy(&map, &player);
-
-        // ★ 인접 NPC 체크 추가
-        NPC* nearNpc = map_get_adjacent_npc(&map, player.x, player.y);
-        if (nearNpc != NULL) {
-            char msg[128];
-            snprintf(msg, sizeof(msg),
-                "%s이(가) 가까이 있다. [0] 키로 대화할 수 있다.",
-                nearNpc->name);
-            ui_add_log(msg);
-        }
-
-        // ★ 인접 상자 체크 추가 (여기!)
-        Chest* nearChest = map_get_adjacent_chest(&map, player.x, player.y);
-        if (nearChest != NULL && !nearChest->isOpened) {
-            ui_add_log("가까운 곳에 상자가 있다. [0] 키로 열 수 있다.");
-        }
-
-        // ★ 상태창 갱신 (HP 변경 반영)
-        //ui_draw_stats(&player, STATUS_X, STATUS_Y, STATUS_W, STATUS_H);
-
-        // ★ 로그창 갱신
-        //ui_draw_log(0, LOG_Y, LOG_W, LOG_H);
-
-        // ★ 상태창/장비창/로그창은 대화 모드일 때 다시 그리면 안 됨
-        if (!inDialogue) {
-            ui_draw_stats(&player, STATUS_X, STATUS_Y, STATUS_W, STATUS_H);
-            ui_draw_equipment(&player, EQUIP_X, EQUIP_Y, EQUIP_W, EQUIP_H);
-            ui_draw_log(0, LOG_Y, LOG_W, LOG_H);
-        }
-    }
-}
-
-
-------------------------------------------------------------
-[FILE PATH] C:\projects\MetroHero\MetroHero\src\core\game.h
-[FILE NAME] game.h
-------------------------------------------------------------
-
-#ifndef GAME_H
-#define GAME_H
-
-void game_run(void);
+} GameState;
 
 #endif
 
 
 ------------------------------------------------------------
-[FILE PATH] C:\projects\MetroHero\MetroHero\src\core\ui.c
-[FILE NAME] ui.c
+[FILE PATH] c:\projects\MetroHero\MetroHero\src\core\system\game_input.c
+[FILE NAME] game_input.c
 ------------------------------------------------------------
 
-#include <windows.h>
+#define _CRT_SECURE_NO_WARNINGS
 #include <stdio.h>
-#include "ui.h"
-#include "../entity/player.h"
-#include "../world/glyph.h"
+#include <conio.h>
+#include <ctype.h>
+#include "game_internal.h"
+#include "../ui/ui.h"
+#include "../logic/combat.h"
+#include "../../cinematic/cinematic.h"
+#include "../../world/glyph.h"
 
-void ui_init(void) {
+// 입력 처리 및 로직 업데이트
+void game_process_input(GameState* state) {
+    // 1. 대화 모드 처리
+    if (state->inDialogue && state->currentNPC != NULL) {
+        int cmd = _getch();
+        cmd = tolower(cmd);
 
+        if (cmd == '0') {
+            if (state->currentNPC->currentDialogue == state->currentNPC->dialogueCount - 1) {
+                // 대화 끝
+                state->currentNPC->currentDialogue = 0;
+                state->inDialogue = 0;
+                state->currentNPC = NULL;
+
+                ui_clear_dialogue_area();
+                // UI 복구는 game_render 혹은 다음 프레임에서 처리됨
+                ui_draw_stats(&state->player);
+                ui_draw_equipment(&state->player);
+                ui_draw_log();
+            }
+            else {
+                // 다음 대화
+                npc_next_dialogue(state->currentNPC);
+                ui_draw_dialogue(state->currentNPC);
+            }
+        }
+        else if (cmd == 't' && state->currentNPC->canTrade) {
+            ui_add_log(COLOR_YELLOW "거래 시스템은 곧 추가됩니다!" COLOR_RESET);
+            ui_draw_log();
+        }
+        else if (cmd == 'x' || cmd == 27) {
+            state->currentNPC->currentDialogue = 0;
+            state->inDialogue = 0;
+            state->currentNPC = NULL;
+            
+            ui_clear_dialogue_area();
+            ui_draw_stats(&state->player);
+            ui_draw_equipment(&state->player);
+        }
+        return;
+    }
+
+    // 2. 일반 게임 모드
+    if (state->player.hp <= 0) {
+        cinematic_play_ending(1);
+        state->isRunning = 0;
+        return;
+    }
+
+    int cmd = _getch();
+    if (cmd == 0 || cmd == 224) {
+        cmd = _getch();
+        switch (cmd) {
+        case 72: cmd = 'w'; break;
+        case 80: cmd = 's'; break;
+        case 75: cmd = 'a'; break;
+        case 77: cmd = 'd'; break;
+        }
+    }
+    cmd = tolower(cmd);
+
+    if (cmd == 'q') {
+        ui_add_log(COLOR_BRIGHT_RED "정말 종료하시겠습니까? (Y: 종료, 그 외: 취소)" COLOR_RESET);
+        ui_draw_log();
+        ui_present();
+
+        int confirm = _getch();
+        confirm = tolower(confirm);
+        if (confirm == 'y') {
+            state->isRunning = 0;
+        } else {
+            ui_add_log("종료를 취소했습니다.");
+        }
+        return;
+    }
+
+    // 행동 전 이펙트 클리어
+    ui_hide_combat_effect();
+
+    int targetX = state->player.x;
+    int targetY = state->player.y;
+
+    switch (cmd) {
+    case 'w': targetY--; break;
+    case 's': targetY++; break;
+    case 'a': targetX--; break;
+    case 'd': targetX++; break;
+    }
+
+    // 이동 처리
+    player_move(&state->player, &state->map, cmd);
+
+    // 상호작용 (0 키)
+    if (cmd == '0') {
+        // NPC
+        NPC* npc = map_get_npc_at(&state->map, targetX, targetY);  // 내 위치 기반이 아닌 이동 방향?
+        // 기존 game.c 로직: targetEnemy는 이동 예측용이었지만
+        // '0'키는 map_get_npc_at(..., tx, ty) ??? 
+        // 기존 코드를 자세히 보면:
+        // int tx = player.x + player.dirX; int ty = ...
+        // '0' 누르면 "map_get_npc_at(&map, tx, ty)" -> 바라보는 방향의 NPC와 상호작용
+        // 리팩토링 시 주의: cmd가 0일 땐 이동이 아니므로 targetX/Y가 의미가 다름.
+        // 바라보는 방향 계산 필요
+        
+        int tx = state->player.x + state->player.dirX;
+        int ty = state->player.y + state->player.dirY;
+
+        NPC* interactNpc = map_get_npc_at(&state->map, tx, ty);
+        if (interactNpc != NULL) {
+            if (interactNpc->useDialogueBox) {
+                state->inDialogue = 1;
+                state->currentNPC = interactNpc;
+                ui_clear_dialogue_area();
+                ui_draw_dialogue(interactNpc);
+                
+                char msg[128];
+                snprintf(msg, sizeof(msg), "%s와 대화를 시작했다.", interactNpc->name);
+                ui_add_log(msg);
+                ui_draw_log();
+            } else {
+                const char* dialogue = npc_get_dialogue(interactNpc);
+                char msg[256];
+                snprintf(msg, sizeof(msg), COLOR_BRIGHT_CYAN "💬 %s: " COLOR_RESET "「%s」", interactNpc->name, dialogue);
+                ui_add_log(msg);
+                npc_next_dialogue(interactNpc);
+            }
+        }
+
+        // Chest
+        Chest* chest = map_get_chest_at(&state->map, tx, ty);
+        if (chest != NULL && !chest->isOpened) {
+            chest->isOpened = 1;
+            player_apply_item(&state->player, chest->itemType, chest->itemName);
+            char msg[128];
+            snprintf(msg, sizeof(msg), COLOR_BRIGHT_YELLOW "📦 상자를 열었다! → %s 획득!" COLOR_RESET, chest->itemName);
+            ui_add_log(msg);
+            ui_render_map_viewport(&state->map, &state->player);
+            ui_draw_equipment(&state->player);
+        }
+    }
+
+    // 주변 체크
+    combat_check_nearby_enemy(&state->map, &state->player);
+
+    NPC* nearNpc = map_get_adjacent_npc(&state->map, state->player.x, state->player.y);
+    if (nearNpc != NULL) {
+        char msg[128];
+        snprintf(msg, sizeof(msg), "%s이(가) 가까이 있다. [0] 키로 대화할 수 있다.", nearNpc->name);
+        ui_add_log(msg);
+    }
+    Chest* nearChest = map_get_adjacent_chest(&state->map, state->player.x, state->player.y);
+    if (nearChest != NULL && !nearChest->isOpened) {
+        ui_add_log("가까운 곳에 상자가 있다. [0] 키로 열 수 있다.");
+    }
+}
+
+
+------------------------------------------------------------
+[FILE PATH] c:\projects\MetroHero\MetroHero\src\core\system\game_internal.h
+[FILE NAME] game_internal.h
+------------------------------------------------------------
+
+#ifndef GAME_INTERNAL_H
+#define GAME_INTERNAL_H
+
+#include "context.h"
+
+// 입력 처리
+void game_process_input(GameState* state);
+
+// 화면 렌더링
+void game_render(GameState* state);
+
+// 메인 루프
+void game_loop(GameState* state);
+
+#endif
+
+
+------------------------------------------------------------
+[FILE PATH] c:\projects\MetroHero\MetroHero\src\core\system\game_loop.c
+[FILE NAME] game_loop.c
+------------------------------------------------------------
+
+#include "game_internal.h"
+#include <windows.h> // Sleep? or just raw loop
+
+void game_loop(GameState* state) {
+    state->isRunning = 1;
+
+    // 초기 상태 렌더링
+    game_render(state);
+
+    while (state->isRunning) {
+        // 입력 처리
+        game_process_input(state);
+
+        // 업데이트 (현재 로직상 input에서 대부분 처리되지만 나중에 분리 가능)
+        // game_update(state); 
+
+        // 렌더링
+        game_render(state);
+    }
+}
+
+
+------------------------------------------------------------
+[FILE PATH] c:\projects\MetroHero\MetroHero\src\core\system\game_render.c
+[FILE NAME] game_render.c
+------------------------------------------------------------
+
+#include <stddef.h> // NULL 정의 추가
+#include "game_internal.h"
+#include "../ui/ui.h"
+#include "../../world/glyph.h"
+
+// 화면 렌더링 (초기화 및 업데이트)
+void game_render(GameState* state) {
+    // 1. 버퍼 클리어
+    ui_clear_buffer();
+
+    // 2. 뷰포트 그리기 (항상 그림)
+    ui_render_map_viewport(&state->map, &state->player);
+
+    // 3. UI 그리기 (항상 그림 - 대화창이 오버레이됨)
+    if (!state->inDialogue) {
+        ui_draw_stats(&state->player);
+        ui_draw_equipment(&state->player);
+    } else {
+        if (state->currentNPC != NULL) {
+            ui_draw_dialogue(state->currentNPC);
+        }
+    }
+    ui_draw_log();
+    // 대화 중일 때는 ui_draw_dialogue가 필요하지만, 
+    // 기존 로직에서는 input 루프 안에서 그렸을 수 있음.
+    // 하지만 더블 버퍼링에서는 매 프레임 다 그리는 게 정석.
+    // game_input.c에서 입력을 대기하면서 그리는지 확인 필요.
+    // 일단 여기서는 기본 UI만 그린다.
+    
+    // 4. 화면 출력 (Present)
+    ui_present();
+}
+
+
+------------------------------------------------------------
+[FILE PATH] c:\projects\MetroHero\MetroHero\src\core\ui\layout.h
+[FILE NAME] layout.h
+------------------------------------------------------------
+
+#ifndef UI_LAYOUT_H
+#define UI_LAYOUT_H
+
+// Screen Dimensions (Expanded & Centered)
+// Screen Dimensions (Expanded & Centered)
+#define SCREEN_W 210
+#define SCREEN_H 55
+
+#define SCREEN_PADDING_LEFT 20
+#define SCREEN_PADDING_TOP 6
+
+// Map Viewport
+#define VIEWPORT_X (SCREEN_PADDING_LEFT)
+#define VIEWPORT_Y (SCREEN_PADDING_TOP)
+#define VIEWPORT_W 120 
+#define VIEWPORT_H 30
+
+// Right Side Panels (Status / Equipment / Dialogue)
+#define PANEL_X (VIEWPORT_X + VIEWPORT_W)
+#define PANEL_WIDTH 52
+
+// Status Panel
+#define STATUS_X PANEL_X
+#define STATUS_Y (SCREEN_PADDING_TOP)
+#define STATUS_W PANEL_WIDTH
+#define STATUS_H 14
+
+// Equipment Panel
+#define EQUIP_X PANEL_X
+#define EQUIP_Y (STATUS_Y + STATUS_H)
+#define EQUIP_W PANEL_WIDTH
+#define EQUIP_H 16
+
+// Dialogue Panel (Overlays Status + Equip)
+#define DIALOGUE_X PANEL_X
+#define DIALOGUE_Y (SCREEN_PADDING_TOP)
+#define DIALOGUE_W PANEL_WIDTH
+#define DIALOGUE_H (STATUS_H + EQUIP_H)
+
+// Log Panel
+#define LOG_X (SCREEN_PADDING_LEFT)
+#define LOG_Y (VIEWPORT_Y + VIEWPORT_H) // +2 padding removed
+#define LOG_W (VIEWPORT_W + PANEL_WIDTH)
+#define LOG_H 14
+#define LOG_LINES 200
+
+#endif
+
+
+------------------------------------------------------------
+[FILE PATH] c:\projects\MetroHero\MetroHero\src\core\ui\ui.h
+[FILE NAME] ui.h
+------------------------------------------------------------
+
+#ifndef UI_H
+#define UI_H
+
+// Backend
+#include "layout.h"
+#include "backend/buffer.h"
+#include "backend/console.h"
+
+// Text
+#include "text/glyph.h"
+#include "text/render.h"
+
+// Widgets
+#include "widgets/box.h"
+
+// Panels
+#include "panels/stats.h"
+#include "panels/equipment.h"
+#include "panels/dialogue.h"
+#include "panels/effect.h"
+
+// View
+#include "view/viewport.h"
+
+#endif
+
+
+------------------------------------------------------------
+[FILE PATH] c:\projects\MetroHero\MetroHero\src\core\ui\backend\buffer.c
+[FILE NAME] buffer.c
+------------------------------------------------------------
+
+#define _CRT_SECURE_NO_WARNINGS
+#include "buffer.h"
+#include "../layout.h"
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+
+Cell* screenBuffer = NULL;
+int bufferWidth = 0;
+int bufferHeight = 0;
+char globalColor[32] = "\033[0m"; 
+
+void ui_init_buffer(void) {
+    // 1. Setup Console
     HANDLE hOut = GetStdHandle(STD_OUTPUT_HANDLE);
-
-    // 콘솔을 UTF-8로 설정
-    SetConsoleOutputCP(CP_UTF8);
-    SetConsoleCP(CP_UTF8);
-
-    // ★★★ ANSI 색상 활성화 (이 부분이 꼭 필요!) ★★★
     DWORD dwMode = 0;
     GetConsoleMode(hOut, &dwMode);
     dwMode |= ENABLE_VIRTUAL_TERMINAL_PROCESSING;
     SetConsoleMode(hOut, dwMode);
+    
+    // Set UTF-8 Output
+    SetConsoleOutputCP(CP_UTF8);
 
-    // ★ 순서 중요: 먼저 윈도우 크기를 최소로 줄임
-    //SMALL_RECT minWindow = { 0, 0, 1, 1 };
-    //SetConsoleWindowInfo(hOut, TRUE, &minWindow);
+    // Fullscreen setup (Alt+Enter simulation)
+    keybd_event(VK_MENU, 0x38, 0, 0);
+    keybd_event(VK_RETURN, 0x1c, 0, 0);
+    keybd_event(VK_RETURN, 0x1c, KEYEVENTF_KEYUP, 0);
+    keybd_event(VK_MENU, 0x38, KEYEVENTF_KEYUP, 0);
+    Sleep(100);
 
-    //// ★ 그 다음 버퍼 크기 설정
-    //COORD bufferSize = { SCREEN_W, SCREEN_H };
-    //SetConsoleScreenBufferSize(hOut, bufferSize);
-
-    //// ★ 마지막으로 윈도우 크기를 원하는 크기로 설정
-    //SMALL_RECT windowSize = { 0, 0, SCREEN_W - 1, SCREEN_H - 1 };
-    //SetConsoleWindowInfo(hOut, TRUE, &windowSize);
-
-    // 커서 숨기기(선택)
+    // 2. Allocate Buffer
+    bufferWidth = SCREEN_W; 
+    bufferHeight = SCREEN_H; 
+    screenBuffer = (Cell*)malloc(sizeof(Cell) * bufferWidth * bufferHeight);
+    
+    // Hide Cursor
     CONSOLE_CURSOR_INFO info;
     info.dwSize = 1;
     info.bVisible = FALSE;
-    SetConsoleCursorInfo(GetStdHandle(STD_OUTPUT_HANDLE), &info);
+    SetConsoleCursorInfo(hOut, &info);
+
+    ui_clear_buffer();
 }
 
-//void console_clear_fast(void) {
-//    HANDLE hOut = GetStdHandle(STD_OUTPUT_HANDLE);
-//    COORD pos = { 0, 0 };
-//    SetConsoleCursorPosition(hOut, pos);
-//}
+void ui_clear_buffer(void) {
+    if (!screenBuffer) return;
+    for (int i = 0; i < bufferWidth * bufferHeight; i++) {
+        strcpy(screenBuffer[i].ch, " ");
+        strcpy(screenBuffer[i].color, "\033[0m"); 
+        screenBuffer[i].isDoubleWidth = 0;
+    }
+    strcpy(globalColor, "\033[0m"); // Reset global color state
+}
+
+void ui_present(void) {
+    if (!screenBuffer) return;
+
+    // Estimate buffer size: Width * Height * (Char(4) + Color(12)) + Newlines
+    static char* outBuf = NULL;
+    static int outBufSize = 0;
+    int requiredSize = bufferWidth * bufferHeight * 20; 
+    
+    if (outBuf == NULL || outBufSize < requiredSize) {
+        free(outBuf);
+        outBuf = (char*)malloc(requiredSize);
+        outBufSize = requiredSize;
+    }
+
+    char* p = outBuf;
+    
+    // Reset cursor to top-left
+    p += sprintf(p, "\033[H"); 
+    
+    char lastColor[32] = "";
+    
+    for (int y = 0; y < bufferHeight; y++) {
+        for (int x = 0; x < bufferWidth; x++) {
+            int idx = y * bufferWidth + x;
+            Cell* c = &screenBuffer[idx];
+            
+            if (c->isDoubleWidth == -1) continue; // Skip padding
+            
+            // Only print color if changed
+            if (strcmp(c->color, lastColor) != 0) {
+                p += sprintf(p, "\033[0m%s", c->color); // Reset before applying new color to avoid BG bleed
+                strcpy(lastColor, c->color);
+            }
+            
+            p += sprintf(p, "%s", c->ch);
+        }
+        if (y < bufferHeight - 1) {
+             p += sprintf(p, "\n");
+        }
+    }
+    
+    // Write whole frame at once
+    DWORD written;
+    WriteConsoleA(GetStdHandle(STD_OUTPUT_HANDLE), outBuf, (DWORD)(p - outBuf), &written, NULL);
+}
+
+void ui_draw_char_at(int x, int y, const char* c, const char* color) {
+    if (x < 0 || x >= bufferWidth || y < 0 || y >= bufferHeight) return;
+    
+    int index = y * bufferWidth + x;
+    
+    strncpy(screenBuffer[index].ch, c, 4);
+    screenBuffer[index].ch[4] = '\0';
+    
+    if (color) strcpy(screenBuffer[index].color, color);
+    else strcpy(screenBuffer[index].color, "\033[0m");
+    
+    screenBuffer[index].isDoubleWidth = 0; 
+}
+
+
+------------------------------------------------------------
+[FILE PATH] c:\projects\MetroHero\MetroHero\src\core\ui\backend\buffer.h
+[FILE NAME] buffer.h
+------------------------------------------------------------
+
+#ifndef UI_BUFFER_H
+#define UI_BUFFER_H
+
+#include <windows.h>
+
+typedef struct {
+    char ch[5];        // UTF-8 char (max 4 bytes + null)
+    char color[32];    // ANSI Color char string
+    int isDoubleWidth; // 0=single, 1=double, -1=padding
+} Cell;
+
+extern Cell* screenBuffer;
+extern int bufferWidth;
+extern int bufferHeight;
+extern char globalColor[32];
+
+void ui_init_buffer(void);
+void ui_clear_buffer(void);
+void ui_present(void);
+
+// Basic low-level drawing (often used internally but exposed if needed)
+void ui_draw_char_at(int x, int y, const char* c, const char* color);
+
+#endif
+
+
+------------------------------------------------------------
+[FILE PATH] c:\projects\MetroHero\MetroHero\src\core\ui\backend\console.c
+[FILE NAME] console.c
+------------------------------------------------------------
+
+#include "console.h"
+#include "buffer.h"
+#include <windows.h>
 
 void console_clear_fast(void) {
     HANDLE hOut = GetStdHandle(STD_OUTPUT_HANDLE);
-
     CONSOLE_SCREEN_BUFFER_INFO csbi;
     GetConsoleScreenBufferInfo(hOut, &csbi);
 
@@ -493,475 +1384,782 @@ void console_clear_fast(void) {
     DWORD count;
     COORD homeCoords = { 0, 0 };
 
-    // 화면 전체를 공백으로 채우기
     FillConsoleOutputCharacter(hOut, ' ', cellCount, homeCoords, &count);
-
-    // 화면 속성 리셋
     FillConsoleOutputAttribute(hOut, csbi.wAttributes, cellCount, homeCoords, &count);
-
-    // 커서 위치 리셋
     SetConsoleCursorPosition(hOut, homeCoords);
 }
-
 
 void console_goto(int x, int y) {
     COORD pos = { x, y };
     SetConsoleCursorPosition(GetStdHandle(STD_OUTPUT_HANDLE), pos);
 }
 
+void ui_init(void) {
+    ui_init_buffer();
+}
 
-// ★ 개선된 display_width 함수
-int display_width(const char* str) {
-    int width = 0;
-    const unsigned char* s = (const unsigned char*)str;
 
-    while (*s) {
-        // ANSI 이스케이프 시퀀스 건너뛰기
-        if (*s == '\033' || *s == 0x1B) {
-            s++;
-            if (*s == '[') {
-                s++;
-                while (*s && *s != 'm') {
-                    s++;
+------------------------------------------------------------
+[FILE PATH] c:\projects\MetroHero\MetroHero\src\core\ui\backend\console.h
+[FILE NAME] console.h
+------------------------------------------------------------
+
+#ifndef UI_CONSOLE_H
+#define UI_CONSOLE_H
+
+void console_clear_fast(void);
+void console_goto(int x, int y);
+void ui_init(void);
+
+#endif
+
+
+------------------------------------------------------------
+[FILE PATH] c:\projects\MetroHero\MetroHero\src\core\ui\panels\dialogue.c
+[FILE NAME] dialogue.c
+------------------------------------------------------------
+
+#define _CRT_SECURE_NO_WARNINGS
+#include "dialogue.h"
+#include "../text/render.h"
+#include "../text/glyph.h"
+#include "../widgets/box.h"
+#include "../../../world/glyph.h" // For Colors
+#include <stdio.h>
+#include <string.h>
+
+#include "../layout.h"
+static char log_buf[LOG_LINES][256];
+static int log_index = 0;
+
+void ui_draw_dialogue(const NPC* npc) {
+    int x = DIALOGUE_X;
+    int y = DIALOGUE_Y;
+    int w = DIALOGUE_W;
+    int h = DIALOGUE_H;
+    
+    ui_draw_box(x, y, w, h, "대화");
+
+    // Name
+    char nameBuf[256];
+    snprintf(nameBuf, sizeof(nameBuf), "💬 %s", npc->name);
+    ui_draw_text_clipped(x + 2, y + 1, w - 4, nameBuf, NULL);
+
+    // Separator
+    ui_draw_str_at(x, y + 2, "├", NULL);
+    for (int i = 1; i < w - 1; i++) ui_draw_str_at(x + i, y + 2, "─", NULL);
+    ui_draw_str_at(x + w - 1, y + 2, "┤", NULL);
+
+    // Dialogue Content
+    const char* dialogue = npc->dialogues[npc->currentDialogue];
+    int lineStart = 0;
+    int lineNum = 0;
+    int maxLines = h - 6;
+
+    for (int i = 3; i < h - 3 && lineNum < maxLines; i++) {
+        char lineBuf[256] = "";  // Temporary buffer for current line
+        
+        int currentWidth = 0;
+        const char* dialoguePtr = dialogue + lineStart;
+        int maxTextWidth = w - 4; // CONTENT_WIDTH - 2 due to padding
+
+        int charsProcessed = 0;
+
+        while (*dialoguePtr) {
+            // ANSI Check
+            if (*dialoguePtr == '\033' || *dialoguePtr == 0x1B) {
+                // Copy ANSI code to buffer
+                const char* ansiStart = dialoguePtr;
+                dialoguePtr++;
+                if (*dialoguePtr == '[') {
+                    while (*dialoguePtr && *dialoguePtr != 'm') dialoguePtr++;
+                    if (*dialoguePtr == 'm') dialoguePtr++;
                 }
-                if (*s == 'm') s++;
+                int codeBytes = (int)(dialoguePtr - ansiStart);
+                if (strlen(lineBuf) + codeBytes < sizeof(lineBuf) - 1) {
+                    strncat(lineBuf, ansiStart, codeBytes);
+                }
+                charsProcessed += codeBytes;
+                continue;
             }
-            continue;
+            
+            // Newline/Tab Check - Replace with space to prevent layout breakage
+            if (*dialoguePtr == '\n' || *dialoguePtr == '\r' || *dialoguePtr == '\t') {
+                int charBytes = 1;
+                int charW = 1;
+                
+                if (currentWidth + charW > maxTextWidth) break;
+                
+                if (strlen(lineBuf) + 1 < sizeof(lineBuf) - 1) {
+                    strcat(lineBuf, " ");
+                }
+                currentWidth += charW;
+                charsProcessed += charBytes;
+                dialoguePtr += charBytes;
+                continue;
+            }
+
+            // Width Check
+            int charW = 1;
+            int charBytes = 1;
+            
+            ui_get_glyph_info(dialoguePtr, &charBytes, &charW);
+             
+             if (currentWidth + charW > maxTextWidth) break;
+             
+             if (strlen(lineBuf) + charBytes < sizeof(lineBuf) - 1) {
+                 strncat(lineBuf, dialoguePtr, charBytes);
+             }
+             currentWidth += charW;
+             charsProcessed += charBytes;
+             dialoguePtr += charBytes;
         }
-
-        if (*s < 128) {
-            // ASCII (1바이트) = 1칸
-            width += 1;
-            s += 1;
-        }
-        else if ((*s & 0xE0) == 0xC0) {
-            // UTF-8 2바이트 문자 = 2칸
-            width += 2;
-            s += 2;
-        }
-        else if ((*s & 0xF0) == 0xE0) {
-            // UTF-8 3바이트 문자 (한글 등) = 2칸
-            width += 2;
-            s += 3;
-        }
-        else if ((*s & 0xF8) == 0xF0) {
-            // UTF-8 4바이트 문자 (이모지) = 2칸
-            width += 2;
-            s += 4;
-        }
-        else {
-            s += 1;
-        }
-    }
-    return width;
-}
-
-// ui.c에 추가
-
-// ★ 개선된 상태창 그리기
-void ui_draw_stats(const Player* p, int x, int y, int w, int h) {
-    const int CONTENT_WIDTH = 34;  // 테두리 안쪽 실제 폭
-
-    console_goto(x, y);
-    printf("┌─ 상태  ──────────────────────────┐");
-
-    console_goto(x, y + 1);
-    printf("│                                  │");
-
-    // HP 바
-    console_goto(x, y + 2);
-    printf("│ HP:");
-    int hpBars = (p->hp * 10) / p->maxHp;
-    for (int i = 0; i < 10; i++) {
-        printf(i < hpBars ? "█" : "░");
-    }
-    // HP 바는 14칸 (4 + 10)
-    int remaining = CONTENT_WIDTH - 14;
-    for (int i = 0; i < remaining; i++) printf(" ");
-    printf("│");
-
-    // HP 수치
-    console_goto(x, y + 3);
-    char hpText[64];
-    snprintf(hpText, sizeof(hpText), "     %3d / %3d", p->hp, p->maxHp);
-    printf("│%s", hpText);
-    remaining = CONTENT_WIDTH - display_width(hpText);
-    for (int i = 0; i < remaining; i++) printf(" ");
-    printf("│");
-
-    console_goto(x, y + 4);
-    printf("│                                  │");
-
-    // 공격력
-    console_goto(x, y + 5);
-    char atkText[64];
-    snprintf(atkText, sizeof(atkText), " 공격력: %2d~%2d", p->attackMin, p->attackMax);
-    printf("│%s", atkText);
-    remaining = CONTENT_WIDTH - display_width(atkText);
-    for (int i = 0; i < remaining; i++) printf(" ");
-    printf("│");
-
-    // 방어력
-    console_goto(x, y + 6);
-    char defText[64];
-    snprintf(defText, sizeof(defText), " 방어력:  %3d", p->defense);
-    printf("│%s", defText);
-    remaining = CONTENT_WIDTH - display_width(defText);
-    for (int i = 0; i < remaining; i++) printf(" ");
-    printf("│");
-
-    // 빈 공간
-    for (int i = 7; i < h - 1; i++) {
-        console_goto(x, y + i);
-        printf("│                                  │");
+        
+        ui_draw_text_clipped(x + 2, y + i, w - 4, lineBuf, NULL);
+        
+        lineStart += charsProcessed;
+        lineNum++;
+        if (dialogue[lineStart] == '\0') break;
     }
 
-    console_goto(x, y + h - 1);
-    printf("└──────────────────────────────────┘");
+    // Bottom Separator
+    ui_draw_str_at(x, y + h - 3, "├", NULL);
+    for (int i = 1; i < w - 1; i++) ui_draw_str_at(x + i, y + h - 3, "─", NULL);
+    ui_draw_str_at(x + w - 1, y + h - 3, "┤", NULL);
+
+    // Buttons
+    char buttonText[64];
+    if (npc->currentDialogue < npc->dialogueCount - 1) {
+        if (npc->canTrade) snprintf(buttonText, sizeof(buttonText), " [0]다음  [T]거래  [X]닫기");
+        else snprintf(buttonText, sizeof(buttonText), " [0]다음  [X]닫기");
+    }
+    else {
+        if (npc->canTrade) snprintf(buttonText, sizeof(buttonText), " [0]끝  [T]거래  [X]닫기");
+        else snprintf(buttonText, sizeof(buttonText), " [0]끝  [X]닫기");
+    }
+    ui_draw_text_clipped(x + 1, y + h - 2, w - 2, buttonText, NULL);
 }
 
-// ★ 개선된 장비창 그리기
-void ui_draw_equipment(const Player* p, int x, int y, int w, int h) {
-    const int CONTENT_WIDTH = 34;
-
-    console_goto(x, y);
-    printf("┌─ 장비  ──────────────────────────┐");
-
-    console_goto(x, y + 1);
-    printf("│                                  │");
-
-    // 무기
-    console_goto(x, y + 2);
-    char weaponText[128];
-    snprintf(weaponText, sizeof(weaponText), " 무기:    %s", p->weaponName);
-    printf("│%s", weaponText);
-    int remaining = CONTENT_WIDTH - display_width(weaponText);
-    for (int i = 0; i < remaining; i++) printf(" ");
-    printf("│");
-
-    // 방어구
-    console_goto(x, y + 3);
-    char armorText[128];
-    snprintf(armorText, sizeof(armorText), " 방어구:  %s", p->armorName);
-    printf("│%s", armorText);
-    remaining = CONTENT_WIDTH - display_width(armorText);
-    for (int i = 0; i < remaining; i++) printf(" ");
-    printf("│");
-
-    // 아이템
-    console_goto(x, y + 4);
-    char itemText[128];
-    snprintf(itemText, sizeof(itemText), " 아이템:  %s", p->item1);
-    printf("│%s", itemText);
-    remaining = CONTENT_WIDTH - display_width(itemText);
-    for (int i = 0; i < remaining; i++) printf(" ");
-    printf("│");
-
-    console_goto(x, y + 5);
-    printf("└──────────────────────────────────┘");
+void ui_clear_dialogue_area(void) {
+    int x = DIALOGUE_X;
+    int y = DIALOGUE_Y;
+    int w = DIALOGUE_W;
+    int h = DIALOGUE_H;
+    for (int i = 0; i < h; i++) {
+        char spaces[128] = "";
+        for (int j = 0; j < w; j++) strcat(spaces, " ");
+        ui_draw_str_at(x, y + i, spaces, NULL);
+    }
 }
-
-#define LOG_LINES 200
-char log_buf[LOG_LINES][256];
-int log_index = 0;
 
 void ui_add_log(const char* msg) {
     snprintf(log_buf[log_index], sizeof(log_buf[log_index]), "%s", msg);
     log_index = (log_index + 1) % LOG_LINES;
 }
 
-// ★ 개선된 로그창 그리기
-void ui_draw_log(int x, int y, int w, int h) {
-    const int CONTENT_WIDTH = w - 4;  // "│ " + " │" = 4칸
+void ui_draw_log(void) {
+    int x = LOG_X;
+    int y = LOG_Y;
+    int w = LOG_W;
+    int h = LOG_H;
 
-    // 상단 테두리
-    console_goto(x, y);
-    printf("┌─ 대화  ");
-    for (int i = 8; i < w - 2; i++) printf("─");
-    printf("┐");
+    ui_draw_box(x, y, w, h, "대화");
 
     int start = (log_index - (h - 2) + LOG_LINES) % LOG_LINES;
-
-    // 로그 내용
     for (int i = 0; i < h - 2; i++) {
-        console_goto(x, y + 1 + i);
-        printf("│ ");
-
+        // Log text with potential ANSI
         const char* logText = log_buf[(start + i) % LOG_LINES];
-        printf("%s", logText);
 
-        // 남은 공간을 공백으로 채우기
-        int displayLen = display_width(logText);
-        int remaining = CONTENT_WIDTH - displayLen;
+        // ★ 텍스트 그리기 - 실제 사용된 표시 폭을 반환받음
+        int actualWidth = ui_draw_text_clipped(x + 2, y + 1 + i, w - 4, logText, NULL);
 
-        for (int j = 0; j < remaining; j++) {
-            printf(" ");
+        // ★ 남은 공간 명시적으로 공백으로 채우기 (오른쪽 테두리 정렬)
+        int textEndX = x + 2 + actualWidth;
+        for (int j = textEndX; j < x + w - 2; j++) {
+            ui_draw_str_at(j, y + 1 + i, " ", NULL);
         }
-
-        printf(" │");
     }
 
-    // 하단 테두리
-    console_goto(x, y + h - 1);
-    printf("└");
-    for (int i = 1; i < w - 1; i++) printf("─");
-    printf("┘");
+    // ★ 테두리 모서리 보호
+    const char* borderCol = "\033[0m";
+    ui_draw_str_at(x, y, "┌", borderCol);
+    ui_draw_str_at(x + w - 1, y, "┐", borderCol);
+    ui_draw_str_at(x, y + h - 1, "└", borderCol);
+    ui_draw_str_at(x + w - 1, y + h - 1, "┘", borderCol);
 }
 
-// ui.c에 추가
-void ui_draw_combat_effect(int x, int y) {
 
-    // ★ 전투중 텍스트 (칼 이펙트 위)
-    console_goto(x, y - 1);
-    printf(COLOR_BRIGHT_RED "전투중" COLOR_RESET);
+------------------------------------------------------------
+[FILE PATH] c:\projects\MetroHero\MetroHero\src\core\ui\panels\dialogue.h
+[FILE NAME] dialogue.h
+------------------------------------------------------------
 
-    // 기존 칼 모양
-    console_goto(x, y);
-    printf(COLOR_BRIGHT_RED "  ⚔" COLOR_RESET);
+#ifndef UI_DIALOGUE_H
+#define UI_DIALOGUE_H
 
-    console_goto(x, y + 1);
-    printf(COLOR_BRIGHT_RED " ⚔⚔⚔" COLOR_RESET);
+#include "../../../entity/npc.h"
 
-    console_goto(x, y + 2);
-    printf(COLOR_BRIGHT_RED "⚔⚔⚔⚔⚔" COLOR_RESET);
+void ui_draw_dialogue(const NPC* npc);
+void ui_clear_dialogue_area(void);
+void ui_add_log(const char* msg);
+void ui_draw_log(void);
 
-    console_goto(x, y + 3);
-    printf(COLOR_BRIGHT_RED " ⚔⚔⚔" COLOR_RESET);
+#endif
 
-    console_goto(x, y + 4);
-    printf(COLOR_BRIGHT_RED "  ⚔" COLOR_RESET);
+
+------------------------------------------------------------
+[FILE PATH] c:\projects\MetroHero\MetroHero\src\core\ui\panels\effect.c
+[FILE NAME] effect.c
+------------------------------------------------------------
+
+#include "effect.h"
+#include "../text/render.h"
+#include "../../../world/glyph.h" // For Colors
+
+static int combatEffectFrames = 0;
+
+void ui_show_combat_effect(void) {
+    combatEffectFrames = 10; // 10 frames duration
+    // No direct draw here, logic handles update in gameloop which calls render
 }
 
-void ui_clear_combat_effect(int x, int y) {
+void ui_hide_combat_effect(void) {
+    combatEffectFrames = 0;
+}
 
-    // ★ "전투중" 지우기
-    console_goto(x, y - 1);
-    printf("      ");   // "전투중" 3글자 = UTF-8 6칸
+void ui_draw_combat_effect_overlay_if_active(int statusX, int statusY) {
+    if (combatEffectFrames > 0) {
+        int ex = statusX + 25;
+        int ey = statusY + 2;
 
-    // 기존 칼 이펙트 지우기
-    for (int i = 0; i < 5; i++) {
-        console_goto(x, y + i);
-        printf("       ");
+        ui_draw_str_at(ex, ey - 1, "전투중", COLOR_BRIGHT_RED);
+        ui_draw_str_at(ex, ey,     "  ⚔",   COLOR_BRIGHT_RED);
+        ui_draw_str_at(ex, ey + 1, " ⚔⚔⚔", COLOR_BRIGHT_RED);
+        ui_draw_str_at(ex, ey + 2, "⚔⚔⚔⚔⚔", COLOR_BRIGHT_RED);
+        ui_draw_str_at(ex, ey + 3, " ⚔⚔⚔", COLOR_BRIGHT_RED);
+        ui_draw_str_at(ex, ey + 4, "  ⚔",   COLOR_BRIGHT_RED);
+
+        combatEffectFrames--;
     }
 }
 
-// ★ 대화창 그리기
-void ui_draw_dialogue(const NPC* npc, int x, int y, int w, int h) {
-    const int CONTENT_WIDTH = 34;
 
-    // 상단 테두리
-    console_goto(x, y);
-    printf("┌─ 대화 ");
-    for (int i = 7; i < w - 2; i++) printf("─");
-    printf("┐");
+------------------------------------------------------------
+[FILE PATH] c:\projects\MetroHero\MetroHero\src\core\ui\panels\effect.h
+[FILE NAME] effect.h
+------------------------------------------------------------
 
-    // NPC 이름 표시
-    console_goto(x, y + 1);
-    char nameText[128];
-    snprintf(nameText, sizeof(nameText), " 💬 %s", npc->name);
-    printf("│%s", nameText);
-    int remaining = CONTENT_WIDTH - display_width(nameText);
-    for (int i = 0; i < remaining; i++) printf(" ");
-    printf("│");
+#ifndef UI_EFFECT_H
+#define UI_EFFECT_H
 
-    // 구분선
-    console_goto(x, y + 2);
-    printf("├");
-    for (int i = 1; i < w - 1; i++) printf("─");
-    printf("┤");
+void ui_show_combat_effect(void);
+void ui_hide_combat_effect(void);
+void ui_draw_combat_effect_overlay_if_active(int statusX, int statusY);
 
-    // 현재 대화 내용 가져오기
-    const char* dialogue = npc->dialogues[npc->currentDialogue];
+#endif
 
-    // 대화 내용을 여러 줄로 나누기 (간단한 구현)
-    char line[128];
-    int lineStart = 0;
-    int lineNum = 0;
-    int maxLines = h - 6;  // 테두리, 이름, 버튼 공간 제외
 
-    for (int i = 3; i < h - 3 && lineNum < maxLines; i++) {
-        console_goto(x, y + i);
-        printf("│ ");
+------------------------------------------------------------
+[FILE PATH] c:\projects\MetroHero\MetroHero\src\core\ui\panels\equipment.c
+[FILE NAME] equipment.c
+------------------------------------------------------------
 
-        // 한 줄에 들어갈 만큼만 추출 (간단 버전)
-        int charsToPrint = 0;
-        int currentWidth = 0;
-        const char* dialoguePtr = dialogue + lineStart;
+#define _CRT_SECURE_NO_WARNINGS
+#include "equipment.h"
+#include "../text/render.h"
+#include "../widgets/box.h"
+#include <stdio.h>
 
-        while (*dialoguePtr && currentWidth < 30) {
-            unsigned char c = *dialoguePtr;
+#include "../layout.h"
 
-            if (c < 128) {
-                currentWidth += 1;
-                charsToPrint += 1;
-                dialoguePtr += 1;
+void ui_draw_equipment(const Player* p) {
+    int x = EQUIP_X;
+    int y = EQUIP_Y;
+    int w = EQUIP_W;
+    int h = EQUIP_H;
+
+    ui_draw_box(x, y, w, h, "장비");
+
+    char buf[128];
+    snprintf(buf, sizeof(buf), " 무기:    %s", p->weaponName);
+    ui_draw_text_clipped(x + 2, y + 2, w - 4, buf, NULL);
+
+    snprintf(buf, sizeof(buf), " 방어구:  %s", p->armorName);
+    ui_draw_text_clipped(x + 2, y + 3, w - 4, buf, NULL);
+
+    snprintf(buf, sizeof(buf), " 아이템:  %s", p->item1);
+    ui_draw_text_clipped(x + 2, y + 4, w - 4, buf, NULL);
+
+    // ★ 테두리 모서리 보호
+    const char* borderCol = "\033[0m";
+    ui_draw_str_at(x, y, "┌", borderCol);
+    ui_draw_str_at(x + w - 1, y, "┐", borderCol);
+    ui_draw_str_at(x, y + h - 1, "└", borderCol);
+    ui_draw_str_at(x + w - 1, y + h - 1, "┘", borderCol);
+}
+
+
+------------------------------------------------------------
+[FILE PATH] c:\projects\MetroHero\MetroHero\src\core\ui\panels\equipment.h
+[FILE NAME] equipment.h
+------------------------------------------------------------
+
+#ifndef UI_EQUIPMENT_H
+#define UI_EQUIPMENT_H
+
+#include "../../../entity/player.h"
+
+void ui_draw_equipment(const Player* p);
+
+#endif
+
+
+------------------------------------------------------------
+[FILE PATH] c:\projects\MetroHero\MetroHero\src\core\ui\panels\stats.c
+[FILE NAME] stats.c
+------------------------------------------------------------
+
+#define _CRT_SECURE_NO_WARNINGS
+#include "stats.h"
+#include "../backend/buffer.h" // For globals/colors if needed, though render handles it
+#include "../text/render.h"
+#include "../text/glyph.h"
+#include "../widgets/box.h"
+#include "../../../world/glyph.h" // For constants if needed, though colors are standard
+#include <stdio.h>
+#include <string.h>
+
+#include "../layout.h"
+
+// Layout constants - Localized (removed)
+
+extern int combatEffectFrames; // Accessed from effect.c ... wait, cyclic dependency or shared state?
+// combatEffectFrames was static in ui.c. Now it belongs to effect module.
+// ui_draw_stats draws the combat effect overlay? 
+// Original code had `ui_draw_stats` drawing the combat overlay.
+// Refactor: Move combat overlay drawing to `effect.c` and call it from `draw_stats` or separate?
+// Better: `ui_draw_stats` calls `ui_draw_combat_effect_overlay` from `effect.h`.
+
+#include "effect.h" // New dependency
+
+void ui_draw_stats(const Player* p) {
+    int x = STATUS_X;
+    int y = STATUS_Y;
+    int w = STATUS_W;
+    int h = STATUS_H;
+    
+    ui_draw_box(x, y, w, h, "상태");
+
+    char buf[128];
+
+    // ★ HP Bar - 개별 문자로 그리기 (정확한 폭 제어)
+    ui_draw_str_at(x + 2, y + 2, "HP: ", NULL);
+    int hpBars = (p->hp * 10) / p->maxHp;
+    if (hpBars > 10) hpBars = 10;
+    int barX = x + 2 + 4;  // "HP: " = 4칸
+
+    // 수정 - 문자열로 한 번에 그리기
+    char hpBarStr[64] = "";
+    for (int i = 0; i < 10; i++) {
+        strcat(hpBarStr, i < hpBars ? "█" : "░");
+    }
+    ui_draw_str_at(barX, y + 2, hpBarStr, NULL);
+    int barEndX = barX + display_width(hpBarStr);  // 동적 계산
+
+    for (int i = barEndX; i < x + w - 2; i++) {
+        ui_draw_str_at(i, y + 2, " ", NULL);
+    }
+
+    // HP Text
+    snprintf(buf, sizeof(buf), "     %3d / %3d", p->hp, p->maxHp);
+    ui_draw_text_clipped(x + 2, y + 3, w - 4, buf, NULL);
+
+    // Attack
+    snprintf(buf, sizeof(buf), " 공격력: %2d~%2d", p->attackMin, p->attackMax);
+    ui_draw_text_clipped(x + 2, y + 5, w - 4, buf, NULL);
+
+    // Defense
+    snprintf(buf, sizeof(buf), " 방어력:  %3d", p->defense);
+    ui_draw_text_clipped(x + 2, y + 6, w - 4, buf, NULL);
+
+    // ★ Direction - 개별 출력 + 공백 채우기
+    const char* arrow = " ";
+    if (p->dirY < 0) arrow = "↑";
+    else if (p->dirY > 0) arrow = "↓";
+    else if (p->dirX < 0) arrow = "←";
+    else if (p->dirX > 0) arrow = "→";
+
+    // 수정 - 한 문자열로 그리고 동적 계산
+    char dirLine[64];
+    snprintf(dirLine, sizeof(dirLine), " 방향:    %s", arrow);
+    ui_draw_str_at(x + 2, y + 7, dirLine, NULL);
+    // 방향 뒤 공백 (동적 계산)
+    int dirEndX = x + 2 + display_width(dirLine);
+    for (int i = dirEndX; i < x + w - 1; i++) {
+        ui_draw_str_at(i, y + 7, " ", NULL);
+    }
+
+    ui_draw_combat_effect_overlay_if_active(x, y);
+
+    // ★ 테두리 모서리 보호
+    const char* borderCol = "\033[0m";
+    ui_draw_str_at(x, y, "┌", borderCol);
+    ui_draw_str_at(x + w - 1, y, "┐", borderCol);
+    ui_draw_str_at(x, y + h - 1, "└", borderCol);
+    ui_draw_str_at(x + w - 1, y + h - 1, "┘", borderCol);
+}
+
+
+------------------------------------------------------------
+[FILE PATH] c:\projects\MetroHero\MetroHero\src\core\ui\panels\stats.h
+[FILE NAME] stats.h
+------------------------------------------------------------
+
+#ifndef UI_STATS_H
+#define UI_STATS_H
+
+#include "../../../entity/player.h"
+
+void ui_draw_stats(const Player* p);
+
+#endif
+
+
+------------------------------------------------------------
+[FILE PATH] c:\projects\MetroHero\MetroHero\src\core\ui\text\glyph.c
+[FILE NAME] glyph.c
+------------------------------------------------------------
+
+#include "glyph.h"
+
+void ui_get_glyph_info(const char* s, int* byteLen, int* displayWidth) {
+    unsigned char c = (unsigned char)*s;
+
+    if (c < 128) {
+        *byteLen = 1;
+        *displayWidth = 1;
+    }
+    else if ((c & 0xE0) == 0xC0) {
+        *byteLen = 2;
+        *displayWidth = 2;
+    }
+    else if ((c & 0xF0) == 0xE0) {
+        *byteLen = 3;
+        if (c == 0xE2) {
+            unsigned char c2 = (unsigned char)*(s + 1);
+
+            // Block Elements (E2 96): █░ - 폭 2 ★ 먼저 체크!
+            if (c2 == 0x96) {
+                //*displayWidth = 2;
+				*displayWidth = 1;
             }
-            else if ((c & 0xE0) == 0xC0) {
-                currentWidth += 2;
-                charsToPrint += 2;
-                dialoguePtr += 2;
+            // Box Drawing (E2 94/95): ─│┌┐ - 폭 1
+            else if (c2 == 0x94 || c2 == 0x95) {
+                *displayWidth = 1;
             }
-            else if ((c & 0xF0) == 0xE0) {
-                currentWidth += 2;
-                charsToPrint += 3;
-                dialoguePtr += 3;
+            // Arrows (E2 86): →↑↓← - 폭 1
+            else if (c2 == 0x86) {
+                *displayWidth = 1;
             }
-            else if ((c & 0xF8) == 0xF0) {
-                currentWidth += 2;
-                charsToPrint += 4;
-                dialoguePtr += 4;
+            // Misc Symbols (E2 98/9A/9B): ☠⚔ 등 - 폭 1
+            else if (c2 == 0x98 || c2 == 0x9A || c2 == 0x9B) {
+                *displayWidth = 1;
             }
+            // General Punctuation (E2 80) - 폭 1
+            else if (c2 == 0x80) {
+                *displayWidth = 1;
+            }
+            // 기타 - 폭 2
             else {
-                dialoguePtr += 1;
+                *displayWidth = 2;
             }
-        }
-
-        // 추출한 부분 출력
-        if (charsToPrint > 0) {
-            for (int j = 0; j < charsToPrint; j++) {
-                putchar(dialogue[lineStart + j]);
-            }
-            lineStart += charsToPrint;
-        }
-
-        // 남은 공간 채우기
-        remaining = CONTENT_WIDTH - 2 - currentWidth;
-        for (int j = 0; j < remaining; j++) printf(" ");
-        printf("│");
-
-        lineNum++;
-
-        // 대화가 끝났으면 종료
-        if (dialogue[lineStart] == '\0') break;
-    }
-
-    // 남은 빈 줄 채우기
-    for (int i = 3 + lineNum; i < h - 3; i++) {
-        console_goto(x, y + i);
-        printf("│                                  │");
-    }
-
-    // 구분선
-    console_goto(x, y + h - 3);
-    printf("├");
-    for (int i = 1; i < w - 1; i++) printf("─");
-    printf("┤");
-
-    // ★ 버튼 안내 개선
-    console_goto(x, y + h - 2);
-    char buttonText[64];
-    if (npc->currentDialogue < npc->dialogueCount - 1) {
-        // 아직 대화가 남았을 때
-        if (npc->canTrade) {
-            snprintf(buttonText, sizeof(buttonText), " [0]다음  [T]거래  [X]닫기");
         }
         else {
-            snprintf(buttonText, sizeof(buttonText), " [0]다음  [X]닫기");
+            *displayWidth = 2;
         }
+    }
+    else if ((c & 0xF8) == 0xF0) {
+        *byteLen = 4;
+        *displayWidth = 2;
     }
     else {
-        // 마지막 대화일 때
-        if (npc->canTrade) {
-            snprintf(buttonText, sizeof(buttonText), " [0]끝  [T]거래  [X]닫기");
-        }
-        else {
-            snprintf(buttonText, sizeof(buttonText), " [0]끝  [X]닫기");
-        }
+        *byteLen = 1;
+        *displayWidth = 1;
     }
-
-    printf("│%s", buttonText);
-    remaining = CONTENT_WIDTH - display_width(buttonText);
-    for (int i = 0; i < remaining; i++) printf(" ");
-    printf("│");
-
-    // 하단 테두리
-    console_goto(x, y + h - 1);
-    printf("└");
-    for (int i = 1; i < w - 1; i++) printf("─");
-    printf("┘");
 }
 
-// ★ 대화창 영역 지우기 (상태창/장비창 복원)
-void ui_clear_dialogue_area(int x, int y, int w, int h) {
-    for (int i = 0; i < h; i++) {
-        console_goto(x, y + i);
-        for (int j = 0; j < w; j++) {
-            printf(" ");
+int display_width(const char* str) {
+    int width = 0;
+    const char* s = str;
+    int byteLen, padding;
+    
+    while (*s) {
+        if (*s == '\033' || *s == 0x1B) {
+            s++;
+            if (*s == '[') {
+                s++;
+                while (*s && *s != 'm') s++;
+                if (*s == 'm') s++;
+            }
+            continue;
         }
+        
+        ui_get_glyph_info(s, &byteLen, &padding); // Use padding as temp width var
+        width += padding;
+        s += byteLen;
     }
+    return width;
 }
 
 
 ------------------------------------------------------------
-[FILE PATH] C:\projects\MetroHero\MetroHero\src\core\ui.h
-[FILE NAME] ui.h
+[FILE PATH] c:\projects\MetroHero\MetroHero\src\core\ui\text\glyph.h
+[FILE NAME] glyph.h
 ------------------------------------------------------------
 
-#ifndef UI_H
-#define UI_H
+#ifndef UI_GLYPH_H
+#define UI_GLYPH_H
 
-#include "../entity/player.h"
-#include "../entity/npc.h"  // ★ 추가
-
-#define SCREEN_W 120
-#define SCREEN_H 30
-
-// 상단 전체 높이
-#define TOP_H 20
-
-// ★ 뷰포트 영역 (왼쪽)
-#define VIEWPORT_X 0
-#define VIEWPORT_Y 0
-#define VIEWPORT_W 80    // 40칸 × 2 (전각)
-#define VIEWPORT_H 20
-
-// ★ 상태창 (오른쪽 상단)
-#define STATUS_X 82
-#define STATUS_Y 0
-#define STATUS_W 38
-#define STATUS_H 10
-
-// ★ 장비창 (오른쪽 중단)
-#define EQUIP_X 82
-#define EQUIP_Y 10
-#define EQUIP_W 38
-#define EQUIP_H 6
-
-// ★ 대화창 (상태창/장비창 위에 오버레이)
-#define DIALOGUE_X 82
-#define DIALOGUE_Y 0
-#define DIALOGUE_W 38
-#define DIALOGUE_H 16
-
-// ★ 로그창 (하단 전체)
-#define LOG_X 0
-#define LOG_Y 20
-#define LOG_W 120
-#define LOG_H 9
-
-void console_goto(int x , int y);
-void console_clear_fast(void);
-
-void ui_draw_equipment(const Player* p , int x , int y , int w , int h);  // ★ 이 줄 확인
-void ui_draw_stats(const Player* p , int x , int y , int w , int h);  // ★ 추가
-
-void ui_add_log(const char* msg);
-void ui_draw_log(int x , int y , int w , int h);
-
-void ui_draw_combat_effect(int x , int y);  // 전투 이펙트
-void ui_clear_combat_effect(int x , int y); // 이펙트 제거
-
-// ★ 대화창 관련 함수
-void ui_draw_dialogue(const NPC* npc , int x , int y , int w , int h);
-void ui_clear_dialogue_area(int x , int y , int w , int h);
-
+void ui_get_glyph_info(const char* s, int* byteLen, int* displayWidth);
 int display_width(const char* str);
 
 #endif
 
 
 ------------------------------------------------------------
-[FILE PATH] C:\projects\MetroHero\MetroHero\src\debug\debug.c
+[FILE PATH] c:\projects\MetroHero\MetroHero\src\core\ui\text\render.c
+[FILE NAME] render.c
+------------------------------------------------------------
+
+#define _CRT_SECURE_NO_WARNINGS
+#include "render.h"
+#include "glyph.h"
+#include "../backend/buffer.h" // Access screenBuffer, globalColor
+#include <string.h>
+#include <stdlib.h>
+
+void ui_draw_str_at(int x, int y, const char* str, const char* color) {
+    if (y < 0 || y >= bufferHeight) return;
+
+    // Priority: Argument color > Embedded ANSI > Default
+    // If 'color' arg is provided, use it.
+    // If 'color' is NULL, we continue using globalColor (stateful).
+    if (color) strcpy(globalColor, color);
+
+    const char* s = str;
+    int cx = x;
+
+    while (*s) {
+        if (cx >= bufferWidth) break;
+
+        // ANSI Processing
+        if (*s == '\033') {
+            const char* end = strchr(s, 'm');
+            if (end) {
+                int len = (int)(end - s) + 1;
+                if (len < 32) {
+                    strncpy(globalColor, s, len);
+                    globalColor[len] = '\0';
+                }
+                s = end + 1;
+                continue;
+            }
+        }
+
+        // Determine Byte Length & Width using Helper
+        int byteLen = 1;
+        int width = 1;
+        
+        ui_get_glyph_info(s, &byteLen, &width);
+        
+        // Write to Cell
+        int index = y * bufferWidth + cx;
+        
+        strncpy(screenBuffer[index].ch, s, byteLen);
+        screenBuffer[index].ch[byteLen] = '\0';
+        strcpy(screenBuffer[index].color, globalColor);
+        
+        if (width == 2) {
+            screenBuffer[index].isDoubleWidth = 1;
+            cx++;
+            if (cx < bufferWidth) {
+                screenBuffer[index+1].isDoubleWidth = -1; // Padding
+                screenBuffer[index+1].ch[0] = '\0';
+                cx++;
+            }
+        } else {
+            screenBuffer[index].isDoubleWidth = 0;
+            cx++;
+        }
+        
+        s += byteLen;
+    }
+}
+
+int ui_draw_text_clipped(int x, int y, int maxWidth, const char* text, const char* color) {
+    if (!text) return 0;
+
+    int currentWidth = 0;
+    const unsigned char* s = (const unsigned char*)text;
+    int curX = x;
+
+    while (*s) {
+        if (currentWidth >= maxWidth) break;
+
+        // Check ANSI
+        if (*s == '\033' || *s == 0x1B) {
+             const unsigned char* start = s;
+             s++;
+             if (*s == '[') {
+                 while (*s && *s != 'm') s++;
+                 if (*s == 'm') s++;
+             }
+             // Draw ANSI code directly (0 width)
+             int len = (int)(s - start);
+             char buf[32];
+             if (len < 32) {
+                 strncpy(buf, (const char*)start, len);
+                 buf[len] = 0;
+                 ui_draw_str_at(curX, y, buf, NULL); 
+             }
+             continue;
+        }
+
+        int charLen = 1;
+        int charWidth = 1;
+
+        ui_get_glyph_info((const char*)s, &charLen, &charWidth);
+
+        if (currentWidth + charWidth > maxWidth) break;
+
+        char buf[8] = {0};
+        strncpy(buf, (const char*)s, charLen);
+
+        ui_draw_str_at(curX, y, buf, color);
+
+        curX += charWidth;
+        currentWidth += charWidth;
+        s += charLen;
+    }
+
+    return currentWidth; // Returns display width used
+}
+
+
+------------------------------------------------------------
+[FILE PATH] c:\projects\MetroHero\MetroHero\src\core\ui\text\render.h
+[FILE NAME] render.h
+------------------------------------------------------------
+
+#ifndef UI_RENDER_H
+#define UI_RENDER_H
+
+void ui_draw_str_at(int x, int y, const char* str, const char* color);
+int ui_draw_text_clipped(int x, int y, int maxWidth, const char* text, const char* color);
+
+#endif
+
+
+------------------------------------------------------------
+[FILE PATH] c:\projects\MetroHero\MetroHero\src\core\ui\view\viewport.c
+[FILE NAME] viewport.c
+------------------------------------------------------------
+
+#define _CRT_SECURE_NO_WARNINGS
+#include "viewport.h"
+#include "../backend/buffer.h" // For globalColor reset
+#include <string.h>
+
+#include "../layout.h"
+
+void ui_render_map_viewport(Map* m, Player* p) {
+    // Reset color before map render to avoid bleed
+    strcpy(globalColor, "\033[0m");
+    map_draw_viewport(m, p, VIEWPORT_X, VIEWPORT_Y, 60, VIEWPORT_H);
+}
+
+
+------------------------------------------------------------
+[FILE PATH] c:\projects\MetroHero\MetroHero\src\core\ui\view\viewport.h
+[FILE NAME] viewport.h
+------------------------------------------------------------
+
+#ifndef UI_VIEWPORT_H
+#define UI_VIEWPORT_H
+
+#include "../../../world/map.h"
+#include "../../../entity/player.h"
+
+void ui_render_map_viewport(Map* m, Player* p);
+
+#endif
+
+
+------------------------------------------------------------
+[FILE PATH] c:\projects\MetroHero\MetroHero\src\core\ui\widgets\box.c
+[FILE NAME] box.c
+------------------------------------------------------------
+
+#include "box.h"
+#include "../text/render.h"
+
+void ui_draw_box(int x, int y, int w, int h, const char* title) {
+    // Force default color for border
+    const char* borderCol = "\033[0m"; 
+    
+    // Corners
+    ui_draw_str_at(x, y, "┌", borderCol);
+    ui_draw_str_at(x + w - 1, y, "┐", borderCol);
+    ui_draw_str_at(x, y + h - 1, "└", borderCol);
+    ui_draw_str_at(x + w - 1, y + h - 1, "┘", borderCol);
+
+    // Top/Bottom edges
+    for (int i = 1; i < w - 1; i++) {
+        ui_draw_str_at(x + i, y, "─", borderCol);
+        ui_draw_str_at(x + i, y + h - 1, "─", borderCol);
+    }
+
+    // Side edges
+    for (int i = 1; i < h - 1; i++) {
+        ui_draw_str_at(x, y + i, "│", borderCol);
+        ui_draw_str_at(x + w - 1, y + i, "│", borderCol);
+    }
+
+    // Title
+    if (title) {
+        ui_draw_str_at(x + 1, y, "─ ", borderCol);
+
+        // Draw title (use default color or bright white?)
+        int titleActualWidth = ui_draw_text_clipped(x + 3, y, w - 5, title, "\033[97m"); // Bright White
+
+        if (3 + titleActualWidth < w - 1) {
+            ui_draw_str_at(x + 3 + titleActualWidth, y, " ─", borderCol);
+        }
+
+        // ★ 오른쪽 위 모서리 보호
+        ui_draw_str_at(x + w - 1, y, "┐", borderCol);
+    }
+
+    // ★ 오른쪽 아래 모서리 보호
+    ui_draw_str_at(x + w - 1, y + h - 1, "┘", borderCol);
+}
+
+
+------------------------------------------------------------
+[FILE PATH] c:\projects\MetroHero\MetroHero\src\core\ui\widgets\box.h
+[FILE NAME] box.h
+------------------------------------------------------------
+
+#ifndef UI_BOX_H
+#define UI_BOX_H
+
+void ui_draw_box(int x, int y, int w, int h, const char* title);
+
+#endif
+
+
+------------------------------------------------------------
+[FILE PATH] c:\projects\MetroHero\MetroHero\src\debug\debug.c
 [FILE NAME] debug.c
 ------------------------------------------------------------
 
@@ -969,6 +2167,7 @@ int display_width(const char* str);
 #include <stdio.h>
 #include <conio.h>
 #include "debug.h"
+#include "../core/ui/text/glyph.h"
 
 void debug_console_info(void) {
     HANDLE hOut = GetStdHandle(STD_OUTPUT_HANDLE);
@@ -1000,8 +2199,57 @@ void debug_console_info(void) {
     printf("\n");
 }
 
+// Helper struct for test cases
+typedef struct {
+    const char* name;
+    const char* str;
+} GlyphTestCase;
+
+void debug_glyph(void) {
+    printf("=== Glyph Width Helper Debugger ===\n\n");
+
+    GlyphTestCase tests[] = {
+        {"ASCII 'A'", "A"},
+        {"Korean '한'", "한"},
+        {"Box '─'", "─"},
+        {"Box '│'", "│"},
+        {"Box '┌'", "┌"},
+        {"Shape '■'", "■"},
+        {"Shape '▲'", "▲"},
+        {"Sword '⚔'", "⚔"},
+        {"Skull '☠'", "☠"},
+        {"Block '█'", "█"},
+        {"Shade '░'", "░"},
+        {"Arrow '→'", "→"}
+    };
+
+    for (int i = 0; i < sizeof(tests) / sizeof(tests[0]); i++) {
+        const char* name = tests[i].name;
+        const char* s = tests[i].str;
+        
+        int len, width;
+        ui_get_glyph_info(s, &len, &width);
+        
+        // Hex Byte printing
+        printf("%-14s : %s [", name, s);
+        for (int j = 0; j < len; j++) {
+            printf("%02X", (unsigned char)s[j]);
+            if (j < len - 1) printf(" ");
+        }
+        printf("] -> Len: %d, Width: %d\n", len, width);
+    }
+}
+
+#ifdef UNIT_TEST_GLYPH
+int main(void) {
+    SetConsoleOutputCP(65001);
+    debug_glyph();
+    return 0;
+}
+#endif
+
 ------------------------------------------------------------
-[FILE PATH] C:\projects\MetroHero\MetroHero\src\debug\debug.h
+[FILE PATH] c:\projects\MetroHero\MetroHero\src\debug\debug.h
 [FILE NAME] debug.h
 ------------------------------------------------------------
 
@@ -1016,18 +2264,22 @@ void debug_console_info(void);
 // void debug_game_state(void);
 // void debug_player_info(const Player* p);
 
-#endif
+void debug_glyph(void);
+
+#endif 
+
 
 ------------------------------------------------------------
-[FILE PATH] C:\projects\MetroHero\MetroHero\src\entity\chest.c
+[FILE PATH] c:\projects\MetroHero\MetroHero\src\entity\chest.c
 [FILE NAME] chest.c
 ------------------------------------------------------------
 
 #include "chest.h"
 
-void chest_init(Chest* c, int x, int y, const char* itemType, const char* itemName) {
+void chest_init(Chest* c, int x, int y, char tile, const char* itemType, const char* itemName) {
     c->x = x;
     c->y = y;
+    c->tile = tile;
     c->isOpened = 0;
     c->itemType = itemType;
     c->itemName = itemName;
@@ -1035,7 +2287,7 @@ void chest_init(Chest* c, int x, int y, const char* itemType, const char* itemNa
 
 
 ------------------------------------------------------------
-[FILE PATH] C:\projects\MetroHero\MetroHero\src\entity\chest.h
+[FILE PATH] c:\projects\MetroHero\MetroHero\src\entity\chest.h
 [FILE NAME] chest.h
 ------------------------------------------------------------
 
@@ -1046,18 +2298,19 @@ void chest_init(Chest* c, int x, int y, const char* itemType, const char* itemNa
 typedef struct {
 	int x , y;
 	int isOpened;          // 0 = 닫힘, 1 = 이미 열린 상자
+	char tile;             // ★ 맵 상의 타일 문자 ('0'~'9')
 
 	const char* itemType;  // "weapon", "armor", "item"
 	const char* itemName;  // 획득할 아이템 이름
 } Chest;
 
-void chest_init(Chest* c , int x , int y , const char* itemType , const char* itemName);
+void chest_init(Chest* c , int x , int y , char tile, const char* itemType , const char* itemName);
 
 #endif
 
 
 ------------------------------------------------------------
-[FILE PATH] C:\projects\MetroHero\MetroHero\src\entity\enemy.c
+[FILE PATH] c:\projects\MetroHero\MetroHero\src\entity\enemy.c
 [FILE NAME] enemy.c
 ------------------------------------------------------------
 
@@ -1065,89 +2318,27 @@ void chest_init(Chest* c , int x , int y , const char* itemType , const char* it
 #include "enemy.h"
 #include "../world/glyph.h"
 
+void enemy_init(Enemy* e, const EnemyConfig* config, int x, int y) {
+    if (!config) return;
 
-void enemy_init(Enemy* e, char type, int x, int y) {
-    e->type = type;
+    e->type = config->tile;
     e->x = x;
     e->y = y;
     e->isAlive = 1;
 
-    // 타입별 스탯 설정
-    switch (type) {
-    case 'a': { // 고블린
+    e->name = config->name;
+    e->glyph = config->glyph;
+    e->maxHp = config->maxHp;
+    e->hp = config->maxHp;
+    
+    e->attackMin = config->attackMin;
+    e->attackMax = config->attackMax;
+    e->defense = config->defense;
 
-        // ★ enemy_init 내부에 대사 정의
-        static const char* lines[] = {
-            "나는 잔인한 냥코다옹",
-            "냥코냥코 대전쟁"
-        };
-
-        e->name = "맹혹한고양이";
-        e->maxHp = 5;
-        e->hp = 5;
-        //e->attack = 2;
-
-        e->attackMin = 1;  // ★ 1~3 데미지
-        e->attackMax = 3;
-
-        e->defense = 0;
-        e->dialogues = lines;   // ★ 배열 연결
-        e->dialogueCount = sizeof(lines) / sizeof(lines[0]);
-        e->dialogueIndex = 0;   // ★ 최초 index 설정
-        e->dialogueColor = COLOR_BRIGHT_CYAN;
-        break;
-    }
-    case 'b': { // 검은괴물
-
-        static const char* lines[] = {
-            "전철역 내 침입자를 인식했습니다...",
-            "경고: 비인가 인원입니다.",
-            "돌아가라 날 건들면 후회할것이다"
-        };
-
-        e->name = "경비로봇";
-        e->maxHp = 10;
-        e->hp = 10;
-        //e->attack = 3;
-
-        e->attackMin = 100;  // ★ 2~4 데미지
-        e->attackMax = 100;
-
-        e->defense = 0;
-
-        e->dialogues = lines;
-        e->dialogueCount = sizeof(lines) / sizeof(lines[0]);
-        e->dialogueIndex = 0;
-        e->dialogueColor = COLOR_RED;
-        break;
-
-    }
-
-    default: {  // 알 수 없는 타입
-
-        static const char* lines[] = {
-            "키에에에엑!",
-            "으르르르르…",
-            "끼아아악!"
-        };
-
-        e->name = "몬스터";
-        e->maxHp = 3;
-        e->hp = 3;
-        //e->attack = 1;
-
-        e->attackMin = 1;
-        e->attackMax = 2;
-
-        e->defense = 0;
-
-        e->dialogues = lines;
-        e->dialogueCount = sizeof(lines) / sizeof(lines[0]);
-        e->dialogueIndex = 0;
-        e->dialogueColor = COLOR_YELLOW;
-        break;
-    }
-    }
+    e->dialogues = config->dialogues;
+    e->dialogueCount = config->dialogueCount;
+    e->dialogueIndex = 0;
+    e->dialogueColor = config->dialogueColor;
 }
 
 int enemy_is_at(const Enemy* e, int x, int y) {
@@ -1155,134 +2346,75 @@ int enemy_is_at(const Enemy* e, int x, int y) {
 }
 
 ------------------------------------------------------------
-[FILE PATH] C:\projects\MetroHero\MetroHero\src\entity\enemy.h
+[FILE PATH] c:\projects\MetroHero\MetroHero\src\entity\enemy.h
 [FILE NAME] enemy.h
 ------------------------------------------------------------
 
 #ifndef ENEMY_H
 #define ENEMY_H
 
+#include "../stages/common.h"
+
 #define MAX_ENEMIES 50  // 맵당 최대 적 수
 
 typedef struct {
-	int x , y;           // 위치
-	char type;          // 'a' = 고블린, 'b' = 오크 등
-	int hp;
-	int maxHp;
-	//int attack;
+	char type;      // 종류 ('a': 고블린, 'b': 슬라임, ...)
+	int x, y;       // 위치
+	int isAlive;
 
-	// ★ 공격력을 범위로 변경
+	// 스탯
+	const char* name;
+    const char* glyph;
+	int maxHp;
+	int hp;
+	//int attack;
 	int attackMin;
 	int attackMax;
-
 	int defense;
-	int isAlive;        // 1 = 살아있음, 0 = 죽음
-	const char* name;   // "고블린", "오크" 등
-	const char** dialogues;  // ★ 대사 배열 (문자열 배열)
-	int dialogueCount;       // ★ 총 몇 개?
-	int dialogueIndex;       // ★ 현재 어떤 대사를 출력할지
-	const char* dialogueColor;   // ★ 추가: 대사 색깔
+
+	// 대사
+	const char** dialogues; // 문자열 배열 포인터
+	int dialogueCount;
+	int dialogueIndex;      // 현재 대사 인덱스
+	
+    // 렌더링
+    const char* dialogueColor; // 색상 코드 추가
+
 } Enemy;
 
-// 적 초기화 (타입에 따라 스탯 설정)
-void enemy_init(Enemy* e , char type , int x , int y);
+// 초기화
+void enemy_init(Enemy* e, const EnemyConfig* config, int x, int y);
 
-// 적이 해당 위치에 있는지 확인
-int enemy_is_at(const Enemy* e , int x , int y);
+int enemy_is_at(const Enemy* e, int x, int y);
 
-#endif#pragma once
+#endif
+#pragma once
 
 
 ------------------------------------------------------------
-[FILE PATH] C:\projects\MetroHero\MetroHero\src\entity\npc.c
+[FILE PATH] c:\projects\MetroHero\MetroHero\src\entity\npc.c
 [FILE NAME] npc.c
 ------------------------------------------------------------
-
-// src/entity/npc.c - 새 파일 생성
 
 #include <stdio.h>
 #include "npc.h"
 #include "../world/glyph.h"
 
-void npc_init(NPC* npc, char type, int x, int y) {
-    npc->type = type;
+void npc_init(NPC* npc, const NPCConfig* config, int x, int y) {
+    if (!config) return;
+
+    npc->type = config->tile;
     npc->x = x;
     npc->y = y;
     npc->currentDialogue = 0;
 
-    switch (type) {
-    case 'A': { // 상인
-        static const char* lines[] = {
-			"당신은 이제 이곳에서 모험을 시작하게 됩니다.. ",
-            "이곳은 성균관대역입니다.",
-            "당신은 이 모험을 끝내고 집으로 돌아가기 위해서는 영등포역에 도착해야합니다...",
-            "일단 이 역의 역장을 물리치고 의왕역으로 넘어가야 할 것입니다...",
-            "행운을 빕니다... 후후후..."
-        };
-
-        npc->name = "우건박";
-        npc->glyph = GLYPH_NPC_MERCHANT;
-        npc->dialogues = lines;
-        npc->dialogueCount = sizeof(lines) / sizeof(lines[0]);
-        npc->canTrade = 0;
-        npc->shopType = "general";
-        npc->useDialogueBox = 1;  // ★ 전용 대화창 사용
-        break;
-    }
-
-    case 'B': { // 경비원
-        static const char* lines[] = {
-            "이 구역은 제가 지키고 있습니다.",
-            "수상한 자들이 많으니 조심하세요.",
-            "질서를 유지하는 것이 제 임무입니다.",
-            "평화로운 하루입니다."
-        };
-
-        npc->name = "경비원";
-        npc->glyph = GLYPH_NPC_GUARD;
-        npc->dialogues = lines;
-        npc->dialogueCount = sizeof(lines) / sizeof(lines[0]);
-        npc->canTrade = 0;
-        npc->shopType = NULL;
-        npc->useDialogueBox = 1;  // ★ 전용 대화창 사용
-        break;
-    }
-
-    case 'C': { // 시민
-        static const char* lines[] = {
-            "안녕하세요, 좋은 하루입니다.",
-            "요즘 전철역이 위험하다고 하더라고요.",
-            "지하에는 이상한 것들이 많다던데...",
-            "조심히 다니세요!"
-        };
-
-        npc->name = "시민";
-        npc->glyph = GLYPH_NPC_CITIZEN;
-        npc->dialogues = lines;
-        npc->dialogueCount = sizeof(lines) / sizeof(lines[0]);
-        npc->canTrade = 0;
-        npc->shopType = NULL;
-        npc->useDialogueBox = 0;  // ★ 로그창만 사용
-        break;
-    }
-
-    default: { // 기본 NPC
-        static const char* lines[] = {
-            "안녕하세요.",
-            "무슨 일이신가요?",
-            "도와드릴 일이 있나요?"
-        };
-
-        npc->name = "NPC";
-        npc->glyph = GLYPH_NPC_GENERIC;
-        npc->dialogues = lines;
-        npc->dialogueCount = sizeof(lines) / sizeof(lines[0]);
-        npc->canTrade = 0;
-        npc->shopType = NULL;
-        npc->useDialogueBox = 0;  // ★ 로그창만 사용
-        break;
-    }
-    }
+    npc->name = config->name;
+    npc->glyph = config->glyph;
+    npc->dialogues = config->dialogues;
+    npc->dialogueCount = config->dialogueCount;
+    npc->canTrade = config->canTrade;
+    npc->shopType = config->shopType;
+    npc->useDialogueBox = config->useDialogueBox;
 }
 
 int npc_is_at(const NPC* npc, int x, int y) {
@@ -1290,15 +2422,18 @@ int npc_is_at(const NPC* npc, int x, int y) {
 }
 
 const char* npc_get_dialogue(NPC* npc) {
+    if (!npc->dialogues || npc->dialogueCount == 0) return "...";
     return npc->dialogues[npc->currentDialogue];
 }
 
 void npc_next_dialogue(NPC* npc) {
-    npc->currentDialogue = (npc->currentDialogue + 1) % npc->dialogueCount;
+    if (npc->dialogueCount > 0) {
+        npc->currentDialogue = (npc->currentDialogue + 1) % npc->dialogueCount;
+    }
 }
 
 ------------------------------------------------------------
-[FILE PATH] C:\projects\MetroHero\MetroHero\src\entity\npc.h
+[FILE PATH] c:\projects\MetroHero\MetroHero\src\entity\npc.h
 [FILE NAME] npc.h
 ------------------------------------------------------------
 
@@ -1307,6 +2442,8 @@ void npc_next_dialogue(NPC* npc) {
 
 #ifndef NPC_H
 #define NPC_H
+
+#include "../stages/common.h"
 
 #define MAX_NPCS 20
 #define MAX_NPC_DIALOGUES 10
@@ -1329,8 +2466,8 @@ typedef struct {
 	int canTrade;          // 거래 가능 여부
 	const char* shopType;  // "weapon", "armor", "item" 등
 } NPC;
-
-void npc_init(NPC* npc , char type , int x , int y);
+// 초기화
+void npc_init(NPC* npc, const NPCConfig* config, int x, int y);
 int npc_is_at(const NPC* npc , int x , int y);
 const char* npc_get_dialogue(NPC* npc);
 void npc_next_dialogue(NPC* npc);
@@ -1338,7 +2475,7 @@ void npc_next_dialogue(NPC* npc);
 #endif
 
 ------------------------------------------------------------
-[FILE PATH] C:\projects\MetroHero\MetroHero\src\entity\player.c
+[FILE PATH] c:\projects\MetroHero\MetroHero\src\entity\player.c
 [FILE NAME] player.c
 ------------------------------------------------------------
 
@@ -1348,13 +2485,16 @@ void npc_next_dialogue(NPC* npc);
 
 #include "../world/map.h"
 #include "player.h"
-#include "../core/ui.h"  // ★ ui_add_log 사용을 위해 추가
-#include "../core/combat.h"  // ★ 추가
+#include "../core/ui/ui.h"  // ★ ui_add_log 사용을 위해 추가
+#include "../core/logic/combat.h"  // ★ 추가
 
 void player_init(Player* p) {
     // ★ 맵 크기를 알 수 없으므로 기본값 설정
     p->x = 20;  // 또는 map_init 후에 설정
     p->y = 10;
+
+    p->dirX = 0;
+    p->dirY = 1;   // 아래 방향을 기본값
 
     // ★ 초기 스탯
     p->maxHp = 10;
@@ -1378,10 +2518,25 @@ void player_move(Player* p, const Map* m, int cmd) {
     int ny = p->y;
 
     switch (cmd) {
-    case 'w': ny--; break;
-    case 's': ny++; break;
-    case 'a': nx--; break;
-    case 'd': nx++; break;
+    case 'w':
+        p->dirX = 0; p->dirY = -1;
+        ny--;
+        break;
+
+    case 's':
+        p->dirX = 0; p->dirY = 1;
+        ny++;
+        break;
+
+    case 'a':
+        p->dirX = -1; p->dirY = 0;
+        nx--;
+        break;
+
+    case 'd':
+        p->dirX = 1;  p->dirY = 0;
+        nx++;
+        break;
     }
 
     // ★ 목표 위치에 적이 있는지 확인
@@ -1460,7 +2615,7 @@ void player_apply_item(Player* p, const char* itemType, const char* itemName) {
 
 
 ------------------------------------------------------------
-[FILE PATH] C:\projects\MetroHero\MetroHero\src\entity\player.h
+[FILE PATH] c:\projects\MetroHero\MetroHero\src\entity\player.h
 [FILE NAME] player.h
 ------------------------------------------------------------
 
@@ -1471,6 +2626,9 @@ struct Map;
 
 typedef struct {
 	int x , y;
+
+	int dirX;
+	int dirY;
 
 	int hp;
 	int maxHp;
@@ -1485,6 +2643,7 @@ typedef struct {
 	const char* weaponName;
 	const char* armorName;
 	const char* item1;
+
 } Player;
 
 void player_init(Player* p);
@@ -1493,640 +2652,106 @@ void player_move(Player* p , struct Map* m , int cmd);  // ★ const 제거
 #endif
 
 ------------------------------------------------------------
-[FILE PATH] C:\projects\MetroHero\MetroHero\src\world\glyph.h
-[FILE NAME] glyph.h
+[FILE PATH] c:\projects\MetroHero\MetroHero\src\stages\common.h
+[FILE NAME] common.h
 ------------------------------------------------------------
 
-// src/world/glyph.h - 타일 정의 추가
+#ifndef STAGE_COMMON_H
+#define STAGE_COMMON_H
 
-#ifndef GLYPH_H
-#define GLYPH_H
+#include "../cinematic/cinematic.h"
 
-// ========================
-// ANSI 색상 코드
-// ========================
-#define COLOR_RESET   "\033[0m"
-#define COLOR_BLACK   "\033[30m"
-#define COLOR_RED     "\033[31m"
-#define COLOR_GREEN   "\033[32m"
-#define COLOR_YELLOW  "\033[33m"
-#define COLOR_BLUE    "\033[34m"
-#define COLOR_MAGENTA "\033[35m"
-#define COLOR_CYAN    "\033[36m"
-#define COLOR_WHITE   "\033[37m"
+// ============================================
+// 공통 데이터 구조체 정의
+// ============================================
 
-// 밝은 색상
-#define COLOR_BRIGHT_BLACK   "\033[90m"
-#define COLOR_BRIGHT_RED     "\033[91m"
-#define COLOR_BRIGHT_GREEN   "\033[92m"
-#define COLOR_BRIGHT_YELLOW  "\033[93m"
-#define COLOR_BRIGHT_BLUE    "\033[94m"
-#define COLOR_BRIGHT_MAGENTA "\033[95m"
-#define COLOR_BRIGHT_CYAN    "\033[96m"
-#define COLOR_BRIGHT_WHITE   "\033[97m"
-
-// 배경색
-#define BG_BLACK   "\033[40m"
-#define BG_RED     "\033[41m"
-#define BG_GREEN   "\033[42m"
-#define BG_YELLOW  "\033[43m"
-#define BG_BLUE    "\033[44m"
-#define BG_MAGENTA "\033[45m"
-#define BG_CYAN    "\033[46m"
-#define BG_WHITE   "\033[47m"
-
-// 전투 메시지용 색상
-#define COMBAT_ATTACK    COLOR_BRIGHT_RED
-#define COMBAT_DAMAGE    COLOR_BRIGHT_YELLOW
-#define COMBAT_DEATH     COLOR_BRIGHT_MAGENTA
-#define COMBAT_ENEMY     COLOR_RED
-#define COMBAT_DETECT    COLOR_CYAN
-
-// 맵 타일
-#define GLYPH_FLOOR    "  "
-#define GLYPH_WALL     "\033[48;5;220m  \033[0m"
-#define GLYPH_RAIL     "=="
-#define GLYPH_EMPTY    "  "
-#define GLYPH_DOOR     "++"
-#define GLYPH_STAIRS   "▼▼"
-
-// 엔티티
-#define GLYPH_PLAYER   COLOR_BRIGHT_GREEN "옷" COLOR_RESET
-
-// ★ 몹 (소문자 a-z)
-#define GLYPH_MOB_CAT      "🐈"
-#define GLYPH_MOB_ROBOT    COLOR_RED "🤖" COLOR_RESET
-#define GLYPH_MOB_GENERIC  COLOR_YELLOW "몹" COLOR_RESET
-
-// ★ NPC (대문자 A-Z)
-#define GLYPH_NPC_MERCHANT COLOR_BRIGHT_BLUE "읏" COLOR_RESET
-#define GLYPH_NPC_GUARD    COLOR_BRIGHT_BLUE "경" COLOR_RESET
-#define GLYPH_NPC_CITIZEN  COLOR_BRIGHT_WHITE "민" COLOR_RESET
-#define GLYPH_NPC_GENERIC  COLOR_CYAN "N" COLOR_RESET
-
-// ★ 상자 (숫자 0-9)
-#define GLYPH_CHEST        "📦"
-
-// 기타
-#define GLYPH_TREE     "♣♣"
-#define GLYPH_WATER    "≈≈"
-
-// ========================
-// 타일 문자 (맵 데이터용)
-// ========================
-#define TILE_FLOOR     '.'
-#define TILE_WALL      '#'
-#define TILE_RAIL      '='
-#define TILE_DOOR      '+'
-#define TILE_SPAWN     '@'
-
-// ★ Entity 타일 분류
-// 몹: 소문자 a-z
-#define TILE_MOB_CAT    'a'
-#define TILE_MOB_ROBOT  'b'
-
-// NPC: 대문자 A-Z
-#define TILE_NPC_MERCHANT 'A'
-#define TILE_NPC_GUARD    'B'
-#define TILE_NPC_CITIZEN  'C'
-
-// 상자: 숫자 0-9
-#define TILE_CHEST_0    '0'
-#define TILE_CHEST_1    '1'
-#define TILE_CHEST_2    '2'
-#define TILE_CHEST_3    '3'
-#define TILE_CHEST_4    '4'
-#define TILE_CHEST_5    '5'
-#define TILE_CHEST_6    '6'
-#define TILE_CHEST_7    '7'
-#define TILE_CHEST_8    '8'
-#define TILE_CHEST_9    '9'
-
-#endif
-
-------------------------------------------------------------
-[FILE PATH] C:\projects\MetroHero\MetroHero\src\world\map.c
-[FILE NAME] map.c
-------------------------------------------------------------
-
-#include <stdio.h>
-#include <windows.h>
-#include "map.h"
-#include "../entity/player.h"
-#include "../entity/enemy.h"  // ★ 추가
-#include "../core/ui.h"   // ★ 반드시 필요
-#include "map_data.h"  // ★ 추가
-#include "glyph.h"  // ★ 추가
-
-// 타일 문자를 렌더링 문자로 변환
-const char* tile_to_glyph(char t) {
-    switch (t) {
-    case '.':
-        return GLYPH_FLOOR;
-    //case '#':
-    //    return GLYPH_WALL;
-    case '#':
-        return GLYPH_WALL;  // 단일 패턴
-    case '=':
-        return GLYPH_RAIL;
-    case '+':
-        return GLYPH_DOOR;
-    case 'S':
-        return GLYPH_STAIRS;
-    default:
-        return GLYPH_EMPTY;
-    }
-}
-
-// ★ 적 타일을 렌더링 문자로 변환
-const char* enemy_to_glyph(char type) {
-    switch (type) {
-    case 'a':
-        return GLYPH_MOB_CAT;
-    case 'b':
-        return GLYPH_MOB_ROBOT;
-    default:
-        return "??";
-    }
-}
-
-// ★ 스폰 포인트 찾기
-void map_find_spawn(Map* m) {
-    // 기본값 (중앙)
-    m->spawnX = m->width / 2;
-    m->spawnY = m->height / 2;
-
-    // @ 찾기
-    for (int y = 0; y < m->height; y++) {
-        for (int x = 0; x < m->width; x++) {
-            if (m->tiles[y][x] == '@') {
-                m->spawnX = x;
-                m->spawnY = y;
-                // @ 를 일반 바닥으로 변환
-                m->tiles[y][x] = '.';
-                return;  // 첫 번째 @ 만 사용
-            }
-        }
-    }
-}
-
-int is_enemy_tile(char t) {
-    return (t == 'a' || t == 'b');   // 몬스터 목록 지정
-}
-
-// ★ 맵에서 적 찾아서 초기화
-void map_load_enemies(Map* m) {
-    m->enemyCount = 0;
-
-    for (int y = 0; y < m->height; y++) {
-        for (int x = 0; x < m->width; x++) {
-            char tile = m->tiles[y][x];
-
-            // a~z 범위의 적 타일 찾기
-            if (is_enemy_tile(tile)) {
-                if (m->enemyCount < MAX_ENEMIES) {
-                    enemy_init(&m->enemies[m->enemyCount], tile, x, y);
-                    m->enemyCount++;
-
-                    // 적이 있던 자리는 바닥으로 변경
-                    m->tiles[y][x] = '.';
-                }
-            }
-        }
-    }
-}
-
-// ★ 특정 위치에 있는 적 반환
-Enemy* map_get_enemy_at(Map* m, int x, int y) {
-    for (int i = 0; i < m->enemyCount; i++) {
-        if (enemy_is_at(&m->enemies[i], x, y)) {
-            return &m->enemies[i];
-        }
-    }
-    return NULL;
-}
-
-void map_load_chests(Map* m) {
-    m->chestCount = 0;
-
-    int cfgCount = 0;
-    const ChestConfig* cfg = get_chest_config(m->stageNumber, &cfgCount);
-
-    if (cfg == NULL) return;
-
-    for (int y = 0; y < m->height; y++) {
-        for (int x = 0; x < m->width; x++) {
-
-            char tile = m->tiles[y][x];
-
-            // 상자 타일이 아닌 경우 skip
-            if (tile < '0' || tile > '9') continue;
-
-            // 해당 tile의 config 찾기
-            for (int i = 0; i < cfgCount; i++) {
-                if (cfg[i].tile == tile) {
-
-                    chest_init(
-                        &m->chests[m->chestCount],
-                        x, y,
-                        cfg[i].itemType,
-                        cfg[i].itemName
-                    );
-                    m->chestCount++;
-
-                    //m->tiles[y][x] = '.'; // 상자 타일을 바닥으로 변경
-                    break;
-                }
-            }
-        }
-    }
-}
-
-
-
-
-
-
-// -------------------------------
-// 맵 렌더링
-// -------------------------------
-//void map_draw(const Map* m, const Player* p) {
-//    for (int y = 0; y < MAP_H; y++) {
-//        for (int x = 0; x < MAP_W; x++) {
-//
-//            if (p->x == x && p->y == y) {
-//                // 플레이어 위치
-//                printf(">>");   // 전각 플레이어 아이콘
-//            }
-//            else {
-//                printf("%s", tile_to_glyph(m->tiles[y][x]));
-//            }
-//
-//        }
-//        putchar('\n');
-//    }
-//}
-
-void map_draw_at(const Map* m, const Player* p, int startX, int startY) {
-    for (int y = 0; y < m->height; y++) {
-        console_goto(startX, startY + y);
-
-        for (int x = 0; x < m->width; x++) {
-
-            // 1) 플레이어
-            if (x == p->x && y == p->y) {
-                printf(GLYPH_PLAYER);
-                continue;
-            }
-
-            // 2) 적
-            Enemy* enemy = map_get_enemy_at((Map*)m, x, y);
-            if (enemy != NULL) {
-                printf("%s", enemy_to_glyph(enemy->type));
-                continue;
-            }
-
-            // 3) ★★★ 상자(Chest) 체크 — 여기 새로 추가하는 부분 ★★★
-            Chest* chest = map_get_chest_at((Map*)m, x, y);
-            if (chest != NULL && !chest->isOpened) {
-                printf(GLYPH_CHEST);   // 예: 📦
-                continue;
-            }
-
-            // 4) 기본 타일
-            printf("%s", tile_to_glyph(m->tiles[y][x]));
-        }
-    }
-}
-
-// ★ map_is_walkable 수정 - NPC도 이동 불가
-int map_is_walkable(const Map* m, int x, int y) {
-    if (x < 0 || x >= m->width || y < 0 || y >= m->height)
-        return 0;
-
-    char t = m->tiles[y][x];
-
-    // 상자(숫자)는 이동 불가
-    if (t >= '0' && t <= '9')
-        return 0;
-
-    // NPC가 있는 위치는 이동 불가
-    for (int i = 0; i < m->npcCount; i++) {
-        if (m->npcs[i].x == x && m->npcs[i].y == y)
-            return 0;
-    }
-
-    return (t == '.');
-}
-
-
-// ★ 플레이어 주변(상하좌우)에 적이 있는지 확인
-Enemy* map_get_adjacent_enemy(Map* m, int px, int py) {
-    // 상하좌우 4방향 체크
-    int directions[4][2] = {
-        {0, -1},  // 위
-        {0, 1},   // 아래
-        {-1, 0},  // 왼쪽
-        {1, 0}    // 오른쪽
-    };
-
-    for (int i = 0; i < 4; i++) {
-        int nx = px + directions[i][0];
-        int ny = py + directions[i][1];
-
-        Enemy* enemy = map_get_enemy_at(m, nx, ny);
-        if (enemy != NULL) {
-            return enemy;
-        }
-    }
-
-    return NULL;
-}
-
-// ★ 적이 어느 방향에 있는지 반환
-const char* map_get_enemy_direction(Map* m, int px, int py, Enemy* enemy) {
-    if (enemy->x < px) return "왼쪽";
-    if (enemy->x > px) return "오른쪽";
-    if (enemy->y < py) return "위";
-    if (enemy->y > py) return "아래";
-    return "여기";
-}
-
-Chest* map_get_chest_at(Map* m, int x, int y) {
-    for (int i = 0; i < m->chestCount; i++) {
-        if (!m->chests[i].isOpened &&
-            m->chests[i].x == x && m->chests[i].y == y) {
-
-            return &m->chests[i];
-        }
-    }
-    return NULL;
-}
-
-Chest* map_get_adjacent_chest(Map* m, int px, int py) {
-    int dirs[4][2] = {
-        {0,-1}, {0,1}, {-1,0}, {1,0}
-    };
-
-    for (int i = 0; i < 4; i++) {
-        int nx = px + dirs[i][0];
-        int ny = py + dirs[i][1];
-
-        Chest* chest = map_get_chest_at(m, nx, ny);
-        if (chest != NULL) return chest;
-    }
-
-    return NULL;
-}
-
-
-// -------------------------------
-// 맵 초기화
-// -------------------------------
-void map_init(Map* m, int stageNumber) {
-    m->stageNumber = stageNumber;  // ★ 선택사항
-    load_map(m, stageNumber);
-
-    map_find_spawn(m);  // ★ 이 줄 추가!
-    //map_load_enemies(m);  // ★ 이 줄 추가!
-
-    map_load_enemies(m);
-    map_load_chests(m);
-    map_load_npcs(m);  // ★ 추가
-}
-
-
-// ★ map_draw_viewport 수정 - NPC 렌더링 추가
-void map_draw_viewport(const Map* m, const Player* p,
-    int startX, int startY,
-    int viewW, int viewH)
-{
-    int viewX = p->x - viewW / 2;
-    int viewY = p->y - viewH / 2;
-
-    if (viewX < 0) viewX = 0;
-    if (viewY < 0) viewY = 0;
-    if (viewX + viewW > m->width)  viewX = m->width - viewW;
-    if (viewY + viewH > m->height) viewY = m->height - viewH;
-    if (viewX < 0) viewX = 0;
-    if (viewY < 0) viewY = 0;
-
-    for (int sy = 0; sy < viewH; sy++) {
-        int my = viewY + sy;
-        console_goto(startX, startY + sy);
-
-        for (int sx = 0; sx < viewW; sx++) {
-            int mx = viewX + sx;
-
-            if (mx < 0 || mx >= m->width ||
-                my < 0 || my >= m->height)
-            {
-                printf("  ");
-                continue;
-            }
-
-            // 플레이어 출력
-            if (mx == p->x && my == p->y) {
-                printf(GLYPH_PLAYER);
-                continue;
-            }
-
-            // ★ NPC 출력 (우선순위 높음)
-            NPC* npc = map_get_npc_at((Map*)m, mx, my);
-            if (npc != NULL) {
-                printf("%s", npc->glyph);
-                continue;
-            }
-
-            // 적 출력
-            Enemy* enemy = map_get_enemy_at((Map*)m, mx, my);
-            if (enemy != NULL) {
-                printf("%s", enemy_to_glyph(enemy->type));
-                continue;
-            }
-
-            // 상자 출력
-            Chest* chest = map_get_chest_at((Map*)m, mx, my);
-            if (chest != NULL && !chest->isOpened) {
-                printf(GLYPH_CHEST);
-                continue;
-            }
-
-            // 기본 타일 출력
-            printf("%s", tile_to_glyph(m->tiles[my][mx]));
-        }
-    }
-}
-
-// src/world/map.c - NPC 관련 함수 추가
-
-// 기존 코드 유지하고 아래 함수들 추가
-
-// ★ NPC 타일 체크
-int is_npc_tile(char t) {
-    return (t >= 'A' && t <= 'Z');
-}
-
-// ★ 맵에서 NPC 찾아서 초기화
-void map_load_npcs(Map* m) {
-    m->npcCount = 0;
-
-    for (int y = 0; y < m->height; y++) {
-        for (int x = 0; x < m->width; x++) {
-            char tile = m->tiles[y][x];
-
-            if (is_npc_tile(tile)) {
-                if (m->npcCount < MAX_NPCS) {
-                    npc_init(&m->npcs[m->npcCount], tile, x, y);
-                    m->npcCount++;
-
-                    // NPC가 있던 자리는 바닥으로 변경
-                    m->tiles[y][x] = '.';
-                }
-            }
-        }
-    }
-}
-
-// ★ 특정 위치에 있는 NPC 반환
-NPC* map_get_npc_at(Map* m, int x, int y) {
-    for (int i = 0; i < m->npcCount; i++) {
-        if (npc_is_at(&m->npcs[i], x, y)) {
-            return &m->npcs[i];
-        }
-    }
-    return NULL;
-}
-
-// ★ 플레이어 인접한 NPC 찾기
-NPC* map_get_adjacent_npc(Map* m, int px, int py) {
-    int dirs[4][2] = {
-        {0, -1}, {0, 1}, {-1, 0}, {1, 0}
-    };
-
-    for (int i = 0; i < 4; i++) {
-        int nx = px + dirs[i][0];
-        int ny = py + dirs[i][1];
-
-        NPC* npc = map_get_npc_at(m, nx, ny);
-        if (npc != NULL) return npc;
-    }
-
-    return NULL;
-}
-
-------------------------------------------------------------
-[FILE PATH] C:\projects\MetroHero\MetroHero\src\world\map.h
-[FILE NAME] map.h
-------------------------------------------------------------
-
-#ifndef MAP_HEADER
-#define MAP_HEADER
-
-#include "../entity/player.h"
-#include "../entity/enemy.h"  // ★ 추가
-#include "../entity/chest.h"
-#include "../entity/npc.h"  // ★ 추가
-
-#define MAX_MAP_W 200  // 최대 크기만 정의
-#define MAX_MAP_H 120
-#define MAX_CHESTS 50
-
+// --- Tile Definition (Global Palette) ---
 typedef struct {
-	int width;
-	int height;
-	int stageNumber;  // ★ 현재 스테이지 번호 추가 (선택사항)
-	int spawnX;  // ★ 스폰 위치 추가
-	int spawnY;  // ★ 스폰 위치 추가
-	char tiles[ MAX_MAP_H ][ MAX_MAP_W ];
+    char symbol;          // 맵 문자 (예: '#')
+    const char* glyph;    // 글리프 문자열 (예: GLYPH_WALL_GRAY)
+    int walkable;         // 1 = 이동 가능, 0 = 이동 불가
+    const char* desc;     // 설명 (디버깅용)
+} TileDef;
 
-	// ★ 적 관리
-	Enemy enemies[ MAX_ENEMIES ];
-	int enemyCount;
+// --- Chest Definition ---
+typedef struct {
+    char tile;              // '0', '1', '2' ... (맵상의 숫자)
+    const char* itemType;   // "weapon", "armor", "item"
+    const char* itemName;   // 아이템 이름
+} ChestConfig;
 
-	Chest chests[ MAX_CHESTS ];
-	int chestCount;
+// --- Enemy Definition ---
+typedef struct {
+    char tile;              // 'a', 'b'... (맵상의 문자)
+    const char* name;       // 몬스터 이름
+    const char* glyph;      // e.g. "🐈"
+    int maxHp;
+    int attackMin;
+    int attackMax;
+    int defense;
+    
+    // 대사 관련
+    const char** dialogues;
+    int dialogueCount;
+    const char* dialogueColor; // 예: COLOR_RED (ANSI Code)
+} EnemyConfig;
 
-	// ★ NPC 추가
-	NPC npcs[ MAX_NPCS ];
-	int npcCount;
-} Map;
+// --- NPC Definition ---
+typedef struct {
+    char tile;              // 'A', 'B', 'C'...
+    const char* name;
+    const char* glyph;      // e.g. GLYPH_NPC_MERCHANT
+    
+    const char** dialogues;
+    int dialogueCount;
+    
+    int canTrade;
+    const char* shopType;
+    int useDialogueBox;
+} NPCConfig;
 
-void map_init(Map* m , int stageNumber);  // ★ 인자 추가
-void map_draw_at(const Map* m , const Player* p , int startX , int startY);
-int map_is_walkable(const Map* m, int x, int y);
-const char* tile_to_glyph(char t);  // ★ 추가
-void map_find_spawn(Map* m);  // ★ 추가
-void map_load_enemies(Map* m);  // ★ 추가
-Enemy* map_get_enemy_at(Map* m , int x , int y);  // ★ 추가
-Enemy* map_get_adjacent_enemy(Map* m , int px , int py);  // ★ 추가
-const char* map_get_enemy_direction(Map* m , int px , int py , Enemy* enemy);  // ★ 추가
-const char* enemy_to_glyph(char type);
+// --- Stage Definition ---
+typedef struct {
+    int stageId;
+    
+    // 맵 데이터
+    const char** mapLines;
+    int mapHeight;
+    // width는 strlen(mapLines[0])으로 계산 가능
 
-Chest* map_get_chest_at(Map* m , int x , int y);
-Chest* map_get_adjacent_chest(Map* m , int px , int py);
+    // 상자 데이터
+    const ChestConfig* chests;
+    int chestCount;
 
-// ★ NPC 관련 함수
-void map_load_npcs(Map* m);
-NPC* map_get_npc_at(Map* m , int x , int y);
-NPC* map_get_adjacent_npc(Map* m , int px , int py);
+    // 적 데이터
+    const EnemyConfig* enemies;
+    int enemyCount;
 
+    // NPC 데이터
+    const NPCConfig* npcs;
+    int npcCount;
 
-void map_draw_viewport(const Map* m , const Player* p , int startX , int startY ,
-	int viewW , int viewH);
+    // 시네마틱 (스토리)
+    const Cinematic* intro;       // 스테이지 시작 시 재생
+    const Cinematic* outro;       // 스테이지 클리어 시 재생
+} StageData;
 
 #endif
 
 
 ------------------------------------------------------------
-[FILE PATH] C:\projects\MetroHero\MetroHero\src\world\map_data.c
-[FILE NAME] map_data.c
+[FILE PATH] c:\projects\MetroHero\MetroHero\src\stages\stage_01\stage_01.c
+[FILE NAME] stage_01.c
 ------------------------------------------------------------
 
-#include "map_data.h"
-#include <string.h>
+#include "stage_01.h"
+#include <stdlib.h>
+#include "../../world/glyph.h"
 
-// ========================
-// 스테이지별 상자 설정
-// ========================
-// src/world/map_data.c - 상자 설정도 숫자로 변경
-
-// ★ Stage 1 상자 설정 (숫자로 변경)
-static const ChestConfig STAGE1_CHESTS[] = {
-    {'0', "weapon", "초보자 검"},
-    {'1', "armor",  "가죽 갑옷"},
-    {'2', "item",   "HP 포션"},
-    {'3', "item",   "민첩의 물약"},
-    {'4', "item",   "힘의 물약"},
-};
-static const int STAGE1_CHEST_COUNT = sizeof(STAGE1_CHESTS) / sizeof(STAGE1_CHESTS[0]);
-
-// Stage 2
-static const ChestConfig STAGE2_CHESTS[] = {
-    {'0', "weapon", "강철 검"},
-    {'1', "armor",  "철 갑옷"},
-    {'2', "item",   "대형 HP 포션"},
-    {'3', "item",   "스태미너 물약"},
-    {'4', "item",   "신비한 원석"},
-};
-static const int STAGE2_CHEST_COUNT = sizeof(STAGE2_CHESTS) / sizeof(STAGE2_CHESTS[0]);
-
-// Stage 3
-static const ChestConfig STAGE3_CHESTS[] = {
-    {'0', "weapon", "마력의 검"},
-    {'1', "armor",  "마나 갑옷"},
-    {'2', "item",   "최대 HP +5"},
-    {'3', "item",   "공격력 +2"},
-    {'4', "item",   "방어력 +2"},
-};
-static const int STAGE3_CHEST_COUNT = sizeof(STAGE3_CHESTS) / sizeof(STAGE3_CHESTS[0]);
-
-
-// ========================
-// 맵 데이터 정의 (상단에 모아두기)
-// ========================
-
-static const char* MAP_STAGE_1[] = {
+// ============================================
+// Stage 1 Map Data
+// ============================================
+static const char* MAP_LINES[] = {
 "########################################################################################################################",
 "########################################################################################################################",
 "############..........@.........##############..........###########....................###############################",
@@ -2203,8 +2828,177 @@ static const char* MAP_STAGE_1[] = {
 "########################################################################################################################"
 };
 
+// ============================================
+// Stage 1 Chests
+// ============================================
+static const ChestConfig CHESTS[] = {
+    {'0', "weapon", "초보자 검"},
+    {'1', "armor",  "가죽 갑옷"},
+    {'2', "item",   "HP 포션"},
+    {'3', "item",   "민첩의 물약"},
+    {'4', "item",   "힘의 물약"},
+};
 
-static const char* MAP_STAGE_2[] = {
+// ============================================
+// Stage 1 Enemies
+// ============================================
+
+// Type 'a': 맹혹한고양이
+static const char* DIALOGUES_A[] = {
+    "나는 잔인한 냥코다옹",
+    "냥코냥코 대전쟁"
+};
+
+// Type 'b': 경비로봇
+static const char* DIALOGUES_B[] = {
+    "전철역 내 침입자를 인식했습니다...",
+    "경고: 비인가 인원입니다.",
+    "돌아가라 날 건들면 후회할것이다"
+};
+
+static const EnemyConfig ENEMIES[] = {
+    {
+        'a', "맹혹한고양이", "🐈",
+        5,              // maxHp
+        1, 3,           // attackMin, Max
+        0,              // defense
+        DIALOGUES_A,
+        sizeof(DIALOGUES_A) / sizeof(DIALOGUES_A[0]),
+        COLOR_BRIGHT_CYAN
+    },
+    {
+        'b', "경비로봇", COLOR_RED "🤖" COLOR_RESET,
+        10,
+        100, 100,
+        0,
+        DIALOGUES_B,
+        sizeof(DIALOGUES_B) / sizeof(DIALOGUES_B[0]),
+        COLOR_RED
+    }
+};
+
+// ============================================
+// Stage 1 NPCs
+// ============================================
+
+// A: Merchant
+static const char* NPC_DIALOGUES_A[] = {
+    "당신은 이제 이곳에서 모험을 시작하게 됩니다.. ",
+    "이곳은 성균관대역입니다.",
+    "당신은 이 모험을 끝내고 집으로 돌아가기 위해서는 영등포역에 도착해야합니다...",
+    "일단 이 역의 역장을 물리치고 의왕역으로 넘어가야 할 것입니다...",
+    "행운을 빕니다... 후후후..."
+};
+
+// C: Citizen
+static const char* NPC_DIALOGUES_C[] = {
+    "안녕하세요, 좋은 하루입니다.",
+    "요즘 전철역이 위험하다고 하더라고요.",
+    "지하에는 이상한 것들이 많다던데...",
+    "조심히 다니세요!"
+};
+
+static const NPCConfig NPCS[] = {
+    {
+        'A', "우건박", COLOR_BRIGHT_BLUE "읏" COLOR_RESET,
+        NPC_DIALOGUES_A, sizeof(NPC_DIALOGUES_A)/sizeof(NPC_DIALOGUES_A[0]),
+        0, "general", 1 // canTrade=0 currently but shopType set? Original code had canTrade=0.
+    },
+    {
+        'C', "시민", COLOR_BRIGHT_WHITE "민" COLOR_RESET,
+        NPC_DIALOGUES_C, sizeof(NPC_DIALOGUES_C)/sizeof(NPC_DIALOGUES_C[0]),
+        0, NULL, 0
+    }
+};
+
+// ============================================
+// Stage 1 Story (Cinematics)
+// ============================================
+
+// --- Intro ---
+static const CinematicLine INTRO_LINES[] = {
+    { "", STYLE_NORMAL, 300 },
+    { "[ STAGE 1 ]", STYLE_TITLE, 500 },
+    { "", STYLE_NORMAL, 200 },
+    { "성균관대역", STYLE_SUBTITLE, 800 },
+};
+
+static const Cinematic INTRO_CINEMATIC = {
+    NULL,
+    INTRO_LINES,
+    sizeof(INTRO_LINES) / sizeof(INTRO_LINES[0]),
+    25,
+    1,
+    COLOR_YELLOW,
+    COLOR_WHITE
+};
+
+// --- Outro (Clear) ---
+static const CinematicLine CLEAR_LINES[] = {
+    { "", STYLE_NORMAL, 300 },
+    { "★ STAGE CLEAR ★", STYLE_TITLE, 800 },
+    { "", STYLE_NORMAL, 500 },
+    { "성균관대역을 정화했다!", STYLE_TYPEWRITER, 600 },
+    { "", STYLE_NORMAL, 300 },
+    { "하지만 어둠은 더 깊은 곳에서 기다리고 있다...", STYLE_TYPEWRITER, 0 },
+};
+
+static const Cinematic CLEAR_CINEMATIC = {
+    NULL,
+    CLEAR_LINES,
+    sizeof(CLEAR_LINES) / sizeof(CLEAR_LINES[0]),
+    30, 
+    1, 
+    COLOR_BRIGHT_GREEN, 
+    COLOR_WHITE
+};
+
+// ============================================
+// Stage Package
+// ============================================
+const StageData STAGE_01_DATA = {
+    1, // ID
+    MAP_LINES,
+    sizeof(MAP_LINES) / sizeof(MAP_LINES[0]),
+    CHESTS,
+    sizeof(CHESTS) / sizeof(CHESTS[0]),
+    ENEMIES,
+    sizeof(ENEMIES) / sizeof(ENEMIES[0]),
+    NPCS,
+    sizeof(NPCS) / sizeof(NPCS[0]),
+    &INTRO_CINEMATIC,
+    &CLEAR_CINEMATIC
+};
+
+
+------------------------------------------------------------
+[FILE PATH] c:\projects\MetroHero\MetroHero\src\stages\stage_01\stage_01.h
+[FILE NAME] stage_01.h
+------------------------------------------------------------
+
+#ifndef STAGE_01_H
+#define STAGE_01_H
+
+#include "../common.h"
+
+extern const StageData STAGE_01_DATA;
+
+#endif
+
+
+------------------------------------------------------------
+[FILE PATH] c:\projects\MetroHero\MetroHero\src\stages\stage_02\stage_02.c
+[FILE NAME] stage_02.c
+------------------------------------------------------------
+
+#include "stage_02.h"
+#include <stdlib.h>
+#include "../../world/glyph.h"
+
+// ============================================
+// Stage 2 Map Data
+// ============================================
+static const char* MAP_LINES[] = {
     "########################################",
     "#====================================..#",
     "#====================================..#",
@@ -2227,7 +3021,128 @@ static const char* MAP_STAGE_2[] = {
     "########################################"
 };
 
-static const char* MAP_STAGE_3[] = {
+// ============================================
+// Stage 2 Chests
+// ============================================
+static const ChestConfig CHESTS[] = {
+    {'0', "weapon", "강철 검"},
+    {'1', "armor",  "철 갑옷"},
+    {'2', "item",   "대형 HP 포션"},
+    {'3', "item",   "스태미너 물약"},
+    {'4', "item",   "신비한 원석"},
+};
+
+// ============================================
+// Stage 2 Enemies
+// ============================================
+
+// Type 'b': 경비로봇 (Available in Stage 2 context)
+static const char* DIALOGUES_B[] = {
+    "전철역 내 침입자를 인식했습니다...",
+    "경고: 비인가 인원입니다.",
+    "돌아가라 날 건들면 후회할것이다"
+};
+
+static const EnemyConfig ENEMIES[] = {
+    {
+        'b', "경비로봇", COLOR_RED "🤖" COLOR_RESET,
+        10,
+        100, 100,
+        0,
+        DIALOGUES_B,
+        sizeof(DIALOGUES_B) / sizeof(DIALOGUES_B[0]),
+        COLOR_RED
+    }
+};
+
+// ============================================
+// Stage 2 Story
+// ============================================
+
+static const CinematicLine INTRO_LINES[] = {
+    { "", STYLE_NORMAL, 300 },
+    { "[ STAGE 2 ]", STYLE_TITLE, 500 },
+    { "", STYLE_NORMAL, 200 },
+    { "화서역 환승 통로", STYLE_SUBTITLE, 800 },
+    { "", STYLE_NORMAL, 500 },
+    { "미로처럼 얽힌 통로...", STYLE_TYPEWRITER, 600 },
+    { "더 강력한 적들이 기다리고 있다.", STYLE_TYPEWRITER, 0 },
+};
+
+static const Cinematic INTRO_CINEMATIC = {
+    NULL,
+    INTRO_LINES,
+    sizeof(INTRO_LINES) / sizeof(INTRO_LINES[0]),
+    25,
+    1,
+    COLOR_BRIGHT_YELLOW,
+    COLOR_WHITE
+};
+
+static const CinematicLine CLEAR_LINES[] = {
+    { "", STYLE_NORMAL, 300 },
+    { "★ STAGE CLEAR ★", STYLE_TITLE, 800 },
+    { "", STYLE_NORMAL, 500 },
+    { "환승 통로를 돌파했다!", STYLE_TYPEWRITER, 600 },
+    { "", STYLE_NORMAL, 300 },
+    { "최종 목적지가 눈앞에 있다...", STYLE_TYPEWRITER, 0 },
+};
+
+static const Cinematic CLEAR_CINEMATIC = {
+    NULL,
+    CLEAR_LINES,
+    sizeof(CLEAR_LINES) / sizeof(CLEAR_LINES[0]),
+    30,
+    1,
+    COLOR_BRIGHT_GREEN,
+    COLOR_WHITE
+};
+
+// ============================================
+// Stage Package
+// ============================================
+const StageData STAGE_02_DATA = {
+    2,
+    MAP_LINES,
+    sizeof(MAP_LINES) / sizeof(MAP_LINES[0]),
+    CHESTS,
+    sizeof(CHESTS) / sizeof(CHESTS[0]),
+    ENEMIES,
+    sizeof(ENEMIES) / sizeof(ENEMIES[0]),
+    NULL, 0, // NPCS
+    &INTRO_CINEMATIC,
+    &CLEAR_CINEMATIC
+};
+
+
+------------------------------------------------------------
+[FILE PATH] c:\projects\MetroHero\MetroHero\src\stages\stage_02\stage_02.h
+[FILE NAME] stage_02.h
+------------------------------------------------------------
+
+#ifndef STAGE_02_H
+#define STAGE_02_H
+
+#include "../common.h"
+
+extern const StageData STAGE_02_DATA;
+
+#endif
+
+
+------------------------------------------------------------
+[FILE PATH] c:\projects\MetroHero\MetroHero\src\stages\stage_03\stage_03.c
+[FILE NAME] stage_03.c
+------------------------------------------------------------
+
+#include "stage_03.h"
+#include <stdlib.h>
+#include "../../world/glyph.h"
+
+// ============================================
+// Stage 3 Map Data
+// ============================================
+static const char* MAP_LINES[] = {
     "####################",
     "#..................#",
     "#....####..........#",
@@ -2240,25 +3155,722 @@ static const char* MAP_STAGE_3[] = {
     "####################"
 };
 
-static const char* MAP_DEFAULT[] = {
-    "####################",
-    "#..................#",
-    "#..................#",
-    "#..................#",
-    "#..................#",
-    "#..................#",
-    "#..................#",
-    "#..................#",
-    "#..................#",
-    "####################"
+// ============================================
+// Stage 3 Chests
+// ============================================
+static const ChestConfig CHESTS[] = {
+    {'0', "weapon", "마력의 검"},
+    {'1', "armor",  "마나 갑옷"},
+    {'2', "item",   "최대 HP +5"},
+    {'3', "item",   "공격력 +2"},
+    {'4', "item",   "방어력 +2"},
 };
 
-// ========================
-// 로직 함수들
-// ========================
+// ============================================
+// Stage 3 Enemies
+// ============================================
 
-// ★ 공통 로드 함수
-static void load_map_from_data(Map* m, const char** mapData, int height) {
+// Generic Monster (Default case from original)
+static const char* DIALOGUES_M[] = {
+    "키에에에엑!",
+    "으르르르르…",
+    "끼아아악!"
+};
+
+static const EnemyConfig ENEMIES[] = {
+    {
+        'm', "몬스터", COLOR_YELLOW "몹" COLOR_RESET,
+        3,
+        1, 2,
+        0,
+        DIALOGUES_M,
+        sizeof(DIALOGUES_M) / sizeof(DIALOGUES_M[0]),
+        COLOR_YELLOW
+    }
+};
+
+// ============================================
+// Stage 3 Story
+// ============================================
+
+static const CinematicLine INTRO_LINES[] = {
+    { "", STYLE_NORMAL, 300 },
+    { "[ STAGE 3 ]", STYLE_TITLE, 500 },
+    { "", STYLE_NORMAL, 200 },
+    { "서울역 지하 심층부", STYLE_SUBTITLE, 800 },
+    { "", STYLE_NORMAL, 500 },
+    { "모든 것의 시작점...", STYLE_TYPEWRITER, 600 },
+    { "최종 결전이 기다린다.", STYLE_TYPEWRITER, 0 },
+};
+
+static const Cinematic INTRO_CINEMATIC = {
+    NULL,
+    INTRO_LINES,
+    sizeof(INTRO_LINES) / sizeof(INTRO_LINES[0]),
+    25,
+    1, // showSkipHint
+    COLOR_BRIGHT_RED, // Border
+    COLOR_WHITE
+};
+
+static const CinematicLine CLEAR_LINES[] = {
+    { "", STYLE_NORMAL, 300 },
+    { "★ STAGE CLEAR ★", STYLE_TITLE, 800 },
+    { "", STYLE_NORMAL, 500 },
+    { "모든 어둠을 물리쳤다!", STYLE_TYPEWRITER, 600 },
+    { "", STYLE_NORMAL, 300 },
+    { "서울 지하철에 다시 평화가 찾아왔다.", STYLE_TYPEWRITER, 0 },
+};
+
+static const Cinematic CLEAR_CINEMATIC = {
+    NULL,
+    CLEAR_LINES,
+    sizeof(CLEAR_LINES) / sizeof(CLEAR_LINES[0]),
+    30,
+    1,
+    COLOR_BRIGHT_YELLOW,
+    COLOR_WHITE
+};
+
+// ============================================
+// Stage Package
+// ============================================
+const StageData STAGE_03_DATA = {
+    3,
+    MAP_LINES,
+    sizeof(MAP_LINES) / sizeof(MAP_LINES[0]),
+    CHESTS,
+    sizeof(CHESTS) / sizeof(CHESTS[0]),
+    ENEMIES,
+    sizeof(ENEMIES) / sizeof(ENEMIES[0]),
+    NULL, 0, // NPCS
+    &INTRO_CINEMATIC,
+    &CLEAR_CINEMATIC
+};
+
+
+------------------------------------------------------------
+[FILE PATH] c:\projects\MetroHero\MetroHero\src\stages\stage_03\stage_03.h
+[FILE NAME] stage_03.h
+------------------------------------------------------------
+
+#ifndef STAGE_03_H
+#define STAGE_03_H
+
+#include "../common.h"
+
+extern const StageData STAGE_03_DATA;
+
+#endif
+
+
+------------------------------------------------------------
+[FILE PATH] c:\projects\MetroHero\MetroHero\src\world\glyph.h
+[FILE NAME] glyph.h
+------------------------------------------------------------
+
+// src/world/glyph.h - 타일 정의 추가
+
+#ifndef GLYPH_H
+#define GLYPH_H
+
+// ========================
+// ANSI 색상 코드
+// ========================
+#define COLOR_RESET   "\033[0m"
+#define COLOR_BLACK   "\033[30m"
+#define COLOR_RED     "\033[31m"
+#define COLOR_GREEN   "\033[32m"
+#define COLOR_YELLOW  "\033[33m"
+#define COLOR_BLUE    "\033[34m"
+#define COLOR_MAGENTA "\033[35m"
+#define COLOR_CYAN    "\033[36m"
+#define COLOR_WHITE   "\033[37m"
+#define COLOR_GRAY    "\033[90m"
+#define COLOR_DARK_GRAY "\033[90m"
+
+// 밝은 색상
+#define COLOR_BRIGHT_BLACK   "\033[90m"
+#define COLOR_BRIGHT_RED     "\033[91m"
+#define COLOR_BRIGHT_GREEN   "\033[92m"
+#define COLOR_BRIGHT_YELLOW  "\033[93m"
+#define COLOR_BRIGHT_BLUE    "\033[94m"
+#define COLOR_BRIGHT_MAGENTA "\033[95m"
+#define COLOR_BRIGHT_CYAN    "\033[96m"
+#define COLOR_BRIGHT_WHITE   "\033[97m"
+
+// 배경색
+#define BG_BLACK   "\033[40m"
+#define BG_RED     "\033[41m"
+#define BG_GREEN   "\033[42m"
+#define BG_YELLOW  "\033[43m"
+#define BG_BLUE    "\033[44m"
+#define BG_MAGENTA "\033[45m"
+#define BG_CYAN    "\033[46m"
+#define BG_WHITE   "\033[47m"
+
+// Bright Backgrounds
+#define BG_BRIGHT_BLACK   "\033[100m"
+#define BG_BRIGHT_RED     "\033[101m"
+#define BG_BRIGHT_GREEN   "\033[102m"
+#define BG_BRIGHT_YELLOW  "\033[103m"
+#define BG_BRIGHT_BLUE    "\033[104m"
+#define BG_BRIGHT_MAGENTA "\033[105m"
+#define BG_BRIGHT_CYAN    "\033[106m"
+#define BG_BRIGHT_WHITE   "\033[107m"
+
+// 전투 메시지용 색상
+#define COMBAT_ATTACK    COLOR_BRIGHT_RED
+#define COMBAT_DAMAGE    COLOR_BRIGHT_YELLOW
+#define COMBAT_DEATH     COLOR_BRIGHT_MAGENTA
+#define COMBAT_ENEMY     COLOR_RED
+#define COMBAT_DETECT    COLOR_CYAN
+
+// 맵 타일
+// ========================
+// 맵 타일 (배경/구조물) -> map_data.c 로 이동됨 global palette 사용
+
+// 5. 상자 (Chests - map.c 로직에서 사용)
+#define GLYPH_CHEST_CLOSED   "📦"
+#define GLYPH_CHEST_OPEN     "📭"
+
+// 6. 엔티티 (Entities)
+#define GLYPH_PLAYER   COLOR_BRIGHT_GREEN "옷" COLOR_RESET
+
+// ========================
+// 호환성 (Compatibility)
+// ========================
+// (Moved to map_data.c)
+#define GLYPH_EMPTY    "  "  // Still used as default fallback in code
+
+// ========================
+// 타일 문자 (맵 데이터용)
+// ========================
+#define TILE_FLOOR     '.'
+// ... (Keep existing TILE_ definitions if useful, or remove if unused)
+
+#endif
+
+------------------------------------------------------------
+[FILE PATH] c:\projects\MetroHero\MetroHero\src\world\map.c
+[FILE NAME] map.c
+------------------------------------------------------------
+
+#include <stdio.h>
+#include <windows.h>
+#include "map.h"
+#include "../entity/player.h"
+#include "../entity/enemy.h"  // ★ 추가
+#include "../core/ui/ui.h"   // ★ 반드시 필요
+#include "map_data.h"  // ★ 추가
+#include "glyph.h"  // ★ 추가
+
+// ★ 타일 정의 조회 Helper
+const TileDef* map_get_tile_def(char symbol) {
+    for (int i = 0; i < GLOBAL_TILE_PALETTE_COUNT; i++) {
+        if (GLOBAL_TILE_PALETTE[i].symbol == symbol) {
+            return &GLOBAL_TILE_PALETTE[i];
+        }
+    }
+    return NULL;
+}
+
+// 타일 문자를 렌더링 문자로 변환
+const char* tile_to_glyph(char t) {
+    const TileDef* def = map_get_tile_def(t);
+    if (def) {
+        return def->glyph;
+    }
+    return GLYPH_EMPTY;
+}
+
+
+// ★ 스폰 포인트 찾기
+void map_find_spawn(Map* m) {
+    // 기본값 (중앙)
+    m->spawnX = m->width / 2;
+    m->spawnY = m->height / 2;
+
+    // @ 찾기
+    for (int y = 0; y < m->height; y++) {
+        for (int x = 0; x < m->width; x++) {
+            if (m->tiles[y][x] == '@') {
+                m->spawnX = x;
+                m->spawnY = y;
+                // @ 를 일반 바닥으로 변환
+                m->tiles[y][x] = '.';
+                return;  // 첫 번째 @ 만 사용
+            }
+        }
+    }
+}
+
+int is_enemy_tile(char t) {
+    return (t == 'a' || t == 'b');   // 몬스터 목록 지정
+}
+
+// ★ 맵에서 적 찾아서 초기화
+// ★ 맵에서 적 찾아서 초기화
+void map_load_enemies(Map* m) {
+    m->enemyCount = 0;
+    
+    const StageData* stageData = get_stage_data(m->stageNumber);
+    if (!stageData) return;
+
+    for (int y = 0; y < m->height; y++) {
+        for (int x = 0; x < m->width; x++) {
+            char tile = m->tiles[y][x];
+
+            // Check against defined enemies for this stage
+            for (int i = 0; i < stageData->enemyCount; i++) {
+                if (stageData->enemies[i].tile == tile) {
+                     if (m->enemyCount < MAX_ENEMIES) {
+                        enemy_init(&m->enemies[m->enemyCount], &stageData->enemies[i], x, y);
+                        m->enemyCount++;
+
+                        // 적이 있던 자리는 바닥으로 변경
+                        m->tiles[y][x] = '.';
+                    }
+                    break;
+                }
+            }
+        }
+    }
+}
+
+// ★ 특정 위치에 있는 적 반환
+Enemy* map_get_enemy_at(Map* m, int x, int y) {
+    for (int i = 0; i < m->enemyCount; i++) {
+        if (enemy_is_at(&m->enemies[i], x, y)) {
+            return &m->enemies[i];
+        }
+    }
+    return NULL;
+}
+
+void map_load_chests(Map* m) {
+    m->chestCount = 0;
+
+    int cfgCount = 0;
+    const ChestConfig* cfg = get_chest_config(m->stageNumber, &cfgCount);
+
+    if (cfg == NULL) return;
+
+    for (int y = 0; y < m->height; y++) {
+        for (int x = 0; x < m->width; x++) {
+
+            char tile = m->tiles[y][x];
+
+            // 상자 타일이 아닌 경우 skip
+            if (tile < '0' || tile > '9') continue;
+
+            // 해당 tile의 config 찾기
+            for (int i = 0; i < cfgCount; i++) {
+                if (cfg[i].tile == tile) {
+
+                    chest_init(
+                        &m->chests[m->chestCount],
+                        x, y,
+                        tile,  // ★ Pass the tile character
+                        cfg[i].itemType,
+                        cfg[i].itemName
+                    );
+                    m->chestCount++;
+
+                    //m->tiles[y][x] = '.'; // 상자 타일을 바닥으로 변경
+                    break;
+                }
+            }
+        }
+    }
+}
+
+
+
+
+
+
+// -------------------------------
+// 맵 렌더링
+// -------------------------------
+//void map_draw(const Map* m, const Player* p) {
+//    for (int y = 0; y < MAP_H; y++) {
+//        for (int x = 0; x < MAP_W; x++) {
+//
+//            if (p->x == x && p->y == y) {
+//                // 플레이어 위치
+//                printf(">>");   // 전각 플레이어 아이콘
+//            }
+//            else {
+//                printf("%s", tile_to_glyph(m->tiles[y][x]));
+//            }
+//
+//        }
+//        putchar('\n');
+//    }
+//}
+
+
+
+// ★ map_is_walkable 수정 - NPC도 이동 불가
+int map_is_walkable(const Map* m, int x, int y) {
+    if (x < 0 || x >= m->width || y < 0 || y >= m->height)
+        return 0;
+
+    char t = m->tiles[y][x];
+
+    // 상자(숫자)는 이동 불가
+    if (t >= '0' && t <= '9')
+        return 0;
+
+    // NPC가 있는 위치는 이동 불가
+    for (int i = 0; i < m->npcCount; i++) {
+        if (m->npcs[i].x == x && m->npcs[i].y == y)
+            return 0;
+    }
+
+    // 기본 타일 이동 가능 여부 확인
+    const TileDef* def = map_get_tile_def(t);
+    if (def) {
+        return def->walkable;
+    }
+
+    return 0;
+}
+
+
+// ★ 플레이어 주변(상하좌우)에 적이 있는지 확인
+Enemy* map_get_adjacent_enemy(Map* m, int px, int py) {
+    // 상하좌우 4방향 체크
+    int directions[4][2] = {
+        {0, -1},  // 위
+        {0, 1},   // 아래
+        {-1, 0},  // 왼쪽
+        {1, 0}    // 오른쪽
+    };
+
+    for (int i = 0; i < 4; i++) {
+        int nx = px + directions[i][0];
+        int ny = py + directions[i][1];
+
+        Enemy* enemy = map_get_enemy_at(m, nx, ny);
+        if (enemy != NULL) {
+            return enemy;
+        }
+    }
+
+    return NULL;
+}
+
+// ★ 적이 어느 방향에 있는지 반환
+const char* map_get_enemy_direction(Map* m, int px, int py, Enemy* enemy) {
+    if (enemy->x < px) return "왼쪽";
+    if (enemy->x > px) return "오른쪽";
+    if (enemy->y < py) return "위";
+    if (enemy->y > py) return "아래";
+    return "여기";
+}
+
+Chest* map_get_chest_at(Map* m, int x, int y) {
+    for (int i = 0; i < m->chestCount; i++) {
+        if (m->chests[i].x == x && m->chests[i].y == y) {
+            return &m->chests[i];
+        }
+    }
+    return NULL;
+}
+
+Chest* map_get_adjacent_chest(Map* m, int px, int py) {
+    int dirs[4][2] = {
+        {0,-1}, {0,1}, {-1,0}, {1,0}
+    };
+
+    for (int i = 0; i < 4; i++) {
+        int nx = px + dirs[i][0];
+        int ny = py + dirs[i][1];
+
+        Chest* chest = map_get_chest_at(m, nx, ny);
+        if (chest != NULL) return chest;
+    }
+
+    return NULL;
+}
+
+
+// -------------------------------
+// 맵 초기화
+// -------------------------------
+void map_init(Map* m, int stageNumber) {
+    m->stageNumber = stageNumber;  // ★ 선택사항
+    load_map(m, stageNumber);
+
+    map_find_spawn(m);  // ★ 이 줄 추가!
+    //map_load_enemies(m);  // ★ 이 줄 추가!
+
+    map_load_enemies(m);
+    map_load_chests(m);
+    map_load_npcs(m);  // ★ 추가
+}
+
+
+// ★ map_draw_viewport 수정 - NPC 렌더링 추가
+void map_draw_viewport(const Map* m, const Player* p,
+    int startX, int startY,
+    int viewW, int viewH)
+{
+    int viewX = p->x - viewW / 2;
+    int viewY = p->y - viewH / 2;
+
+    if (viewX < 0) viewX = 0;
+    if (viewY < 0) viewY = 0;
+    if (viewX + viewW > m->width)  viewX = m->width - viewW;
+    if (viewY + viewH > m->height) viewY = m->height - viewH;
+    if (viewX < 0) viewX = 0;
+    if (viewY < 0) viewY = 0;
+
+    for (int sy = 0; sy < viewH; sy++) {
+        int my = viewY + sy;
+        int screenY = startY + sy;
+        
+        for (int sx = 0; sx < viewW; sx++) {
+            int mx = viewX + sx;
+            int screenX = startX + sx * 2; // Assuming 2 chars per tile
+
+            if (mx < 0 || mx >= m->width ||
+                my < 0 || my >= m->height)
+            {
+                ui_draw_str_at(screenX, screenY, "  ", NULL);
+                continue;
+            }
+
+            // 플레이어 출력
+            if (mx == p->x && my == p->y) {
+                ui_draw_str_at(screenX, screenY, GLYPH_PLAYER, NULL);
+                continue;
+            }
+
+            // ★ NPC 출력 (우선순위 높음)
+            NPC* npc = map_get_npc_at((Map*)m, mx, my);
+            if (npc != NULL) {
+                ui_draw_str_at(screenX, screenY, npc->glyph, NULL);
+                continue;
+            }
+
+            // 적 출력
+            Enemy* enemy = map_get_enemy_at((Map*)m, mx, my);
+            if (enemy != NULL) {
+                ui_draw_str_at(screenX, screenY, enemy->glyph, NULL);
+                continue;
+            }
+
+            // 상자 출력
+            // 상자 출력
+            Chest* chest = map_get_chest_at((Map*)m, mx, my);
+            if (chest != NULL) {
+                if (chest->isOpened) {
+                     ui_draw_str_at(screenX, screenY, GLYPH_CHEST_OPEN, NULL);
+                } else {
+                    // Use the tile stored in the chest to look up the glyph
+                    const TileDef* def = map_get_tile_def(chest->tile);
+                    if (def) {
+                        ui_draw_str_at(screenX, screenY, def->glyph, NULL);
+                    } else {
+                        ui_draw_str_at(screenX, screenY, GLYPH_CHEST_CLOSED, NULL); // Fallback
+                    }
+                }
+                continue;
+            }
+
+            // 기본 타일 출력
+            ui_draw_str_at(screenX, screenY, tile_to_glyph(m->tiles[my][mx]), NULL);
+        }
+    }
+}
+
+// src/world/map.c - NPC 관련 함수 추가
+
+// 기존 코드 유지하고 아래 함수들 추가
+
+// ★ 맵에서 NPC 찾아서 초기화
+void map_load_npcs(Map* m) {
+    m->npcCount = 0;
+    
+    const StageData* stageData = get_stage_data(m->stageNumber);
+    if (!stageData) return;
+
+    for (int y = 0; y < m->height; y++) {
+        for (int x = 0; x < m->width; x++) {
+            char tile = m->tiles[y][x];
+
+            for (int i = 0; i < stageData->npcCount; i++) {
+                if (stageData->npcs[i].tile == tile) {
+                    if (m->npcCount < MAX_NPCS) {
+                        npc_init(&m->npcs[m->npcCount], &stageData->npcs[i], x, y);
+                        m->npcCount++;
+
+                        // NPC가 있던 자리는 바닥으로 변경
+                        m->tiles[y][x] = '.';
+                    }
+                    break;
+                }
+            }
+        }
+    }
+}
+
+// ★ 특정 위치에 있는 NPC 반환
+NPC* map_get_npc_at(Map* m, int x, int y) {
+    for (int i = 0; i < m->npcCount; i++) {
+        if (npc_is_at(&m->npcs[i], x, y)) {
+            return &m->npcs[i];
+        }
+    }
+    return NULL;
+}
+
+// ★ 플레이어 인접한 NPC 찾기
+NPC* map_get_adjacent_npc(Map* m, int px, int py) {
+    int dirs[4][2] = {
+        {0, -1}, {0, 1}, {-1, 0}, {1, 0}
+    };
+
+    for (int i = 0; i < 4; i++) {
+        int nx = px + dirs[i][0];
+        int ny = py + dirs[i][1];
+
+        NPC* npc = map_get_npc_at(m, nx, ny);
+        if (npc != NULL) return npc;
+    }
+
+    return NULL;
+}
+
+------------------------------------------------------------
+[FILE PATH] c:\projects\MetroHero\MetroHero\src\world\map.h
+[FILE NAME] map.h
+------------------------------------------------------------
+
+#ifndef MAP_HEADER
+#define MAP_HEADER
+
+#include "../entity/player.h"
+#include "../entity/enemy.h"  // ★ 추가
+#include "../entity/chest.h"
+#include "../entity/npc.h"  // ★ 추가
+
+#define MAX_MAP_W 200  // 최대 크기만 정의
+#define MAX_MAP_H 120
+#define MAX_CHESTS 50
+
+typedef struct {
+	int width;
+	int height;
+	int stageNumber;  // ★ 현재 스테이지 번호 추가 (선택사항)
+	int spawnX;  // ★ 스폰 위치 추가
+	int spawnY;  // ★ 스폰 위치 추가
+	char tiles[ MAX_MAP_H ][ MAX_MAP_W ];
+
+	// ★ 적 관리
+	Enemy enemies[ MAX_ENEMIES ];
+	int enemyCount;
+
+	Chest chests[ MAX_CHESTS ];
+	int chestCount;
+
+	// ★ NPC 추가
+	NPC npcs[ MAX_NPCS ];
+	int npcCount;
+} Map;
+
+void map_init(Map* m , int stageNumber);
+int map_is_walkable(const Map* m, int x, int y);
+const char* tile_to_glyph(char t);
+void map_find_spawn(Map* m);
+void map_load_enemies(Map* m);
+Enemy* map_get_enemy_at(Map* m , int x , int y);
+Enemy* map_get_adjacent_enemy(Map* m , int px , int py);
+const char* map_get_enemy_direction(Map* m , int px , int py , Enemy* enemy);  // ★ 추가
+const char* enemy_to_glyph(char type);
+
+Chest* map_get_chest_at(Map* m , int x , int y);
+Chest* map_get_adjacent_chest(Map* m , int px , int py);
+
+// ★ NPC 관련 함수
+void map_load_npcs(Map* m);
+NPC* map_get_npc_at(Map* m , int x , int y);
+NPC* map_get_adjacent_npc(Map* m , int px , int py);
+
+
+void map_draw_viewport(const Map* m , const Player* p , int startX , int startY ,
+	int viewW , int viewH);
+
+#endif
+
+
+------------------------------------------------------------
+[FILE PATH] c:\projects\MetroHero\MetroHero\src\world\map_data.c
+[FILE NAME] map_data.c
+------------------------------------------------------------
+
+#include "map_data.h"
+#include <string.h>
+#include <stdlib.h>
+
+#include "glyph.h"
+#include "../stages/stage_01/stage_01.h"
+#include "../stages/stage_02/stage_02.h"
+#include "../stages/stage_03/stage_03.h"
+
+// ========================
+// Global Tile Palette
+// ========================
+// ========================
+// Global Tile Palette
+// ========================
+const TileDef GLOBAL_TILE_PALETTE[] = {
+    // Floors (Walkable)
+    { '.', "\033[48;5;240m..\033[0m",   1, "Tiled Floor" },
+    { ',', "\033[32m,,\033[0m",        1, "Grass Floor" },
+    { '-', "\033[48;5;235m--\033[0m",   1, "Paved Floor" },
+    { '_', "\033[93m..\033[0m",        1, "Dirt Floor" },
+    { '~', "\033[44m  \033[0m",        1, "Water" },
+
+    // Walls (Blocked)
+    { '#', "\033[48;5;236m  \033[0m",  0, "Gray Wall" },
+    { '%', "\033[48;5;124m  \033[0m",  0, "Brick Wall" },
+    { '&', "\033[48;5;22m  \033[0m",   0, "Iron Wall" },
+    { '$', "\033[48;5;123m  \033[0m",  0, "Glass Wall" },
+    
+    // Objects
+    { '+', "🚪",                      0, "Closed Door" },
+    { '/', "\033[30m▒▒\033[0m",        1, "Open Door" },
+    { 'T', "🌲",                      0, "Tree" },
+    { 'B', "🚧",                      0, "Barricade" },
+    { '=', "||",                      1, "Rail" },
+    { 'S', "▼▼",                      1, "Stairs Down" },
+    { 'U', "▲▲",                      1, "Stairs Up" },
+
+    // Special
+    { '@', "  ",                      1, "Spawn Point" }, // Default floor
+    
+    // Chests (0-9) - Blocked
+    { '0', "📦",  0, "Chest 0" },
+    { '1', "📦",  0, "Chest 1" },
+    { '2', "📦",  0, "Chest 2" },
+    { '3', "📦",  0, "Chest 3" },
+    { '4', "📦",  0, "Chest 4" },
+    { '5', "📦",  0, "Chest 5" },
+    { '6', "📦",  0, "Chest 6" },
+    { '7', "📦",  0, "Chest 7" },
+    { '8', "📦",  0, "Chest 8" },
+    { '9', "📦",  0, "Chest 9" },
+};
+const int GLOBAL_TILE_PALETTE_COUNT = sizeof(GLOBAL_TILE_PALETTE) / sizeof(GLOBAL_TILE_PALETTE[0]);
+
+// ========================
+// 공통 로드 함수
+// ========================
+static void load_map_from_lines(Map* m, const char** mapData, int height) {
     m->height = height;
     m->width = strlen(mapData[0]);
 
@@ -2269,46 +3881,44 @@ static void load_map_from_data(Map* m, const char** mapData, int height) {
     }
 }
 
-// ★ 스테이지 번호로 맵 로드
-void load_map(Map* m, int stageNumber) {
+// ========================
+// 데이터 접근 함수
+// ========================
+
+const StageData* get_stage_data(int stageNumber) {
     switch (stageNumber) {
-    case 1:
-        load_map_from_data(m, MAP_STAGE_1, sizeof(MAP_STAGE_1) / sizeof(MAP_STAGE_1[0]));
-        break;
-    case 2:
-        load_map_from_data(m, MAP_STAGE_2, sizeof(MAP_STAGE_2) / sizeof(MAP_STAGE_2[0]));
-        break;
-    case 3:
-        load_map_from_data(m, MAP_STAGE_3, sizeof(MAP_STAGE_3) / sizeof(MAP_STAGE_3[0]));
-        break;
-    default:
-        load_map_from_data(m, MAP_DEFAULT, sizeof(MAP_DEFAULT) / sizeof(MAP_DEFAULT[0]));
-        break;
+        case 1: return &STAGE_01_DATA;
+        case 2: return &STAGE_02_DATA;
+        case 3: return &STAGE_03_DATA;
+        default: return NULL;
+    }
+}
+
+void load_map(Map* m, int stageNumber) {
+    const StageData* data = get_stage_data(stageNumber);
+    if (data) {
+        load_map_from_lines(m, data->mapLines, data->mapHeight);
+    } else {
+        // Fallback or empty map
+        // For safety, maybe clear map?
+        m->height = 0;
+        m->width = 0;
     }
 }
 
 const ChestConfig* get_chest_config(int stage, int* outCount) {
-    switch (stage) {
-    case 1:
-        *outCount = STAGE1_CHEST_COUNT;
-        return STAGE1_CHESTS;
-
-    case 2:
-        *outCount = STAGE2_CHEST_COUNT;
-        return STAGE2_CHESTS;
-
-    case 3:
-        *outCount = STAGE3_CHEST_COUNT;
-        return STAGE3_CHESTS;
+    const StageData* data = get_stage_data(stage);
+    if (data) {
+        *outCount = data->chestCount;
+        return data->chests;
     }
-
     *outCount = 0;
     return NULL;
 }
 
 
 ------------------------------------------------------------
-[FILE PATH] C:\projects\MetroHero\MetroHero\src\world\map_data.h
+[FILE PATH] c:\projects\MetroHero\MetroHero\src\world\map_data.h
 [FILE NAME] map_data.h
 ------------------------------------------------------------
 
@@ -2316,16 +3926,17 @@ const ChestConfig* get_chest_config(int stage, int* outCount) {
 #define MAP_DATA_H
 
 #include "map.h"
+#include "../stages/common.h"
 
-typedef struct {
-	char tile;              // 'A', 'B', 'C' ...
-	const char* itemType;   // "weapon", "armor", "item"
-	const char* itemName;   // "초보자 검"
-} ChestConfig;
-
+// get_chest_config is kept for compatibility but implementation will change
 const ChestConfig* get_chest_config(int stage , int* outCount);
 
-// ★ 단일 함수로 변경
+// Global Tile Palette
+extern const TileDef GLOBAL_TILE_PALETTE[];
+extern const int GLOBAL_TILE_PALETTE_COUNT;
+
+const StageData* get_stage_data(int stageNumber);
+
 void load_map(Map* m , int stageNumber);
 
 #endif

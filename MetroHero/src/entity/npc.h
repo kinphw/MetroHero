@@ -19,6 +19,7 @@ typedef struct {
 	const char** dialogues;
 	int dialogueCount;
 	int currentDialogue;    // 현재 대화 인덱스
+    const char* imagePath;  // ★ Add Raylib Image Path
 
 	// ★ 대화 모드 추가
 	int useDialogueBox;    // 1 = 전용 대화창 사용, 0 = 로그창만

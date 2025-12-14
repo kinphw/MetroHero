@@ -12,6 +12,7 @@ void npc_init(NPC* npc, const NPCConfig* config, int x, int y) {
 
     npc->name = config->name;
     npc->glyph = config->glyph;
+    npc->imagePath = config->imagePath; // ★ Add
     npc->dialogues = config->dialogues;
     npc->dialogueCount = config->dialogueCount;
     npc->canTrade = config->canTrade;
