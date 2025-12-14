@@ -12,6 +12,9 @@
 // Global Cinematics (Moved from story.h)
 // ============================================
 
+// Key buffering for peeking (Moved here for scope visibility)
+static int HACK_bufferedKey = 0;
+
 // --- Intro ---
 static const CinematicLine INTRO_LINES[] = {
 	{ "", STYLE_NORMAL, 500 },
@@ -120,21 +123,28 @@ static void cinematic_goto(int x, int y) {
 static void cinematic_delay(int ms) {
     if (ms <= 0) return;
     
-    // Break delay into small chunks to keep window responsive
-    int chunks = ms / 50; 
-    if (chunks < 1) chunks = 1;
-    
-    for (int i = 0; i < chunks; i++) {
+    // Use Timer based wait for better input handling
+    double startTime = GetTime();
+    while ((GetTime() - startTime) * 1000.0 < ms) {
+        PollInputEvents();
+        
+        // Capture key if pressed during delay (Robust filtering)
+        if (HACK_bufferedKey == 0) {
+             int k = GetKeyPressed();
+             if (k != 0) HACK_bufferedKey = k;
+        }
+
         if (WindowShouldClose()) {
             CloseWindow();
             exit(0); // Force exit on close request during cinematic
         }
-        WaitTime(0.05f); // 50ms wait
+        
+        // Yield slightly to prevent 100% CPU, but keep responsive
+        WaitTime(0.005f); 
     }
 }
 
-// Key buffering for peeking
-static int HACK_bufferedKey = 0;
+// Key buffering for peeking declared at top of file
 
 static int internal_poll_key(void) {
     if (HACK_bufferedKey == 0) {
