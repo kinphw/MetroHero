@@ -26,6 +26,19 @@ void ui_init_buffer(void) {
     InitWindow(screenWidth, screenHeight, "MetroHero");
     SetExitKey(0); // Disable ESC to exit (handled manually)
     SetTargetFPS(60);
+    SetWindowState(FLAG_WINDOW_RESIZABLE);
+    
+    // Toggle fullscreen as requested
+    // Note: To capture proper resolution, we might want to get monitor size, 
+    // but ToggleFullscreen() handles switching to monitor's resolution usually.
+    // However, since we use render texture target, we need to ensure DrawTexturePro 
+    // scales to current screen size (which it does in ui_present).
+    // int monitor = GetCurrentMonitor();
+    // int monitorW = GetMonitorWidth(monitor);
+    // int monitorH = GetMonitorHeight(monitor);
+    
+    // Attempt fullscreen if screen size matches or just toggle
+    // ToggleFullscreen(); // Removed forced toggle
     
     // Load custom font for Korean support
     ui_load_font();
@@ -49,13 +62,40 @@ void ui_clear_buffer(void) {
 }
 
 void ui_present(void) {
+    // Handle Alt+Enter Toggle
+    if ((IsKeyDown(KEY_LEFT_ALT) || IsKeyDown(KEY_RIGHT_ALT)) && IsKeyPressed(KEY_ENTER)) {
+        int display = GetCurrentMonitor();
+        if (IsWindowFullscreen()) {
+            ToggleFullscreen();
+            SetWindowSize(SCREEN_W * 8, SCREEN_H * 16);
+        } else {
+             SetWindowSize(GetMonitorWidth(display), GetMonitorHeight(display));
+             ToggleFullscreen();
+        }
+    }
+
     BeginDrawing();
     ClearBackground(BLACK);
     
     // Draw the backing texture to the screen
     // Note: RenderTextures are Y-flipped in default OpenGL coordinates
     Rectangle src = { 0, 0, (float)target.texture.width, (float)-target.texture.height };
-    Rectangle dst = { 0, 0, (float)GetScreenWidth(), (float)GetScreenHeight() };
+    
+    // Calculate aspect ratio preserving destination rect
+    float screenWidth = (float)GetScreenWidth();
+    float screenHeight = (float)GetScreenHeight();
+    float scale = screenWidth / (float)target.texture.width;
+    
+    if (target.texture.height * scale > screenHeight) {
+        scale = screenHeight / (float)target.texture.height;
+    }
+    
+    float destWidth = target.texture.width * scale;
+    float destHeight = target.texture.height * scale;
+    float destX = (screenWidth - destWidth) / 2.0f;
+    float destY = (screenHeight - destHeight) / 2.0f;
+    
+    Rectangle dst = { destX, destY, destWidth, destHeight };
     Vector2 origin = { 0, 0 };
     
     DrawTexturePro(target.texture, src, dst, origin, 0.0f, WHITE);

@@ -82,8 +82,18 @@ static Color GetColorFromAnsi(const char* ansi) {
 static Font globalFont = { 0 };
 
 void ui_load_font(void) {
-    // Generate codepoints for ASCII (32-126) and Hangul Syllables (0xAC00-0xD7A3)
-    int codepointCount = (126 - 32 + 1) + (0xD7A3 - 0xAC00 + 1);
+    // Generate codepoints for:
+    // 1. ASCII (32-126)
+    // 2. Hangul Syllables (0xAC00-0xD7A3)
+    // 3. Box Drawing (0x2500-0x257F) for UI borders
+    // 4. Misc Symbols (0x2600-0x26FF) for ★ etc.
+    
+    int countASCII = 126 - 32 + 1;
+    int countHangul = 0xD7A3 - 0xAC00 + 1;
+    int countBox = 0x257F - 0x2500 + 1;
+    int countSymbols = 0x26FF - 0x2600 + 1;
+    
+    int codepointCount = countASCII + countHangul + countBox + countSymbols;
     int* codepoints = (int*)malloc(codepointCount * sizeof(int));
     
     int index = 0;
@@ -93,6 +103,14 @@ void ui_load_font(void) {
     }
     // Korean Hangul Syllables
     for (int i = 0xAC00; i <= 0xD7A3; i++) {
+        codepoints[index++] = i;
+    }
+    // Box Drawing
+    for (int i = 0x2500; i <= 0x257F; i++) {
+        codepoints[index++] = i;
+    }
+    // Misc Symbols
+    for (int i = 0x2600; i <= 0x26FF; i++) {
         codepoints[index++] = i;
     }
 
