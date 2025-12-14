@@ -186,6 +186,23 @@ void cinematic_draw_frame(const char* borderColor) {
 
     const char* color = borderColor ? borderColor : COLOR_WHITE;
 
+    // Draw Graphical Border instead of Text Border (Font might lack box chars)
+    // Convert grid coords to pixels
+    int px = CINE_X * 8;
+    int py = CINE_Y * 16;
+    int pw = CINE_WIDTH * 8;
+    int ph = CINE_HEIGHT * 16;
+    
+    // Draw thick border
+    // Adjust logic to match Color string if possible, or just use white/colored rect
+    Color rectColor = GetColorFromAnsi(borderColor);
+    
+    // Draw outer box
+    DrawRectangleLines(px, py, pw, ph, rectColor);
+    DrawRectangleLines(px + 1, py + 1, pw - 2, ph - 2, rectColor); // Double thickness
+    
+    // Legacy text drawing removed to prevent invisible/broken chars
+    /*
     int right = CINE_X + CINE_WIDTH - 1;
     int bottom = CINE_Y + CINE_HEIGHT - 1;
 
@@ -204,6 +221,7 @@ void cinematic_draw_frame(const char* borderColor) {
     ui_draw_str_at(CINE_X, bottom, "╚", color);
     for (int i = CINE_X + 1; i < right; i++) ui_draw_str_at(i, bottom, "═", color);
     ui_draw_str_at(right, bottom, "╝", color);
+    */
     
     ui_end_texture_mode();
     ui_present();

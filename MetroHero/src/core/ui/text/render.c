@@ -65,7 +65,7 @@ void ui_draw_tile(int x, int y, const char* imagePath) {
 }
 
 // Helper to map ANSI color codes roughly to Raylib colors
-static Color GetColorFromAnsi(const char* ansi) {
+Color GetColorFromAnsi(const char* ansi) {
     if (!ansi) return WHITE;
     if (strstr(ansi, "31")) return RED;
     if (strstr(ansi, "32")) return GREEN;
