@@ -88,13 +88,12 @@ static const Cinematic STORY_ENDING_BAD = {
 // 내부 상수 (Layout.h 기반 동적 조정)
 // ============================================
 
-#define CINE_X      SCREEN_PADDING_LEFT
-#define CINE_Y      SCREEN_PADDING_TOP
+// Center the cinematic window
+#define CINE_WIDTH  186
+#define CINE_HEIGHT 47
 
-// 테두리가 그려질 실제 크기 (화면 전체 덮지 않고 패딩 감안)
-// 우측/하단 여백도 좌측/상단과 비슷하게 줌
-#define CINE_WIDTH  (SCREEN_W - CINE_X - 4) 
-#define CINE_HEIGHT (SCREEN_H - CINE_Y - 2)
+#define CINE_X      ((SCREEN_W - CINE_WIDTH) / 2)
+#define CINE_Y      ((SCREEN_H - CINE_HEIGHT) / 2)
 
 // 텍스트 표시 영역 (테두리 내부)
 #define CONTENT_X       (CINE_X + 4)
