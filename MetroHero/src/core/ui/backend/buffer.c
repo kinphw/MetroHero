@@ -38,7 +38,7 @@ void ui_init_buffer(void) {
     // int monitorH = GetMonitorHeight(monitor);
     
     // Attempt fullscreen if screen size matches or just toggle
-    // ToggleFullscreen(); // Removed forced toggle
+    ToggleFullscreen(); // Removed forced toggle
     
     // Load custom font for Korean support
     ui_load_font();
