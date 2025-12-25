@@ -56,7 +56,10 @@ void ui_draw_tile(int x, int y, const char* imagePath) {
 
     // ui_begin_texture_mode(); // Optimization: Caller provides batch
     if (tex.id != 0) {
-        DrawTexture(tex, px, py, WHITE);
+        Rectangle src = { 0.0f, 0.0f, (float)tex.width, (float)tex.height };
+        Rectangle dst = { (float)px, (float)py, 16.0f, 16.0f };
+        Vector2 origin = { 0.0f, 0.0f };
+        DrawTexturePro(tex, src, dst, origin, 0.0f, WHITE);
     } else {
         // Fallback: Magenta square
         DrawRectangle(px, py, 16, 16, MAGENTA);
