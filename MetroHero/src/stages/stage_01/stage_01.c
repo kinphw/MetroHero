@@ -113,6 +113,7 @@ static const char* DIALOGUES_B[] = {
 static const EnemyConfig ENEMIES[] = {
     {
         'a', "맹혹한고양이", "🐈",
+        "assets/cat.png",
         5,              // maxHp
         1, 3,           // attackMin, Max
         0,              // defense
@@ -122,6 +123,7 @@ static const EnemyConfig ENEMIES[] = {
     },
     {
         'b', "경비로봇", COLOR_RED "🤖" COLOR_RESET,
+        "assets/security_robot.png",
         10,
         100, 100,
         0,
