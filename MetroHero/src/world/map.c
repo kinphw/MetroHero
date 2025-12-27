@@ -166,6 +166,10 @@ int map_is_walkable(const Map* m, int x, int y) {
     if (t >= '0' && t <= '9')
         return 0;
 
+    // 상자 엔티티 체크 (타일이 바닥으로 변경되었으므로 별도 체크 필요)
+    if (map_get_chest_at((Map*)m, x, y))
+        return 0;
+
     // NPC가 있는 위치는 이동 불가
     for (int i = 0; i < m->npcCount; i++) {
         if (m->npcs[i].x == x && m->npcs[i].y == y)
