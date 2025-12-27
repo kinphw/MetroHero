@@ -120,7 +120,7 @@ void map_load_chests(Map* m) {
                     );
                     m->chestCount++;
 
-                    //m->tiles[y][x] = '.'; // 상자 타일을 바닥으로 변경
+                    m->tiles[y][x] = '.'; // 상자 타일을 바닥으로 변경
                     break;
                 }
             }
@@ -286,56 +286,7 @@ void map_draw_viewport(const Map* m, const Player* p,
                 continue;
             }
 
-            // 플레이어 출력 (항상 존재, 방향별 처리는 나중으로 미룸)
-            if (mx == p->x && my == p->y) {
-                // TODO: p->direction based images
-                ui_draw_tile(screenX, screenY, "assets/person_down.png");
-                continue;
-            }
-
-            // ★ NPC 출력 (우선순위 높음)
-            NPC* npc = map_get_npc_at((Map*)m, mx, my);
-            if (npc != NULL) {
-                if (npc->imagePath) {
-                    ui_draw_tile(screenX, screenY, npc->imagePath);
-                } else {
-                    ui_draw_str_at(screenX, screenY, npc->glyph, NULL);
-                }
-                continue;
-            }
-
-            // 적 출력
-            Enemy* enemy = map_get_enemy_at((Map*)m, mx, my);
-            if (enemy != NULL) {
-                if (enemy->imagePath) {
-                    ui_draw_tile(screenX, screenY, enemy->imagePath);
-                } else {
-                    ui_draw_str_at(screenX, screenY, enemy->glyph, NULL);
-                }
-                continue;
-            }
-
-            // 상자 출력
-            Chest* chest = map_get_chest_at((Map*)m, mx, my);
-            if (chest != NULL) {
-                if (chest->isOpened) {
-                     ui_draw_tile(screenX, screenY, "assets/chest_open.png");
-                } else {
-                    // Try chest specific image?
-                    if (chest->imagePath) {
-                         ui_draw_tile(screenX, screenY, chest->imagePath);
-                    } else {
-                        // Fallback to palette logic based on tile char?
-                        // Or general chest closed image
-                         ui_draw_tile(screenX, screenY, "assets/chest_closed.png");
-                    }
-                }
-                continue;
-            }
-
-            // 기본 타일 출력
-            // tile_to_glyph returns const char* glyph string.
-            // We need TileDef to get imagePath.
+            // 1. Base Tile (Background) - Always draw first
             const TileDef* def = map_get_tile_def(m->tiles[my][mx]);
             if (def && def->imagePath) {
                 ui_draw_tile(screenX, screenY, def->imagePath);
@@ -343,6 +294,46 @@ void map_draw_viewport(const Map* m, const Player* p,
                 ui_draw_str_at(screenX, screenY, def->glyph, NULL);
             } else {
                 ui_draw_str_at(screenX, screenY, "  ", NULL);
+            }
+
+            // 2. Chest (Overlay)
+            Chest* chest = map_get_chest_at((Map*)m, mx, my);
+            if (chest != NULL) {
+                if (chest->isOpened) {
+                     ui_draw_tile(screenX, screenY, "assets/chest_open.png");
+                } else {
+                    if (chest->imagePath) {
+                         ui_draw_tile(screenX, screenY, chest->imagePath);
+                    } else {
+                         ui_draw_tile(screenX, screenY, "assets/chest_closed.png");
+                    }
+                }
+            }
+
+            // 3. Enemy (Overlay)
+            Enemy* enemy = map_get_enemy_at((Map*)m, mx, my);
+            if (enemy != NULL) {
+                if (enemy->imagePath) {
+                    ui_draw_tile(screenX, screenY, enemy->imagePath);
+                } else {
+                    ui_draw_str_at(screenX, screenY, enemy->glyph, NULL);
+                }
+            }
+
+            // 4. NPC (Overlay)
+            NPC* npc = map_get_npc_at((Map*)m, mx, my);
+            if (npc != NULL) {
+                if (npc->imagePath) {
+                    ui_draw_tile(screenX, screenY, npc->imagePath);
+                } else {
+                    ui_draw_str_at(screenX, screenY, npc->glyph, NULL);
+                }
+            }
+
+            // 5. Player (Overlay)
+            if (mx == p->x && my == p->y) {
+                // TODO: p->direction based images
+                ui_draw_tile(screenX, screenY, "assets/person_down.png");
             }
         }
     }
