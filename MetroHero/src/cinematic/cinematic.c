@@ -300,7 +300,11 @@ void cinematic_print_centered(int y, const char* text, const char* color) {
 // 타이핑 효과 텍스트 출력
 // ============================================
 
-void cinematic_print_typewriter(int x, int y, const char* text, const char* color, int charDelay) {
+// ============================================
+// 타이핑 효과 텍스트 출력
+// ============================================
+
+int cinematic_print_typewriter(int x, int y, const char* text, const char* color, int charDelay) {
     const unsigned char* s = (const unsigned char*)text;
     int curX = x;
 
@@ -308,11 +312,14 @@ void cinematic_print_typewriter(int x, int y, const char* text, const char* colo
         // ESC 스킵 체크
         if (cinematic_key_pressed()) {
             int key = cinematic_get_key();
-            if (key == 27) {  // ESC
+            if (key == 27) {  // ESC -> Scene Skip
+                return 1;
+            }
+            if (key == ' ' || key == 13) { // SPACE/ENTER -> Skip Typing (Finish line)
                 // 남은 텍스트 한번에 출력
                 ui_draw_str_at(curX, y, (const char*)s, color);
                 ui_present();
-                return;
+                return 0; // Continue scene normally
             }
         }
 
@@ -355,13 +362,14 @@ void cinematic_print_typewriter(int x, int y, const char* text, const char* colo
 
         cinematic_delay(charDelay);
     }
+    return 0;
 }
 
 // ============================================
 // 스크롤 텍스트 (스타워즈 스타일)
 // ============================================
 
-void cinematic_scroll_text(const char** lines, int lineCount, int speed) {
+int cinematic_scroll_text(const char** lines, int lineCount, int speed) {
     // 스크롤 영역: 화면 중앙 부분
     int scrollTop = CINE_Y + 6;
     int scrollBottom = CINE_Y + CINE_HEIGHT - 6;
@@ -372,7 +380,7 @@ void cinematic_scroll_text(const char** lines, int lineCount, int speed) {
         // ESC 스킵 체크
         if (cinematic_key_pressed()) {
             int key = cinematic_get_key();
-            if (key == 27) return;
+            if (key == 27) return 1;
         }
 
         // 스크롤 영역 지우기
@@ -421,6 +429,7 @@ void cinematic_scroll_text(const char** lines, int lineCount, int speed) {
         ui_present();
         cinematic_delay(speed);
     }
+    return 0;
 }
 
 // ============================================
@@ -611,15 +620,20 @@ void cinematic_play(const Cinematic* cine) {
 
                 const char* color = cine->textColor ? cine->textColor : COLOR_WHITE;
                 
-                cinematic_print_typewriter(x, currentY, line->text, color,
-                    cine->scrollSpeed > 0 ? cine->scrollSpeed : 30);
+                // If typewriter returns 1, it means ESC was pressed for full skip
+                if (cinematic_print_typewriter(x, currentY, line->text, color,
+                    cine->scrollSpeed > 0 ? cine->scrollSpeed : 30)) {
+                    skipped = 1;
+                }
                 
                 currentY += 2;
                 break;
             }
 
             case STYLE_SCROLL_UP:
-                cinematic_scroll_text((const char**)line->text, 10, cine->scrollSpeed); 
+                if (cinematic_scroll_text((const char**)line->text, 10, cine->scrollSpeed)) {
+                    skipped = 1;
+                }
                 break;
 
             case STYLE_FADE_IN:
@@ -640,7 +654,7 @@ void cinematic_play(const Cinematic* cine) {
         }
 
         // 라인 후 대기
-        if (line->delayAfter > 0) {
+        if (!skipped && line->delayAfter > 0) {
             // ★ 딜레이 중에도 ESC로 스킵 가능하도록 짧은 단위로 나눠서 체크
             int remainingDelay = line->delayAfter;
             const int checkInterval = 50;  // 50ms마다 체크
@@ -659,7 +673,7 @@ void cinematic_play(const Cinematic* cine) {
                 }
             }
         }
-        else if (line->delayAfter == 0 && line->style != STYLE_NORMAL) {
+        else if (!skipped && line->delayAfter == 0 && line->style != STYLE_NORMAL) {
             // 키 입력 대기 (힌트 깜빡임 적용)
             skipped = cinematic_wait_key(cine->showSkipHint);
         }
