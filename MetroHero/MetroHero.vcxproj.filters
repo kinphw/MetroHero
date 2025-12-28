@@ -141,6 +141,9 @@
     <ClCompile Include="src\stages\stage_03\stage_03.c">
       <Filter>src\stages\stage_03</Filter>
     </ClCompile>
+    <ClCompile Include="src\core\system\launcher.c">
+      <Filter>src\core\system</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="src\core\game.h">
@@ -229,6 +232,9 @@
     </ClInclude>
     <ClInclude Include="src\stages\common.h">
       <Filter>src\stages</Filter>
+    </ClInclude>
+    <ClInclude Include="src\core\system\launcher.h">
+      <Filter>src\core\system</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>

@@ -8,12 +8,12 @@
 #include "../world/map.h"
 #include "../entity/player.h"
 
-// 게임 실행 (진입점)
-void game_run(void) {
+// 게임 세션 시작 (새 게임)
+void game_run_new_session(void) {
     // 1. 상태 초기화
     GameState state = { 0 };  // 모든 필드 0/NULL 초기화
 
-    ui_init();
+    // ui_init(); // Moved to main.c
 
     // 인트로 시네마틱
     cinematic_play_intro();
@@ -43,7 +43,7 @@ void game_run(void) {
 
     // 입력 안내
     ui_begin_texture_mode();
-    ui_draw_str_at(0, SCREEN_H - 1, "[화살표/WASD] 이동 | [0] 상호작용 | [Q] 종료", NULL);
+    ui_draw_str_at(0, SCREEN_H - 1, "[화살표/WASD] 이동 | [0] 상호작용 | [ESC] 메뉴", NULL);
     ui_end_texture_mode();
     ui_present();
 

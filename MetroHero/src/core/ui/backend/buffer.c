@@ -61,6 +61,11 @@ void ui_clear_buffer(void) {
     EndTextureMode();
 }
 
+void ui_close(void) {
+    UnloadRenderTexture(target);
+    CloseWindow();
+}
+
 void ui_present(void) {
     // Handle Alt+Enter Toggle
     if ((IsKeyDown(KEY_LEFT_ALT) || IsKeyDown(KEY_RIGHT_ALT)) && IsKeyPressed(KEY_ENTER)) {

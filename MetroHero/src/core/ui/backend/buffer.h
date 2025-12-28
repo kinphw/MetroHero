@@ -16,6 +16,7 @@ extern char globalColor[32];
 
 void ui_init_buffer(void);
 void ui_clear_buffer(void);
+void ui_close(void);
 void ui_present(void);
 
 // Basic low-level drawing (often used internally but exposed if needed)
