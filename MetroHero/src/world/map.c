@@ -260,10 +260,10 @@ void map_init(Map* m, int stageNumber) {
 }
 
 
-// ★ map_draw_viewport 수정 - NPC 렌더링 추가
+// ★ map_draw_viewport 수정 - NPC 및 이펙트 렌더링 추가
 void map_draw_viewport(const Map* m, const Player* p,
     int startX, int startY,
-    int viewW, int viewH)
+    int viewW, int viewH, int effectX, int effectY, float effectTimer)
 {
     int viewX = p->x - viewW / 2;
     int viewY = p->y - viewH / 2;
@@ -338,6 +338,11 @@ void map_draw_viewport(const Map* m, const Player* p,
             if (mx == p->x && my == p->y) {
                 // TODO: p->direction based images
                 ui_draw_tile(screenX, screenY, "assets/person_down.png");
+            }
+
+            // 6. Effect (Overlay)
+            if (effectTimer > 0 && mx == effectX && my == effectY) {
+                 ui_draw_tile(screenX, screenY, "assets/effect_slash.png");
             }
         }
     }

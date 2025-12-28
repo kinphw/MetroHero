@@ -23,6 +23,9 @@ typedef struct {
 	const char* armorName;
 	const char* item1;
 
+    // ★ 전투 관련 (실시간)
+    float attackCooldown; // 0보다 크면 공격 불가
+
 } Player;
 
 void player_init(Player* p);

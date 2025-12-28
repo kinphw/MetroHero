@@ -50,6 +50,6 @@ NPC* map_get_adjacent_npc(Map* m , int px , int py);
 
 
 void map_draw_viewport(const Map* m , const Player* p , int startX , int startY ,
-	int viewW , int viewH);
+	int viewW , int viewH, int effectX, int effectY, float effectTimer);
 
 #endif

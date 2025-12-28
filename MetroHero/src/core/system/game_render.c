@@ -15,7 +15,7 @@ void game_render(GameState* state) {
     // Since ui_clear_buffer does Begin/End, we should NOT use it if we want to batch.
     
     // 2. 뷰포트 그리기 (항상 그림)
-    ui_render_map_viewport(&state->map, &state->player);
+    ui_render_map_viewport(&state->map, &state->player, state->effectX, state->effectY, state->effectTimer);
 
     // ★ In-Game Header Image (Logo)
     // Screen Width: 1680px (SCREEN_W * 8)

@@ -5,7 +5,10 @@
 #include "combat.h"
 #include "../ui/ui.h"
 #include "../../world/map.h"
+#include "../ui/ui.h"
+#include "../../world/map.h"
 #include "../../world/glyph.h" 
+#include "../system/context.h" // ★ GameState 정의 필요 
 
 // ... (rest of code logic is same, commented out Sleep calls are fine to remain commented or be removed)
 #include "../ui/ui.h"
@@ -110,5 +113,48 @@ void combat_attack_enemy(Player* p, Enemy* e, Map* m) {
     // 플레이어 사망 체크
     if (p->hp <= 0) {
         ui_add_log("당신은 쓰러졌습니다...");
+    }
+}
+
+// ★ 실시간 공격 시도
+void combat_try_attack(GameState* state) {
+    Player* p = &state->player;
+    Map* m = &state->map;
+
+    if (p->attackCooldown > 0) return; // 쿨타임 중
+
+    p->attackCooldown = 0.5f; // 0.5초 쿨타임
+
+    // 바라보는 방향 계산
+    int tx = p->x + p->dirX;
+    int ty = p->y + p->dirY;
+
+    // ★ 이펙트 표시 (0.2초)
+    state->effectX = tx;
+    state->effectY = ty;
+    state->effectTimer = 0.2f;
+
+    Enemy* target = map_get_enemy_at(m, tx, ty);
+    if (target) {
+        // 데미지 계산
+        int dmg = p->attackMin + rand() % (p->attackMax - p->attackMin + 1);
+        dmg -= target->defense;
+        if (dmg < 1) dmg = 1;
+
+        target->hp -= dmg;
+
+        char buf[128];
+        snprintf(buf, sizeof(buf), "⚔ %s에게 %d 피해! (HP: %d)", target->name, dmg, target->hp);
+        ui_add_combat_log(buf); // 우측 전투 로그에 출력
+
+        if (target->hp <= 0) {
+            target->isAlive = 0;
+            // 맵 타일 정리 (적 제거) - 추후 자동 clean up
+             snprintf(buf, sizeof(buf), "★ %s 처치!", target->name);
+             ui_add_combat_log(buf);
+        }
+    } else {
+        // 허공에 공격
+        // ui_add_combat_log("허공을 가랐다.");
     }
 }

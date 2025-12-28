@@ -27,7 +27,8 @@ static int MapKeyToCmd(int key) {
         case KEY_S: case KEY_DOWN:  return 's';
         case KEY_A: case KEY_LEFT:  return 'a';
         case KEY_D: case KEY_RIGHT: return 'd';
-        case KEY_ZERO: case KEY_KP_0: case KEY_ENTER: case KEY_SPACE: return '0';
+        case KEY_ZERO: case KEY_KP_0: case KEY_ENTER: return '0';
+        case KEY_SPACE: case KEY_Z: return 'f'; // Fight
         case KEY_Q: return 'q';
         case KEY_X: case KEY_ESCAPE: return 'x';
         case KEY_T: return 't';
@@ -169,6 +170,11 @@ void game_process_input(GameState* state) {
 
     // 이동 처리
     player_move(&state->player, &state->map, cmd);
+
+    // ★ 실시간 공격 (f 키)
+    if (cmd == 'f') {
+        combat_try_attack(state);
+    }
 
     // 상호작용 (0 키)
     if (cmd == '0') {

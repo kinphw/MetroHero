@@ -4,6 +4,6 @@
 #include "../../../world/map.h"
 #include "../../../entity/player.h"
 
-void ui_render_map_viewport(Map* m, Player* p);
+void ui_render_map_viewport(Map* m, Player* p, int effectX, int effectY, float effectTimer);
 
 #endif

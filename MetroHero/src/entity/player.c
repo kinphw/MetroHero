@@ -29,6 +29,8 @@ void player_init(Player* p) {
     p->weaponName = "";
     p->armorName = "";
     p->item1 = "";
+    
+    p->attackCooldown = 0.0f;
 }
 
 

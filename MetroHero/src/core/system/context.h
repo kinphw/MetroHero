@@ -19,6 +19,10 @@ typedef struct {
     int inDialogue;
     NPC* currentNPC;
 
+    // ★ 이펙트 관련
+    int effectX, effectY;
+    float effectTimer;
+
 } GameState;
 
 #endif
