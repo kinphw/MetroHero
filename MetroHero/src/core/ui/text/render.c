@@ -96,8 +96,9 @@ void ui_load_font(void) {
     int countBox = 0x257F - 0x2500 + 1;
     int countSymbols = 0x26FF - 0x2600 + 1;
     int countEmojis = 0x1F9FF - 0x1F300 + 1;
+    int countCJKSymbols = 0x303F - 0x3000 + 1;
     
-    int codepointCount = countASCII + countHangul + countBox + countSymbols + countEmojis;
+    int codepointCount = countASCII + countHangul + countBox + countSymbols + countEmojis + countCJKSymbols;
     int* codepoints = (int*)malloc(codepointCount * sizeof(int));
     
     int index = 0;
@@ -119,6 +120,10 @@ void ui_load_font(void) {
     }
     // Emojis (Additional Range for 🐈 etc.)
     for (int i = 0x1F300; i <= 0x1F9FF; i++) {
+        codepoints[index++] = i;
+    }
+    // CJK Symbols and Punctuation (「, 」 etc.)
+    for (int i = 0x3000; i <= 0x303F; i++) {
         codepoints[index++] = i;
     }
 
