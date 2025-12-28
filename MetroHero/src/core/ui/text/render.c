@@ -155,8 +155,79 @@ void ui_draw_str_at(int x, int y, const char* str, const char* color) {
     // ui_end_texture_mode();
 }
 
+#include "glyph.h" // For display_width / ui_get_glyph_info
+
+void ui_draw_str_ansi(int x, int y, const char* str) {
+    if (!str) return;
+
+    int currentX = x;
+    const char* ptr = str;
+    char buffer[256] = { 0 };
+    int bufIndex = 0;
+    
+    // Default color
+    char currentColor[32] = "\033[0m"; 
+
+    while (*ptr) {
+        // ANSI Check
+        if (*ptr == '\033') {
+            // 1. Flush buffer if needed
+            if (bufIndex > 0) {
+                buffer[bufIndex] = '\0';
+                ui_draw_str_at(currentX, y, buffer, currentColor);
+                
+                // Calculate width and advance X
+                int w = display_width(buffer);
+                currentX += w;
+                
+                bufIndex = 0;
+            }
+
+            // 2. Parse ANSI
+            const char* start = ptr;
+            ptr++;
+            if (*ptr == '[') {
+                while (*ptr && *ptr != 'm') ptr++;
+                if (*ptr == 'm') ptr++;
+            }
+            
+            // Extract code
+            int len = (int)(ptr - start);
+            if (len < 31) {
+                strncpy(currentColor, start, len);
+                currentColor[len] = '\0';
+            }
+            continue;
+        }
+
+        // Buffer text
+        if (bufIndex < 255) {
+            buffer[bufIndex++] = *ptr++;
+        } else {
+             // Buffer full safety
+             ptr++; 
+        }
+    }
+
+    // Flush remaining
+    if (bufIndex > 0) {
+        buffer[bufIndex] = '\0';
+        ui_draw_str_at(currentX, y, buffer, currentColor);
+    }
+}
+
 int ui_draw_text_clipped(int x, int y, int maxWidth, const char* text, const char* color) {
     if (!text) return 0;
-    ui_draw_str_at(x, y, text, color);
+
+    // ★ If color is provided, force specific color (ignore ANSI inside) -> Use original
+    if (color != NULL) {
+        ui_draw_str_at(x, y, text, color);
+    } 
+    // ★ If color is NULL, assume ANSI parsing is desired
+    else {
+        ui_draw_str_ansi(x, y, text);
+    }
+    
+    // Return length (or potentially display width, but original returned strlen)
     return (int)strlen(text); 
 }

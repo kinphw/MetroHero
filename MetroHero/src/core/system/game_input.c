@@ -8,6 +8,18 @@
 #include "../../world/glyph.h"
 #include "raylib.h"
 
+// ★ 키 반복 입력을 위한 타이머 구조체
+typedef struct {
+    int lastKey;              // 마지막으로 눌린 키
+    double keyDownTime;       // 키를 누르기 시작한 시간
+    double lastRepeatTime;    // 마지막 반복 입력 시간
+    double initialDelay;      // 초기 딜레이 (초)
+    double repeatInterval;    // 반복 간격 (초, 점점 짧아짐)
+    double minInterval;       // 최소 반복 간격
+} KeyRepeatState;
+
+static KeyRepeatState g_keyRepeat = { 0, 0.0, 0.0, 0.3, 0.15, 0.05 };
+
 // Helper to map Raylib keys to char 'commands'
 static int MapKeyToCmd(int key) {
     switch (key) {
@@ -23,6 +35,70 @@ static int MapKeyToCmd(int key) {
     }
 }
 
+// ★ 이동 키인지 확인
+static int IsMovementKey(int key) {
+    return (key == KEY_W || key == KEY_S || key == KEY_A || key == KEY_D ||
+            key == KEY_UP || key == KEY_DOWN || key == KEY_LEFT || key == KEY_RIGHT);
+}
+
+// ★ 키 반복 입력 처리 (누르고 있으면 점점 빨라짐)
+static int GetRepeatingKey() {
+    double currentTime = GetTime();
+
+    // 이동 키들 체크
+    int pressedKeys[] = { KEY_W, KEY_S, KEY_A, KEY_D, KEY_UP, KEY_DOWN, KEY_LEFT, KEY_RIGHT };
+    int currentKey = 0;
+
+    for (int i = 0; i < 8; i++) {
+        if (IsKeyDown(pressedKeys[i])) {
+            currentKey = pressedKeys[i];
+            break;
+        }
+    }
+
+    // 키가 안 눌려있으면 초기화
+    if (currentKey == 0) {
+        g_keyRepeat.lastKey = 0;
+        g_keyRepeat.keyDownTime = 0.0;
+        g_keyRepeat.lastRepeatTime = 0.0;
+        g_keyRepeat.repeatInterval = 0.15;  // 반복 간격 초기화
+        return 0;
+    }
+
+    // 새로운 키가 눌렸을 때
+    if (currentKey != g_keyRepeat.lastKey) {
+        g_keyRepeat.lastKey = currentKey;
+        g_keyRepeat.keyDownTime = currentTime;
+        g_keyRepeat.lastRepeatTime = currentTime;
+        g_keyRepeat.repeatInterval = 0.15;  // 반복 간격 초기화
+        return currentKey;  // 첫 입력은 즉시 반환
+    }
+
+    // 같은 키를 계속 누르고 있을 때
+    double heldTime = currentTime - g_keyRepeat.keyDownTime;
+
+    // 초기 딜레이 대기
+    if (heldTime < g_keyRepeat.initialDelay) {
+        return 0;
+    }
+
+    // 반복 간격 체크
+    double timeSinceLastRepeat = currentTime - g_keyRepeat.lastRepeatTime;
+    if (timeSinceLastRepeat >= g_keyRepeat.repeatInterval) {
+        g_keyRepeat.lastRepeatTime = currentTime;
+
+        // 점점 빨라지게 (최소값까지)
+        g_keyRepeat.repeatInterval *= 0.85;
+        if (g_keyRepeat.repeatInterval < g_keyRepeat.minInterval) {
+            g_keyRepeat.repeatInterval = g_keyRepeat.minInterval;
+        }
+
+        return currentKey;
+    }
+
+    return 0;
+}
+
 // 입력 처리 및 로직 업데이트
 void game_process_input(GameState* state) {
     if (state->player.hp <= 0) {
@@ -31,7 +107,13 @@ void game_process_input(GameState* state) {
         return;
     }
 
-    int key = GetKeyPressed();
+    // ★ 이동 키는 반복 입력 처리, 다른 키는 한 번만
+    int key = GetRepeatingKey();  // 이동 키 반복 처리
+    if (key == 0) {
+        // 이동 키가 아닌 다른 키 체크 (한 번만)
+        key = GetKeyPressed();
+    }
+
     if (key == 0) return; // No input this frame
 
     int cmd = MapKeyToCmd(key);

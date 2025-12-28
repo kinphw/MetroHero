@@ -4,6 +4,7 @@
 #include "raylib.h" // For Color struct
 
 void ui_draw_str_at(int x, int y, const char* str, const char* color);
+void ui_draw_str_ansi(int x, int y, const char* str); // ★ Added wrapper
 int ui_draw_text_clipped(int x, int y, int maxWidth, const char* text, const char* color);
 void ui_draw_tile(int x, int y, const char* imagePath); // Raylib specific
 void ui_load_font(void);
