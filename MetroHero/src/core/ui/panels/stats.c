@@ -33,21 +33,41 @@ void ui_draw_stats(const Player* p) {
 
     // ★ HP Bar - 개별 문자로 그리기 (정확한 폭 제어)
     ui_draw_str_at(x + 2, y + 2, "HP: ", NULL);
-    int hpBars = (p->hp * 10) / p->maxHp;
-    if (hpBars > 10) hpBars = 10;
-    int barX = x + 2 + 4;  // "HP: " = 4칸
-
-    // 수정 - 문자열로 한 번에 그리기
-    char hpBarStr[64] = "";
-    for (int i = 0; i < 10; i++) {
-        strcat(hpBarStr, i < hpBars ? "█" : "░");
+    // ★ HP Bar - Raylib 도형 그리기
+    ui_draw_str_at(x + 2, y + 2, "HP: ", NULL);
+    
+    // Calculate Pixels
+    // "HP: " is 4 chars width = 4 * 16px (full width) / 2 = 32px? 
+    // display_width("HP: ") returns grid units (4). 4 * 8px = 32px.
+    int hpLabelWidthPx = 4 * 8; 
+    
+    int barX = (x + 2) * 8 + hpLabelWidthPx; // Start after "HP: "
+    int barY = (y + 2) * 16;
+    
+    // Bar dimensions
+    // Width: Fill remaining space inside box with some padding?
+    // Previous loop was 10 chars -> 10 * 8 = 80px.
+    int barW = 80; 
+    int barH = 14; // Slightly smaller than 16 to fit nicely vertically
+    int barYOffset = 1; // Center vertically in the cell (16 - 14)/2 = 1
+    
+    // Draw Background (Dark Red/Gray)
+    DrawRectangle(barX, barY + barYOffset, barW, barH, DARKGRAY);
+    
+    // Draw Foreground (Red/Green based on HP?)
+    if (p->maxHp > 0) {
+        float hpPercent = (float)p->hp / (float)p->maxHp;
+        if (hpPercent < 0) hpPercent = 0;
+        if (hpPercent > 1) hpPercent = 1;
+        
+        int fillW = (int)(barW * hpPercent);
+        
+        // Color choice: Red for HP usually
+        DrawRectangle(barX, barY + barYOffset, fillW, barH, RED);
     }
-    ui_draw_str_at(barX, y + 2, hpBarStr, NULL);
-    int barEndX = barX + display_width(hpBarStr);  // 동적 계산
-
-    for (int i = barEndX; i < x + w - 2; i++) {
-        ui_draw_str_at(i, y + 2, " ", NULL);
-    }
+    
+    // Draw Border
+    DrawRectangleLines(barX, barY + barYOffset, barW, barH, WHITE);
 
     // HP Text
     snprintf(buf, sizeof(buf), "     %3d / %3d", p->hp, p->maxHp);
