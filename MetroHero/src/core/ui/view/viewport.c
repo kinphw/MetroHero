@@ -8,5 +8,5 @@
 void ui_render_map_viewport(Map* m, Player* p, int effectX, int effectY, float effectTimer) {
     // Reset color before map render to avoid bleed
     strcpy(globalColor, "\033[0m");
-    map_draw_viewport(m, p, VIEWPORT_X, VIEWPORT_Y, 60, VIEWPORT_H, effectX, effectY, effectTimer);
+    map_draw_viewport(m, p, VIEWPORT_X, VIEWPORT_Y, VIEWPORT_MAP_W, VIEWPORT_MAP_H, effectX, effectY, effectTimer);
 }

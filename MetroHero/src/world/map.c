@@ -4,6 +4,7 @@
 #include "../entity/player.h"
 #include "../entity/enemy.h"  // ★ 추가
 #include "../core/ui/ui.h"   // ★ 반드시 필요
+#include "../core/ui/layout.h" // For GRID_W, GRID_H, MAP_TILE_SIZE
 #include "map_data.h"  // ★ 추가
 #include "glyph.h"  // ★ 추가
 
@@ -313,7 +314,7 @@ void map_init(Map* m, int stageNumber) {
 }
 
 
-// ★ map_draw_viewport 수정 - NPC 및 이펙트 렌더링 추가
+// ★ map_draw_viewport 수정 - 32x32 타일 렌더링 (Mixed Resolution support)
 void map_draw_viewport(const Map* m, const Player* p,
     int startX, int startY,
     int viewW, int viewH, int effectX, int effectY, float effectTimer)
@@ -328,41 +329,46 @@ void map_draw_viewport(const Map* m, const Player* p,
     if (viewX < 0) viewX = 0;
     if (viewY < 0) viewY = 0;
 
+    // Convert Grid Units to Pixels (for ui_draw_image)
+    int startPxX = startX * GRID_W;
+    int startPxY = startY * GRID_H;
+
     for (int sy = 0; sy < viewH; sy++) {
         int my = viewY + sy;
-        int screenY = startY + sy;
-        
+        int screenPxY = startPxY + sy * MAP_TILE_SIZE;
+        // Grid equivalent for glyph rendering (approx centered)
+        int screenGridY = startY + sy * 2; 
+
         for (int sx = 0; sx < viewW; sx++) {
             int mx = viewX + sx;
-            int screenX = startX + sx * 2; // Assuming 2 chars per tile
+            int screenPxX = startPxX + sx * MAP_TILE_SIZE;
+            int screenGridX = startX + sx * 4;
 
             if (mx < 0 || mx >= m->width ||
                 my < 0 || my >= m->height)
             {
-                ui_draw_str_at(screenX, screenY, "  ", NULL);
                 continue;
             }
 
-            // 1. Base Tile (Background) - Always draw first
+            // 1. Base Tile (Background)
             const TileDef* def = map_get_tile_def(m->tiles[my][mx]);
             if (def && def->imagePath) {
-                ui_draw_tile(screenX, screenY, def->imagePath);
+                ui_draw_image(screenPxX, screenPxY, MAP_TILE_SIZE, MAP_TILE_SIZE, def->imagePath);
             } else if (def) {
-                ui_draw_str_at(screenX, screenY, def->glyph, NULL);
-            } else {
-                ui_draw_str_at(screenX, screenY, "  ", NULL);
+                // Glyph Fallback (Centered in 32x32 block)
+                ui_draw_str_at(screenGridX + 1, screenGridY, def->glyph, NULL);
             }
 
             // 2. Chest (Overlay)
             Chest* chest = map_get_chest_at((Map*)m, mx, my);
             if (chest != NULL) {
                 if (chest->isOpened) {
-                     ui_draw_tile(screenX, screenY, "assets/chest_open.png");
+                     ui_draw_image(screenPxX, screenPxY, MAP_TILE_SIZE, MAP_TILE_SIZE, "assets/chest_open.png");
                 } else {
                     if (chest->imagePath) {
-                         ui_draw_tile(screenX, screenY, chest->imagePath);
+                         ui_draw_image(screenPxX, screenPxY, MAP_TILE_SIZE, MAP_TILE_SIZE, chest->imagePath);
                     } else {
-                         ui_draw_tile(screenX, screenY, "assets/chest_closed.png");
+                         ui_draw_image(screenPxX, screenPxY, MAP_TILE_SIZE, MAP_TILE_SIZE, "assets/chest_closed.png");
                     }
                 }
             }
@@ -371,9 +377,9 @@ void map_draw_viewport(const Map* m, const Player* p,
             Enemy* enemy = map_get_enemy_at((Map*)m, mx, my);
             if (enemy != NULL) {
                 if (enemy->imagePath) {
-                    ui_draw_tile(screenX, screenY, enemy->imagePath);
+                    ui_draw_image(screenPxX, screenPxY, MAP_TILE_SIZE, MAP_TILE_SIZE, enemy->imagePath);
                 } else {
-                    ui_draw_str_at(screenX, screenY, enemy->glyph, NULL);
+                    ui_draw_str_at(screenGridX + 1, screenGridY, enemy->glyph, NULL);
                 }
             }
 
@@ -381,28 +387,26 @@ void map_draw_viewport(const Map* m, const Player* p,
             NPC* npc = map_get_npc_at((Map*)m, mx, my);
             if (npc != NULL) {
                 if (npc->imagePath) {
-                    ui_draw_tile(screenX, screenY, npc->imagePath);
+                    ui_draw_image(screenPxX, screenPxY, MAP_TILE_SIZE, MAP_TILE_SIZE, npc->imagePath);
                 } else {
-                    ui_draw_str_at(screenX, screenY, npc->glyph, NULL);
+                    ui_draw_str_at(screenGridX + 1, screenGridY, npc->glyph, NULL);
                 }
-
             }
 
             // 5. Door (Overlay)
             Door* door = map_get_door_at((Map*)m, mx, my);
             if (door != NULL && !door->isOpen) {
-                ui_draw_tile(screenX, screenY, "assets/door.png");
+                ui_draw_image(screenPxX, screenPxY, MAP_TILE_SIZE, MAP_TILE_SIZE, "assets/door.png");
             }
 
-            // 6. Player (Overlay) (Renumbering necessary if needed, but just inserting before player)
+            // 6. Player (Overlay)
             if (mx == p->x && my == p->y) {
-                // TODO: p->direction based images
-                ui_draw_tile(screenX, screenY, "assets/person_down.png");
+                ui_draw_image(screenPxX, screenPxY, MAP_TILE_SIZE, MAP_TILE_SIZE, "assets/person_down.png");
             }
 
-            // 6. Effect (Overlay)
+            // 7. Effect (Overlay)
             if (effectTimer > 0 && mx == effectX && my == effectY) {
-                 ui_draw_tile(screenX, screenY, "assets/slash.png");
+                 ui_draw_image(screenPxX, screenPxY, MAP_TILE_SIZE, MAP_TILE_SIZE, "assets/slash.png");
             }
         }
     }
