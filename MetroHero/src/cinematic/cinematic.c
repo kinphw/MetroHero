@@ -56,40 +56,32 @@ static int HACK_bufferedKey = 0;
 static const CinematicLine INTRO_LINES[] = {
     { "", STYLE_NORMAL, 500, "assets/cinematic/1_1.png" }, // ★ Image Start
 
-    // { "……", STYLE_TYPEWRITER, 600, NULL },
-    { "눈을 뜬다.", STYLE_TYPEWRITER, 700, NULL },
-    { "", STYLE_NORMAL, 300, NULL },
+    { "눈을 떠보니... 어? 여기는 성균관대역?", STYLE_TYPEWRITER, 400, NULL },
+    { "", STYLE_NORMAL, 200, NULL },
 
-    { "천장이 낯설지 않다. 아니, 오히려 익숙하다.", STYLE_TYPEWRITER, 700, NULL },    
-    { "", STYLE_NORMAL, 400, NULL },
+    { "그런데 뭔가 이상해! 불이 깜빡거리고 아무도 없어!", STYLE_TYPEWRITER, 400, NULL },    
+    { "", STYLE_NORMAL, 200, NULL },
 
-    { "성균관대역. 매일같이 지나던 그 역이다.", STYLE_TYPEWRITER, 900, NULL },
-    { "", STYLE_NORMAL, 400, NULL },
+    { "바닥에는 쓰레기가 뒹굴고... 으스스한 느낌이야.", STYLE_TYPEWRITER, 500, NULL },
+    { "", STYLE_NORMAL, 200, NULL },
 
-    { "하지만 뭔가가 이상하다.", STYLE_TYPEWRITER, 800, NULL },
-    { "", STYLE_NORMAL, 300, NULL },
+    { "큰일 났다! 지하철역이 괴물들에게 점령당한 것 같아!", STYLE_TYPEWRITER, 400, NULL },
+    { "", STYLE_NORMAL, 200, NULL },
 
-    { "전광판은 깜박이고, 열차 도착 안내는 멈춰 있다.", STYLE_TYPEWRITER, 700, NULL },
-    { "", STYLE_NORMAL, 300, NULL },
+    { "하지만 난 겁쟁이가 아니지!", STYLE_TYPEWRITER, 300, NULL },
+    { "", STYLE_NORMAL, 200, NULL },
 
-    { "바닥에는 깨진 유리와, 누군가 급히 버리고 간 물건들이 흩어져 있다.", STYLE_TYPEWRITER, 700, NULL },
-    { "", STYLE_NORMAL, 400, NULL },
+    { "용기를 내서 이곳을 탈출하고 사람들을 구해야 해!", STYLE_TYPEWRITER, 400, NULL },
+    { "", STYLE_NORMAL, 200, NULL },
 
-    { "역 안은 지나치게 조용하다.", STYLE_TYPEWRITER, 800, NULL },
-    { "사람이 있어야 할 곳에서, 사람의 기척이 전혀 느껴지지 않는다.", STYLE_TYPEWRITER, 700, NULL },
-    { "", STYLE_NORMAL, 400, NULL },
-
-    { "등 뒤에서 식은땀이 흐른다. 본능적으로 알 수 있다.", STYLE_TYPEWRITER, 800, NULL },
-    { "", STYLE_NORMAL, 300, NULL },
-
-    { "이곳은 더 이상 안전하지 않다.", STYLE_TYPEWRITER, 1200, NULL },
+    { "가자! 메트로 히어로 출동!", STYLE_TYPEWRITER, 800, NULL },
 };
 
 static const Cinematic STORY_INTRO = {
     "★  M E T R O   H E R O  ★",
     INTRO_LINES,
     sizeof(INTRO_LINES) / sizeof(INTRO_LINES[0]),
-    30,     // 타이핑 속도
+    15,     // 타이핑 속도 (빠름)
     1,      // 스킵 힌트 표시
     COLOR_BRIGHT_CYAN,
     COLOR_WHITE

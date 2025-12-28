@@ -49,6 +49,8 @@ void combat_try_attack(GameState* state) {
         // ★ 플레이어가 적 공격 -> 적 이미지 표시
         show_enemy_image(state, target);
 
+        target->isProvoked = 1; // ★ 공격받으면 적대적 상태 전환
+        
         // 데미지 계산
         int dmg = p->attackMin + rand() % (p->attackMax - p->attackMin + 1);
         dmg -= target->defense;
@@ -93,7 +95,7 @@ void combat_update_ai(GameState* state, float dt) {
         int dist = abs(dx) + abs(dy);
         
         // ★ 인식 범위 체크 및 로그 (Alert Logic)
-        if (dist <= e->detectionRange) {
+        if (dist <= e->detectionRange || e->isProvoked) {
             if (!e->isChasing) { // Not alerted yet
                 e->isChasing = 1; // Mark as alerted
 
@@ -102,7 +104,7 @@ void combat_update_ai(GameState* state, float dt) {
 
                 // 인식 로그 출력 (좌측 일반 로그)
                 char buf[128];
-                if (e->chaseOnSight) {
+                if (e->chaseOnSight || e->isProvoked) {
                     snprintf(buf, sizeof(buf), "%s이(가) 당신을 발견했습니다, 당신에게 접근합니다!", e->name);
                 } else {
                     snprintf(buf, sizeof(buf), "%s이(가) 당신을 발견했습니다!", e->name);
@@ -110,14 +112,20 @@ void combat_update_ai(GameState* state, float dt) {
                 ui_add_log(buf);
             }
         } else {
-            // 범위 밖으로 나가면 인식(Alert) 해제
+            // 범위 밖으로 나가면 인식(Alert) 해제 (단, Provoked 상태면 계속 추격할 수도 있음 - 여기서는 해제)
+            // User requirement: "All enemies must follow". So maybe don't lose aggro if provoked?
+            // Let's keep it simple: if provoked, condition (dist <= detectionRange || isProvoked) is TRUE.
+            // isProvoked is persistent until death.
+            // So if provoked, we never enter this else block unless... wait.
+            // If provoked, the IF condition is always TRUE. So we never clear isChasing.
+            // Correct.
             e->isChasing = 0;
         }
 
         // 행동 결정 (Alerted 상태일 때만 or 항상? 보통 인식해야 행동)
         if (e->isChasing) {
             // 1. 공격 (인접 + 선공O + 쿨타임)
-            if (dist <= 1 && e->attackOnSight) {
+            if (dist <= 1 && (e->attackOnSight || e->isProvoked)) {
                 if (e->attackCooldown <= 0) {
                     e->attackCooldown = e->attackInterval; // 쿨타임 리셋
 
@@ -135,13 +143,18 @@ void combat_update_ai(GameState* state, float dt) {
                     snprintf(buf, sizeof(buf), "☠ %s의 공격! %d 피해 (HP: %d)", e->name, dmg, p->hp);
                     ui_add_combat_log(buf);
 
+                    // ★ 사망 처리 (즉시 종료하지 않고 상태만 변경)
                     if (p->hp <= 0) {
-                        ui_add_log("당신은 쓰러졌습니다...");
+                        state->isPlayerDead = 1;
+                        ui_add_log(COLOR_BRIGHT_RED "★ 당신은 쓰러졌습니다..." COLOR_RESET);
+                        ui_add_combat_log(COLOR_BRIGHT_RED "★ 당신은 쓰러졌습니다..." COLOR_RESET);
+                        ui_add_combat_log(" ");
+                        ui_add_combat_log(COLOR_BRIGHT_YELLOW "[ENTER]를 눌러 계속..." COLOR_RESET);
                     }
                 }
             }
             // 2. 추적 (거리>1 + 선추격O + 쿨타임)
-            else if (dist > 1 && e->chaseOnSight) {
+            else if (dist > 1 && (e->chaseOnSight || e->isProvoked)) {
                 if (e->moveCooldown <= 0) {
                      e->moveCooldown = e->moveInterval; // 쿨타임 리셋
             

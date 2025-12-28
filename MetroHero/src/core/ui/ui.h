@@ -18,6 +18,7 @@
 #include "panels/equipment.h"
 #include "panels/dialogue.h"
 #include "panels/effect.h"
+#include "panels/combat_log.h"
 
 // View
 #include "view/viewport.h"

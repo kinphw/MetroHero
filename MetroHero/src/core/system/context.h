@@ -27,6 +27,9 @@ typedef struct {
     const char* enemyImagePath;  // 현재 표시할 적 이미지 경로
     double enemyImageTimer;      // 이미지 표시 시간 (5초)
 
+    // ★ 사망 처리 관련
+    int isPlayerDead;            // 플레이어 사망 상태 (엔터 대기 중)
+
 } GameState;
 
 #endif

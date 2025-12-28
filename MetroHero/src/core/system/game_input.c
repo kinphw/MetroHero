@@ -102,10 +102,14 @@ static int GetRepeatingKey() {
 
 // 입력 처리 및 로직 업데이트
 void game_process_input(GameState* state) {
-    if (state->player.hp <= 0) {
-        cinematic_play_ending(1);
-        state->isRunning = 0;
-        return;
+    // ★ 사망 대기 모드: 엔터 입력만 받아서 엔딩 시네마틱으로 이동
+    if (state->isPlayerDead) {
+        int key = GetKeyPressed();
+        if (key == KEY_ENTER || key == KEY_KP_0 || key == KEY_ZERO) {
+            cinematic_play_ending(1);
+            state->isRunning = 0;
+        }
+        return; // 사망 상태에서는 다른 입력 무시
     }
 
     // ★ 이동 키는 반복 입력 처리, 다른 키는 한 번만
@@ -208,6 +212,13 @@ void game_process_input(GameState* state) {
             char msg[128];
             snprintf(msg, sizeof(msg), "📦 상자를 열었다! → %s 획득!", chest->itemName);
             ui_add_log(msg);
+        }
+
+        Door* door = map_get_door_at(&state->map, tx, ty);
+        if (door != NULL && !door->isOpen) {
+            door->isOpen = 1;
+            ui_add_log("철컹! 문이 열렸다.");
+            // PlaySound("assets/door_open.wav"); // Optional
         }
     }
 

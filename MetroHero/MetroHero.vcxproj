@@ -26,6 +26,7 @@
     <ClCompile Include="src\core\system\launcher.c" />
     <ClCompile Include="src\core\ui\backend\buffer.c" />
     <ClCompile Include="src\core\ui\backend\console.c" />
+    <ClCompile Include="src\core\ui\panels\combat_log.c" />
     <ClCompile Include="src\core\ui\panels\dialogue.c" />
     <ClCompile Include="src\core\ui\panels\effect.c" />
     <ClCompile Include="src\core\ui\panels\equipment.c" />
@@ -56,6 +57,7 @@
     <ClInclude Include="src\core\ui\backend\buffer.h" />
     <ClInclude Include="src\core\ui\backend\console.h" />
     <ClInclude Include="src\core\ui\layout.h" />
+    <ClInclude Include="src\core\ui\panels\combat_log.h" />
     <ClInclude Include="src\core\ui\panels\dialogue.h" />
     <ClInclude Include="src\core\ui\panels\effect.h" />
     <ClInclude Include="src\core\ui\panels\equipment.h" />

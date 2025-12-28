@@ -34,8 +34,10 @@ void game_loop(GameState* state) {
             }
         }
 
-        // ★ 적 AI 업데이트
-        combat_update_ai(state, dt);
+        // ★ 적 AI 업데이트 (사망 시 멈춤)
+        if (!state->isPlayerDead) {
+            combat_update_ai(state, dt);
+        }
 
         // 렌더링 (매 프레임 호출)
         game_render(state);

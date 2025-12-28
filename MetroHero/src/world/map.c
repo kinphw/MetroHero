@@ -176,6 +176,11 @@ int map_is_walkable(const Map* m, int x, int y) {
             return 0;
     }
 
+    // 닫힌 문 체크
+    Door* door = map_get_door_at((Map*)m, x, y);
+    if (door && !door->isOpen)
+        return 0;
+
     // 기본 타일 이동 가능 여부 확인
     const TileDef* def = map_get_tile_def(t);
     if (def) {
@@ -257,6 +262,7 @@ void map_init(Map* m, int stageNumber) {
     map_load_enemies(m);
     map_load_chests(m);
     map_load_npcs(m);  // ★ 추가
+    map_load_doors(m); // ★ 추가
 }
 
 
@@ -332,9 +338,16 @@ void map_draw_viewport(const Map* m, const Player* p,
                 } else {
                     ui_draw_str_at(screenX, screenY, npc->glyph, NULL);
                 }
+
             }
 
-            // 5. Player (Overlay)
+            // 5. Door (Overlay)
+            Door* door = map_get_door_at((Map*)m, mx, my);
+            if (door != NULL && !door->isOpen) {
+                ui_draw_tile(screenX, screenY, "assets/door.png");
+            }
+
+            // 6. Player (Overlay) (Renumbering necessary if needed, but just inserting before player)
             if (mx == p->x && my == p->y) {
                 // TODO: p->direction based images
                 ui_draw_tile(screenX, screenY, "assets/person_down.png");
@@ -403,5 +416,36 @@ NPC* map_get_adjacent_npc(Map* m, int px, int py) {
         if (npc != NULL) return npc;
     }
 
+    return NULL;
+}
+
+// ★ 맵에서 문 찾아서 초기화
+void map_load_doors(Map* m) {
+    m->doorCount = 0;
+    
+    for (int y = 0; y < m->height; y++) {
+        for (int x = 0; x < m->width; x++) {
+            if (m->tiles[y][x] == '%') {
+                 if (m->doorCount < MAX_DOORS) {
+                     m->doors[m->doorCount].x = x;
+                     m->doors[m->doorCount].y = y;
+                     m->doors[m->doorCount].isOpen = 0; // 닫힌 상태로 시작
+                     m->doorCount++;
+
+                     // 문 타일을 바닥으로 변경 (엔티티로 관리)
+                     m->tiles[y][x] = '.';
+                 }
+            }
+        }
+    }
+}
+
+// ★ 특정 위치에 있는 문 반환
+Door* map_get_door_at(Map* m, int x, int y) {
+    for (int i = 0; i < m->doorCount; i++) {
+        if (m->doors[i].x == x && m->doors[i].y == y) {
+            return &m->doors[i];
+        }
+    }
     return NULL;
 }

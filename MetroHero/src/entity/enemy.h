@@ -27,6 +27,8 @@ typedef struct {
     int attackOnSight;
     int detectionRange;
     int isChasing;
+    int isProvoked; // ★ 공격받음 상태
+
 
     float moveInterval;
     float attackInterval;

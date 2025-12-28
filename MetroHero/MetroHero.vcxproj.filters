@@ -144,6 +144,9 @@
     <ClCompile Include="src\core\system\launcher.c">
       <Filter>src\core\system</Filter>
     </ClCompile>
+    <ClCompile Include="src\core\ui\panels\combat_log.c">
+      <Filter>src\core\ui\panels</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="src\core\game.h">
@@ -235,6 +238,9 @@
     </ClInclude>
     <ClInclude Include="src\core\system\launcher.h">
       <Filter>src\core\system</Filter>
+    </ClInclude>
+    <ClInclude Include="src\core\ui\panels\combat_log.h">
+      <Filter>src\core\ui\panels</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>

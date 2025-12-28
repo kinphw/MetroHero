@@ -10,6 +10,14 @@
 #define MAX_MAP_H 120
 #define MAX_CHESTS 50
 
+// ★ 문 관리
+typedef struct {
+    int x, y;
+    int isOpen;
+} Door;
+
+#define MAX_DOORS 20
+
 typedef struct {
 	int width;
 	int height;
@@ -28,6 +36,10 @@ typedef struct {
 	// ★ NPC 추가
 	NPC npcs[ MAX_NPCS ];
 	int npcCount;
+
+	// ★ 문 관리
+	Door doors[ MAX_DOORS ];
+	int doorCount;
 } Map;
 
 void map_init(Map* m , int stageNumber);
@@ -47,6 +59,10 @@ Chest* map_get_adjacent_chest(Map* m , int px , int py);
 void map_load_npcs(Map* m);
 NPC* map_get_npc_at(Map* m , int x , int y);
 NPC* map_get_adjacent_npc(Map* m , int px , int py);
+
+// ★ 문 관련 함수
+void map_load_doors(Map* m);
+Door* map_get_door_at(Map* m, int x, int y);
 
 
 void map_draw_viewport(const Map* m , const Player* p , int startX , int startY ,
