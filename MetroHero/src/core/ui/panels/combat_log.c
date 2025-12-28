@@ -51,7 +51,7 @@ void ui_draw_enemy_image(const char* imagePath) {
     int h = COMBAT_LOG_H;
 
     // 이미지 크기 및 위치 계산
-    int imgSize = 120;
+    int imgSize = 180;
 
     // 박스 오른쪽에 위치 (픽셀 좌표)
     int boxRightPx = (x + w) * 8;  // 박스 오른쪽 끝

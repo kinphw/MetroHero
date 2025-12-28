@@ -26,9 +26,10 @@ void ui_draw_dialogue(const NPC* npc) {
     }
 
     // 1. Name
+    // 1. Name
     char nameBuf[256];
     snprintf(nameBuf, sizeof(nameBuf), "💬 %s", npc->name);
-    ui_draw_text_clipped(x + 2, y + 1, w - 4, nameBuf, NULL);
+    ui_draw_text_clipped(x + 1, y + 1, w - 2, nameBuf, NULL);
 
     // 2. Face Image (In expanded header)
     if (npc->faceImagePath) {
@@ -64,7 +65,7 @@ void ui_draw_dialogue(const NPC* npc) {
         
         int currentWidth = 0;
         const char* dialoguePtr = dialogue + lineStart;
-        int maxTextWidth = w - 4; // Full width restored!
+        int maxTextWidth = w - 2; // Full width restored!
 
         int charsProcessed = 0;
 
@@ -129,7 +130,7 @@ void ui_draw_dialogue(const NPC* npc) {
              dialoguePtr += charBytes;
         }
         
-        ui_draw_text_clipped(x + 2, y + i, w - 4, lineBuf, NULL);
+        ui_draw_text_clipped(x + 1, y + i, w - 2, lineBuf, NULL);
         
         lineStart += charsProcessed;
         lineNum++;

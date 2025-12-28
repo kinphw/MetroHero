@@ -190,6 +190,53 @@ int map_is_walkable(const Map* m, int x, int y) {
     return 0;
 }
 
+// ★ 시야 체크 (Line of Sight) - Bresenham Algorithm
+int map_check_los(Map* m, int x1, int y1, int x2, int y2) {
+    int dx = abs(x2 - x1);
+    int dy = -abs(y2 - y1);
+    int sx = (x1 < x2) ? 1 : -1;
+    int sy = (y1 < y2) ? 1 : -1;
+    int err = dx + dy;
+    
+    while (1) {
+        // 목표 지점 도달 시 시야 확보 성공 (목표 지점의 타일 속성은 체크하지 않음 - 플레이어 위치)
+        if (x1 == x2 && y1 == y2) return 1;
+
+        // 현재 지점의 타일 속성 확인 (시작점 포함)
+        // 단, 시작점(적 위치)은 항상 뚫려있다고 가정하거나 체크해도 무방(바닥일테니)
+        char t = m->tiles[y1][x1];
+        
+        // 벽 체크 (#, %, &, $, T, B 등)
+        // 간단히: 이동 불가능한 벽 타일들
+        if (t == '#' || t == '&') return 0;
+        
+        // 닫힌 문 체크
+        if (t == '%') { // %는 기본적으로 벽이지만, 열리면 .으로 바뀜. 
+                        // 하지만 map_load_doors에서 %가 .으로 바뀌고 Door 엔티티가 생성됨.
+                        // 따라서 타일이 '%'인 경우는 없음?
+                        // 아, map_load_doors에서 m->tiles[y][x] = '.' 으로 바꿈.
+                        // 그러므로 여기서 '%' 체크는 불필요하지만, Door 엔티티를 확인해야 함.
+        }
+
+        // 문 (Door) 엔티티 체크 - 닫혀있으면 시야 차단
+        Door* d = map_get_door_at(m, x1, y1);
+        if (d && !d->isOpen) return 0;
+
+        // 다음 좌표 계산
+        if (2 * err >= dy) {
+            if (x1 == x2) break;
+            err += dy;
+            x1 += sx;
+        }
+        if (2 * err <= dx) {
+            if (y1 == y2) break;
+            err += dx;
+            y1 += sy;
+        }
+    }
+    return 1;
+}
+
 
 // ★ 플레이어 주변(상하좌우)에 적이 있는지 확인
 Enemy* map_get_adjacent_enemy(Map* m, int px, int py) {

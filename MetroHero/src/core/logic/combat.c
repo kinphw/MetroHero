@@ -95,7 +95,10 @@ void combat_update_ai(GameState* state, float dt) {
         int dist = abs(dx) + abs(dy);
         
         // ★ 인식 범위 체크 및 로그 (Alert Logic)
-        if (dist <= e->detectionRange || e->isProvoked) {
+        // 시야 체크 추가: 거리가 가까워도 벽으로 막혀있으면 인식 불가 (단, 이미 Provoke 된 경우 무조건 인식)
+        int hasLOS = map_check_los(m, e->x, e->y, p->x, p->y);
+        
+        if ((dist <= e->detectionRange && hasLOS) || e->isProvoked) {
             if (!e->isChasing) { // Not alerted yet
                 e->isChasing = 1; // Mark as alerted
 
@@ -109,7 +112,7 @@ void combat_update_ai(GameState* state, float dt) {
                 } else {
                     snprintf(buf, sizeof(buf), "%s이(가) 당신을 발견했습니다!", e->name);
                 }
-                ui_add_log(buf);
+                ui_add_combat_log(buf);
             }
         } else {
             // 범위 밖으로 나가면 인식(Alert) 해제 (단, Provoked 상태면 계속 추격할 수도 있음 - 여기서는 해제)
