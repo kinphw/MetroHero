@@ -43,16 +43,29 @@ GameMode game_menu(void) {
 
         // 1. Title Image
         if (titleTexture.id != 0) {
-            // 중앙 정렬
-            int imgX = (screenW - titleTexture.width) / 2;
-            int imgY = 100; // 상단 여백
-            DrawTexture(titleTexture, imgX, imgY, WHITE);
+            // 원본 크기: 3392x1248 -> 너무 큼
+            // 목표 크기: 너비 800px 유지 (비율 고정)
+            float targetWidth = 1200.0f;
+            float scale = targetWidth / (float)titleTexture.width;
+            float targetHeight = (float)titleTexture.height * scale; // 1248 * 0.23... ~= 293px
+
+            // 중앙 정렬 좌표 계산
+            float imgX = ((float)screenW - targetWidth) / 2.0f;
+            float imgY = 100.0f; // 상단 여백
+
+            // 소스 영역 (전체 이미지)
+            Rectangle srcRec = { 0.0f, 0.0f, (float)titleTexture.width, (float)titleTexture.height };
+            // 대상 영역 (리사이징된 크기)
+            Rectangle destRec = { imgX, imgY, targetWidth, targetHeight };
+            // 회전 중심 (좌상단 0,0)
+            Vector2 origin = { 0.0f, 0.0f };
+
+            DrawTexturePro(titleTexture, srcRec, destRec, origin, 0.0f, WHITE);
             
             // 텍스트 타이틀 (이미지 아래)
-            // DrawText("METRO HERO", ...); // 사용자가 같이 출력 원함
-            // 이미지 크기에 따라 위치 조정 필요. 일단 이미지 아래에.
-            int textY = imgY + titleTexture.height + 20;
-            ui_draw_str_at((screenW - 200)/16, textY/16, "METRO HERO", "\033[93m"); // Bright Yellow? Grid coord approx
+            // 이미지 높이(targetHeight)에 맞춰 텍스트 위치 조정
+            // int textY = (int)(imgY + targetHeight + 20);
+            // ui_draw_str_at((screenW - 200)/16, textY/16, "METRO HERO", "\033[93m");
         } else {
             // 이미지 없으면 텍스트만 크게?
             const char* title = "METRO HERO";
