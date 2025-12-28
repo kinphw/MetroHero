@@ -3,6 +3,8 @@
 #include "../ui/ui.h" // For ui_begin_texture_mode etc if needed, or just raylib
 #include "../ui/layout.h"
 #include "../ui/text/render.h"
+#include "../ui/text/glyph.h" // For display_width
+#include <stdio.h> // snprintf
 
 // 타이틀 이미지 텍스처 (정적 캐싱)
 static Texture2D titleTexture = { 0 };
@@ -27,62 +29,81 @@ static void unload_title_image(void) {
 GameMode game_menu(void) {
     load_title_image();
     
+    int selectedOption = 0;
+    const int optionCount = 3;
+    const char* options[] = { "새로 시작", "이어 하기", "종료" };
+    
     // 메뉴 루프
     while (!WindowShouldClose()) {
         // --- Input Handling ---
-        if (IsKeyPressed(KEY_ONE)) return GAME_NEW;
-        if (IsKeyPressed(KEY_TWO)) return GAME_LOAD;
-        if (IsKeyPressed(KEY_Q)) return GAME_EXIT;
+        if (IsKeyPressed(KEY_DOWN)) {
+            selectedOption = (selectedOption + 1) % optionCount;
+        }
+        if (IsKeyPressed(KEY_UP)) {
+            selectedOption = (selectedOption - 1 + optionCount) % optionCount;
+        }
+        
+        if (IsKeyPressed(KEY_ENTER)) {
+            if (selectedOption == 0) return GAME_NEW;
+            if (selectedOption == 1) return GAME_LOAD; // 아직 구현 안됨
+            if (selectedOption == 2) return GAME_EXIT;
+        }
 
         // --- Drawing ---
         BeginDrawing();
         ClearBackground(BLACK);
 
         int screenW = SCREEN_W * 8; // 1680
-        // int screenH = SCREEN_H * 16; // 880
 
         // 1. Title Image
         if (titleTexture.id != 0) {
-            // 원본 크기: 3392x1248 -> 너무 큼
-            // 목표 크기: 너비 800px 유지 (비율 고정)
             float targetWidth = 1200.0f;
             float scale = targetWidth / (float)titleTexture.width;
-            float targetHeight = (float)titleTexture.height * scale; // 1248 * 0.23... ~= 293px
+            float targetHeight = (float)titleTexture.height * scale;
 
-            // 중앙 정렬 좌표 계산
             float imgX = ((float)screenW - targetWidth) / 2.0f;
-            float imgY = 100.0f; // 상단 여백
+            float imgY = 100.0f; 
 
-            // 소스 영역 (전체 이미지)
             Rectangle srcRec = { 0.0f, 0.0f, (float)titleTexture.width, (float)titleTexture.height };
-            // 대상 영역 (리사이징된 크기)
             Rectangle destRec = { imgX, imgY, targetWidth, targetHeight };
-            // 회전 중심 (좌상단 0,0)
             Vector2 origin = { 0.0f, 0.0f };
 
             DrawTexturePro(titleTexture, srcRec, destRec, origin, 0.0f, WHITE);
-            
-            // 텍스트 타이틀 (이미지 아래)
-            // 이미지 높이(targetHeight)에 맞춰 텍스트 위치 조정
-            // int textY = (int)(imgY + targetHeight + 20);
-            // ui_draw_str_at((screenW - 200)/16, textY/16, "METRO HERO", "\033[93m");
         } else {
-            // 이미지 없으면 텍스트만 크게?
-            const char* title = "METRO HERO";
-            // ui_draw_text_clipped or custom large text
-            // Just basic centered text for now
-            int titleLen = 10;
-            int titleX = (SCREEN_W - titleLen) / 2;
-            ui_draw_str_at(titleX, 10, title, "\033[93m");
+            int titleX = (SCREEN_W - 10) / 2;
+            ui_draw_str_at(titleX, 10, "METRO HERO", "\033[93m");
         }
         
         // 2. Menu Options
-        int menuY = 35; // Grid Unit (approx middle-bottom)
+        int menuStartY = 35; // Grid Unit
         int centerX = SCREEN_W / 2;
         
-        ui_draw_str_at(centerX - 10, menuY,     "[1] 새로 시작", "\033[97m");
-        ui_draw_str_at(centerX - 10, menuY + 3, "[2] 이어 하기", "\033[90m"); // Gray (Not impl yet)
-        ui_draw_str_at(centerX - 10, menuY + 6, "[Q] 종료", "\033[97m");
+        for (int i = 0; i < optionCount; i++) {
+            int y = menuStartY + (i * 3);
+            char buf[64];
+            const char* color = "\033[90m"; // Default Gray
+            
+            if (i == selectedOption) {
+                color = "\033[97m"; // Bright White (Selected)
+                snprintf(buf, sizeof(buf), "> %s", options[i]);
+            } else {
+                snprintf(buf, sizeof(buf), "  %s", options[i]);
+            }
+            
+            // "이어하기" 비활성화 표시? (선택은 되지만 색상을 다르게 하거나)
+            // 현재는 그냥 선택 가능하도록 둠 (사용자 요청: 직관적 이동)
+            
+            // 중앙 정렬을 위해 대략적 길이 계산 (한글 2칸, 공백 1칸..)
+            // display_width 사용하면 좋음.
+            int len = display_width(buf); 
+            ui_draw_str_at(centerX - (len / 2), y, buf, color);
+        }
+
+        // 안내 문구 추가
+        int guideY = menuStartY + (optionCount * 3) + 4;
+        const char* guide = "- ENTER 키를 눌러 선택하세요 -";
+        int guideLen = display_width(guide);
+        ui_draw_str_at(centerX - (guideLen / 2), guideY, guide, "\033[90m"); // Dark Gray
 
         EndDrawing();
     }
