@@ -161,20 +161,57 @@ void combat_update_ai(GameState* state, float dt) {
                 if (e->moveCooldown <= 0) {
                      e->moveCooldown = e->moveInterval; // 쿨타임 리셋
             
-                    int nextX = e->x;
-                    int nextY = e->y;
+                    int tryX = e->x;
+                    int tryY = e->y;
+                    
+                    int dirX = (dx > 0) ? 1 : -1;
+                    int dirY = (dy > 0) ? 1 : -1;
+                    
+                    int moved = 0;
 
-                    // X축, Y축 중 더 먼 쪽을 좁힘 (단순 추적)
-                    if (abs(dx) > abs(dy)) {
-                        nextX += (dx > 0) ? 1 : -1;
+                    // 1. 주축(Primary Axis) 결정 및 이동 시도
+                    if (abs(dx) >= abs(dy)) {
+                        // X축 우선
+                        if (dx != 0) {
+                            int nx = e->x + dirX;
+                            int ny = e->y;
+                            if (map_is_walkable(m, nx, ny) && !map_get_enemy_at(m, nx, ny)) {
+                                e->x = nx;
+                                e->y = ny;
+                                moved = 1;
+                            }
+                        }
+                        // X축 실패 or 이동 안함 -> Y축 시도 (Fallback)
+                        if (!moved && dy != 0) {
+                            int nx = e->x;
+                            int ny = e->y + dirY;
+                            if (map_is_walkable(m, nx, ny) && !map_get_enemy_at(m, nx, ny)) {
+                                e->x = nx;
+                                e->y = ny;
+                                moved = 1;
+                            }
+                        }
                     } else {
-                        nextY += (dy > 0) ? 1 : -1;
-                    }
-
-                    // 이동 가능 여부 확인
-                    if (map_is_walkable(m, nextX, nextY) && !map_get_enemy_at(m, nextX, nextY)) {
-                        e->x = nextX;
-                        e->y = nextY;
+                        // Y축 우선
+                        if (dy != 0) {
+                            int nx = e->x;
+                            int ny = e->y + dirY;
+                            if (map_is_walkable(m, nx, ny) && !map_get_enemy_at(m, nx, ny)) {
+                                e->x = nx;
+                                e->y = ny;
+                                moved = 1;
+                            }
+                        }
+                        // Y축 실패 -> X축 시도 (Fallback)
+                        if (!moved && dx != 0) {
+                            int nx = e->x + dirX;
+                            int ny = e->y;
+                            if (map_is_walkable(m, nx, ny) && !map_get_enemy_at(m, nx, ny)) {
+                                e->x = nx;
+                                e->y = ny;
+                                moved = 1;
+                            }
+                        }
                     }
                 }
             }
