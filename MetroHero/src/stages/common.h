@@ -29,7 +29,8 @@ typedef struct {
     char tile;              // 'a', 'b'... (맵상의 문자)
     const char* name;       // 몬스터 이름
     const char* glyph;      // e.g. "🐈"
-    const char* imagePath;  // ★ 추가
+    const char* imagePath;  // 맵 타일 이미지
+    const char* portraitPath; // ★ 전투 박스 초상화 이미지
     int maxHp;
     int attackMin;
     int attackMax;

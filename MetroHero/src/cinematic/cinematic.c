@@ -12,19 +12,77 @@
 // Global Cinematics (Moved from story.h)
 // ============================================
 
+// Cinematic Image Texture
+static Texture2D cinematicTexture = { 0 };
+
+static void cinematic_load_image(const char* path) {
+    if (!path) return;
+    
+    // 이미 로드된 이미지가 다르면 해제 후 로드 (또는 같은 이미지면 스킵)
+    // 여기선 단순하게 매번 로드하거나 체크.
+    // 기존 텍스처 해제
+    if (cinematicTexture.id != 0) {
+        UnloadTexture(cinematicTexture);
+        cinematicTexture.id = 0;
+    }
+
+    cinematicTexture = LoadTexture(path);
+    if (cinematicTexture.id != 0) {
+        SetTextureFilter(cinematicTexture, TEXTURE_FILTER_BILINEAR);
+    }
+}
+
+static void cinematic_unload_image(void) {
+    if (cinematicTexture.id != 0) {
+        UnloadTexture(cinematicTexture);
+        cinematicTexture.id = 0;
+    }
+}
+
 // Key buffering for peeking (Moved here for scope visibility)
 static int HACK_bufferedKey = 0;
 
-// --- Intro ---
+// static const CinematicLine INTRO_LINES[] = {
+// 	{ "", STYLE_NORMAL, 500, "assets/cinematic/1_1.png" }, // ★ Image Start
+// 	{ "갑자기 당신은 눈을 떴다...", STYLE_TYPEWRITER, 800, NULL },
+// 	{ "", STYLE_NORMAL, 300, NULL },
+// 	{ "이곳은...", STYLE_TYPEWRITER, 800, NULL },
+// 	{ "", STYLE_NORMAL, 300, NULL },
+// 	{ "성균관대역....?", STYLE_TYPEWRITER, 1000, NULL },
+// 	{ "", STYLE_NORMAL, 300, NULL },
+// 	{ "당신은 몸을 일으켜 주위를 둘러본다...", STYLE_TYPEWRITER, 0, NULL },
+// };
+
 static const CinematicLine INTRO_LINES[] = {
-	{ "", STYLE_NORMAL, 500 },
-	{ "갑자기 당신은 눈을 떴다...", STYLE_TYPEWRITER, 800 },
-	{ "", STYLE_NORMAL, 300 },
-	{ "이곳은...", STYLE_TYPEWRITER, 800 },
-	{ "", STYLE_NORMAL, 300 },
-	{ "성균관대역....?", STYLE_TYPEWRITER, 1000 },
-	{ "", STYLE_NORMAL, 300 },
-	{ "당신은 몸을 일으켜 주위를 둘러본다...", STYLE_TYPEWRITER, 0 },
+    { "", STYLE_NORMAL, 500, "assets/cinematic/1_1.png" }, // ★ Image Start
+
+    // { "……", STYLE_TYPEWRITER, 600, NULL },
+    { "눈을 뜬다.", STYLE_TYPEWRITER, 700, NULL },
+    { "", STYLE_NORMAL, 300, NULL },
+
+    { "천장이 낯설지 않다. 아니, 오히려 익숙하다.", STYLE_TYPEWRITER, 700, NULL },    
+    { "", STYLE_NORMAL, 400, NULL },
+
+    { "성균관대역. 매일같이 지나던 그 역이다.", STYLE_TYPEWRITER, 900, NULL },
+    { "", STYLE_NORMAL, 400, NULL },
+
+    { "하지만 뭔가가 이상하다.", STYLE_TYPEWRITER, 800, NULL },
+    { "", STYLE_NORMAL, 300, NULL },
+
+    { "전광판은 깜박이고, 열차 도착 안내는 멈춰 있다.", STYLE_TYPEWRITER, 700, NULL },
+    { "", STYLE_NORMAL, 300, NULL },
+
+    { "바닥에는 깨진 유리와, 누군가 급히 버리고 간 물건들이 흩어져 있다.", STYLE_TYPEWRITER, 700, NULL },
+    { "", STYLE_NORMAL, 400, NULL },
+
+    { "역 안은 지나치게 조용하다.", STYLE_TYPEWRITER, 800, NULL },
+    { "사람이 있어야 할 곳에서, 사람의 기척이 전혀 느껴지지 않는다.", STYLE_TYPEWRITER, 700, NULL },
+    { "", STYLE_NORMAL, 400, NULL },
+
+    { "등 뒤에서 식은땀이 흐른다. 본능적으로 알 수 있다.", STYLE_TYPEWRITER, 800, NULL },
+    { "", STYLE_NORMAL, 300, NULL },
+
+    { "이곳은 더 이상 안전하지 않다.", STYLE_TYPEWRITER, 1200, NULL },
 };
 
 static const Cinematic STORY_INTRO = {
@@ -39,16 +97,16 @@ static const Cinematic STORY_INTRO = {
 
 // --- Good Ending ---
 static const CinematicLine ENDING_GOOD_LINES[] = {
-    { "", STYLE_NORMAL, 500 },
-    { "당신은 해냈다.", STYLE_TYPEWRITER, 1000 },
-    { "", STYLE_NORMAL, 500 },
-    { "지하철의 어둠은 물러가고,", STYLE_TYPEWRITER, 800 },
-    { "시민들은 다시 안전하게 이동할 수 있게 되었다.", STYLE_TYPEWRITER, 1000 },
-    { "", STYLE_NORMAL, 500 },
-    { "하지만 영웅의 이야기는", STYLE_TYPEWRITER, 600 },
-    { "누구에게도 알려지지 않았다...", STYLE_TYPEWRITER, 1000 },
-    { "", STYLE_NORMAL, 800 },
-    { "그것이 진정한 영웅의 길.", STYLE_TYPEWRITER, 0 },
+    { "", STYLE_NORMAL, 500, NULL },
+    { "당신은 해냈다.", STYLE_TYPEWRITER, 1000, NULL },
+    { "", STYLE_NORMAL, 500, NULL },
+    { "지하철의 어둠은 물러가고,", STYLE_TYPEWRITER, 800, NULL },
+    { "시민들은 다시 안전하게 이동할 수 있게 되었다.", STYLE_TYPEWRITER, 1000, NULL },
+    { "", STYLE_NORMAL, 500, NULL },
+    { "하지만 영웅의 이야기는", STYLE_TYPEWRITER, 600, NULL },
+    { "누구에게도 알려지지 않았다...", STYLE_TYPEWRITER, 1000, NULL },
+    { "", STYLE_NORMAL, 800, NULL },
+    { "그것이 진정한 영웅의 길.", STYLE_TYPEWRITER, 0, NULL },
 };
 
 static const Cinematic STORY_ENDING_GOOD = {
@@ -63,14 +121,14 @@ static const Cinematic STORY_ENDING_GOOD = {
 
 // --- Bad Ending ---
 static const CinematicLine ENDING_BAD_LINES[] = {
-    { "", STYLE_NORMAL, 500 },
-    { "어둠이 당신을 삼켰다...", STYLE_TYPEWRITER, 1000 },
-    { "", STYLE_NORMAL, 500 },
-    { "지하철의 수호자는 쓰러졌고,", STYLE_TYPEWRITER, 800 },
-    { "도시는 영원한 어둠 속에 남겨졌다.", STYLE_TYPEWRITER, 1000 },
-    { "", STYLE_NORMAL, 800 },
-    { "하지만 희망은 사라지지 않는다.", STYLE_TYPEWRITER, 600 },
-    { "언젠가 새로운 영웅이 나타날 것이다...", STYLE_TYPEWRITER, 0 },
+    { "", STYLE_NORMAL, 500, NULL },
+    { "어둠이 당신을 삼켰다...", STYLE_TYPEWRITER, 1000, NULL },
+    { "", STYLE_NORMAL, 500, NULL },
+    { "지하철의 수호자는 쓰러졌고,", STYLE_TYPEWRITER, 800, NULL },
+    { "도시는 영원한 어둠 속에 남겨졌다.", STYLE_TYPEWRITER, 1000, NULL },
+    { "", STYLE_NORMAL, 800, NULL },
+    { "하지만 희망은 사라지지 않는다.", STYLE_TYPEWRITER, 600, NULL },
+    { "언젠가 새로운 영웅이 나타날 것이다...", STYLE_TYPEWRITER, 0, NULL },
 };
 
 static const Cinematic STORY_ENDING_BAD = {
@@ -471,8 +529,61 @@ void cinematic_play(const Cinematic* cine) {
     int currentY = cine->title ? (CONTENT_Y + 2) : CONTENT_Y;
     int skipped = 0;
 
+    // ★ 초기 이미지 로드 (첫 라인부터 체크하므로 루프 안에서 처리됨)
+    // 하지만 첫 프레임 전에 그려야 할 수도 있으므로 여기서 미리 그리지 않고 루프 내에서 처리.
+    // 단, 배경 클리어(draw_frame) 직후 이미지가 그려져야 함.
+    
+    // 루프 시작 전 기존 이미지 초기화? (시네마틱 시작 시점)
+    cinematic_unload_image();
+
     for (int i = 0; i < cine->lineCount && !skipped; i++) {
         const CinematicLine* line = &cine->lines[i];
+
+        // ★ 이미지 변경 체크
+        if (line->imagePath != NULL) {
+            cinematic_load_image(line->imagePath);
+        }
+
+        // ★ 이미지 그리기 (매 라인/프레임마다...가 아니라 텍스처 모드 안에서? 아님 ui_present 전에?)
+        // ui_present는 화면을 갱신하므로, 매번 이미지를 다시 그려야 할 수 있음.
+        // 현재 구조상 '텍스트 타이핑 루프' 내에서도 ui_present가 호출됨.
+        // 따라서 이미지는 '배경'으로서 계속 그려져야 함.
+        // 하지만 타이핑 함수(cinematic_print_typewriter)는 ui_present만 호출함.
+        // ui_present 내부에서 전체를 다시 그리지 않는다면(즉 백버퍼가 유지된다면) 한 번 그리면 됨.
+        // MetroHero의 ui_present는 TextureMode의 텍스처를 화면에 뿌리는 역할일 확률이 높음.
+        // ui_begin_texture_mode()로 그린 것은 텍스처에 남음.
+        // 즉, 이미지가 변경되었을 때 한 번만 "덧그리면" 됨.
+        
+        if (line->imagePath != NULL) {
+             ui_begin_texture_mode();
+             // 배경 이미지를 그릴 위치: 상단 중앙 (타이틀 화면과 유사하게)
+             // Y=100 (Title Screen)
+             // Frame is ClearBackground-ed black.
+             if (cinematicTexture.id != 0) {
+                // 검은 배경 위, 텍스트 아래.
+                // 하지만 이미 텍스트가 있을 수 있으니 주의. (보통 라인 단위로 출력하므로 겹치진 않음, 스크롤 제외)
+                
+                float targetWidth = 1200.0f;
+                float scale = targetWidth / (float)cinematicTexture.width;
+                float targetHeight = (float)cinematicTexture.height * scale;
+
+                float imgX = ((float)(SCREEN_W * 8) - targetWidth) / 2.0f;
+                float imgY = 100.0f; 
+                
+                // 프레임 테두리가 덮이지 않게 하려면?
+                // 프레임은 처음에 한 번 그려짐. 이미지를 그리면 프레임 내부(또는 위)에 그려짐.
+                // 텍스트는 그 위에 그려짐.
+                
+                // Draw Texture directly
+                Rectangle srcRec = { 0.0f, 0.0f, (float)cinematicTexture.width, (float)cinematicTexture.height };
+                Rectangle destRec = { imgX, imgY, targetWidth, targetHeight };
+                Vector2 origin = { 0.0f, 0.0f };
+                
+                DrawTexturePro(cinematicTexture, srcRec, destRec, origin, 0.0f, WHITE);
+             }
+             ui_end_texture_mode();
+             // Don't present yet, text will follow
+        }
 
         // ★ ESC 키로 언제든지 스킵 가능
         if (cinematic_key_pressed()) {
@@ -569,6 +680,9 @@ void cinematic_play(const Cinematic* cine) {
 
     // 페이드 아웃
     cinematic_fade_out(300);
+    
+    // 이미지 정리
+    cinematic_unload_image();
 }
 
 // ============================================

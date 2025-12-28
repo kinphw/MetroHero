@@ -45,7 +45,12 @@ void game_render(GameState* state) {
     }
     ui_draw_log();
     ui_draw_combat_log();
-    
+
+    // ★ 적 이미지 표시 (타이머가 남아있을 때만)
+    if (state->enemyImageTimer > 0) {
+        ui_draw_enemy_image(state->enemyImagePath);
+    }
+
     // 배칭 종료
     ui_end_texture_mode();
     

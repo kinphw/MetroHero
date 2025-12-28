@@ -53,9 +53,14 @@ static const char* DIALOGUES_B[] = {
 static const EnemyConfig ENEMIES[] = {
     {
         'b', "경비로봇", COLOR_RED "🤖" COLOR_RESET,
-        10,
-        100, 100,
-        0,
+        "assets/security_robot.png", // 맵 타일 이미지
+        "assets/enemy/1b.png",       // ★ 전투 박스 초상화 이미지
+        10,             // maxHp
+        100, 100,       // attackMin, Max
+        0,              // defense
+        // AI: 선추격X, 선공O, 감지5, 이속2.0, 공속2.0
+        0, 1, 5, 2.0f, 2.0f,
+
         DIALOGUES_B,
         sizeof(DIALOGUES_B) / sizeof(DIALOGUES_B[0]),
         COLOR_RED

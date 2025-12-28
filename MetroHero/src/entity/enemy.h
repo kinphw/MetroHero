@@ -13,7 +13,8 @@ typedef struct {
 	// 스탯
 	const char* name;
     const char* glyph;
-    const char* imagePath; // ★ Add Raylib Image Path
+    const char* imagePath;     // 맵 타일 이미지 (예: assets/cat.png)
+    const char* portraitPath;  // ★ 전투 박스 초상화 이미지 (예: assets/enemy/1a.png)
 	int maxHp;
 	int hp;
 	//int attack;

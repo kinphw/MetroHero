@@ -113,7 +113,8 @@ static const char* DIALOGUES_B[] = {
 static const EnemyConfig ENEMIES[] = {
     {
         'a', "맹혹한고양이", "🐈",
-        "assets/cat.png",
+        "assets/cat.png",           // 맵 타일 이미지
+        "assets/enemy/1a.png",      // ★ 전투 박스 초상화 이미지
         5,              // maxHp
         1, 3,           // attackMin, Max
         0,              // defense
@@ -126,7 +127,8 @@ static const EnemyConfig ENEMIES[] = {
     },
     {
         'b', "경비로봇", COLOR_RED "🤖" COLOR_RESET,
-        "assets/security_robot.png",
+        "assets/security_robot.png", // 맵 타일 이미지
+        "assets/enemy/1b.png",       // ★ 전투 박스 초상화 이미지
         10,
         100, 100,
         0,
@@ -183,10 +185,10 @@ static const NPCConfig NPCS[] = {
 
 // --- Intro ---
 static const CinematicLine INTRO_LINES[] = {
-    { "", STYLE_NORMAL, 300 },
-    { "[ STAGE 1 ]", STYLE_TITLE, 500 },
-    { "", STYLE_NORMAL, 200 },
-    { "성균관대역", STYLE_SUBTITLE, 800 },
+    { "", STYLE_NORMAL, 300, NULL }, // Reverted to NULL
+    { "[ STAGE 1 ]", STYLE_TITLE, 500, NULL },
+    { "", STYLE_NORMAL, 200, NULL },
+    { "성균관대역", STYLE_SUBTITLE, 800, NULL },
 };
 
 static const Cinematic INTRO_CINEMATIC = {
@@ -201,12 +203,12 @@ static const Cinematic INTRO_CINEMATIC = {
 
 // --- Outro (Clear) ---
 static const CinematicLine CLEAR_LINES[] = {
-    { "", STYLE_NORMAL, 300 },
-    { "★ STAGE CLEAR ★", STYLE_TITLE, 800 },
-    { "", STYLE_NORMAL, 500 },
-    { "성균관대역을 정화했다!", STYLE_TYPEWRITER, 600 },
-    { "", STYLE_NORMAL, 300 },
-    { "하지만 어둠은 더 깊은 곳에서 기다리고 있다...", STYLE_TYPEWRITER, 0 },
+    { "", STYLE_NORMAL, 300, NULL },
+    { "★ STAGE CLEAR ★", STYLE_TITLE, 800, NULL },
+    { "", STYLE_NORMAL, 500, NULL },
+    { "성균관대역을 정화했다!", STYLE_TYPEWRITER, 600, NULL },
+    { "", STYLE_NORMAL, 300, NULL },
+    { "하지만 어둠은 더 깊은 곳에서 기다리고 있다...", STYLE_TYPEWRITER, 0, NULL },
 };
 
 static const Cinematic CLEAR_CINEMATIC = {

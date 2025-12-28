@@ -25,6 +25,15 @@ void game_loop(GameState* state) {
         if (state->effectTimer > 0) state->effectTimer -= dt;
         if (state->player.attackCooldown > 0) state->player.attackCooldown -= dt;
 
+        // ★ 적 이미지 타이머 체크 (5초 후 숨김)
+        if (state->enemyImageTimer > 0) {
+            double currentTime = GetTime();
+            if (currentTime >= state->enemyImageTimer) {
+                state->enemyImageTimer = 0;
+                state->enemyImagePath = NULL;
+            }
+        }
+
         // ★ 적 AI 업데이트
         combat_update_ai(state, dt);
 

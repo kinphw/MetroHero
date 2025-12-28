@@ -23,6 +23,10 @@ typedef struct {
     int effectX, effectY;
     float effectTimer;
 
+    // ★ 적 이미지 표시 관련
+    const char* enemyImagePath;  // 현재 표시할 적 이미지 경로
+    double enemyImageTimer;      // 이미지 표시 시간 (5초)
+
 } GameState;
 
 #endif

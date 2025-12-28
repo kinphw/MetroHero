@@ -12,7 +12,8 @@ void enemy_init(Enemy* e, const EnemyConfig* config, int x, int y) {
 
     e->name = config->name;
     e->glyph = config->glyph;
-    e->imagePath = config->imagePath; // ★ Add
+    e->imagePath = config->imagePath;       // 맵 타일 이미지
+    e->portraitPath = config->portraitPath; // ★ 초상화 이미지
     e->maxHp = config->maxHp;
     e->hp = config->maxHp;
     

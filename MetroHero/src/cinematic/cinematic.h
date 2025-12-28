@@ -30,6 +30,7 @@ typedef struct {
     const char* text;       // 텍스트 내용
     TextStyle style;        // 표시 스타일
     int delayAfter;         // 이 라인 후 대기시간 (ms), 0이면 키 입력 대기
+    const char* imagePath;  // ★ 표시할 이미지 (NULL이면 변경 없음)
 } CinematicLine;
 
 // 시네마틱 구조체

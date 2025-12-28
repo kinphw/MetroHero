@@ -9,5 +9,6 @@ void ui_add_log(const char* msg);
 void ui_draw_log(void);
 void ui_add_combat_log(const char* msg);
 void ui_draw_combat_log(void);
+void ui_draw_enemy_image(const char* imagePath); // ★ 적 이미지 표시
 
 #endif

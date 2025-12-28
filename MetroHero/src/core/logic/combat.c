@@ -7,13 +7,22 @@
 #include "../../world/map.h"
 #include "../ui/ui.h"
 #include "../../world/map.h"
-#include "../../world/glyph.h" 
-#include "../system/context.h" // ★ GameState 정의 필요 
+#include "../../world/glyph.h"
+#include "../system/context.h" // ★ GameState 정의 필요
+#include "raylib.h"
 
 // ... (rest of code logic is same, commented out Sleep calls are fine to remain commented or be removed)
 #include "../ui/ui.h"
 #include "../../world/map.h"
 #include "../../world/glyph.h"  // ★ 추가
+
+// ★ 적 이미지 표시 헬퍼 함수 (5초 타이머)
+static void show_enemy_image(GameState* state, const Enemy* enemy) {
+    if (enemy && enemy->portraitPath) {
+        state->enemyImagePath = enemy->portraitPath; // ★ 초상화 이미지 사용
+        state->enemyImageTimer = GetTime() + 5.0;    // 현재 시간 + 5초
+    }
+}
 
 
 // ★ 인접 적 체크 및 메시지 (체력 + 순환 대사 포함)
@@ -37,6 +46,9 @@ void combat_try_attack(GameState* state) {
 
     Enemy* target = map_get_enemy_at(m, tx, ty);
     if (target) {
+        // ★ 플레이어가 적 공격 -> 적 이미지 표시
+        show_enemy_image(state, target);
+
         // 데미지 계산
         int dmg = p->attackMin + rand() % (p->attackMax - p->attackMin + 1);
         dmg -= target->defense;
@@ -50,6 +62,7 @@ void combat_try_attack(GameState* state) {
 
         if (target->hp <= 0) {
             target->isAlive = 0;
+            // ★ 적 처치 -> 이미지 유지 (이미 표시됨)
             // 맵 타일 정리 (적 제거) - 추후 자동 clean up
              snprintf(buf, sizeof(buf), "★ %s 처치!", target->name);
              ui_add_combat_log(buf);
@@ -83,9 +96,17 @@ void combat_update_ai(GameState* state, float dt) {
         if (dist <= e->detectionRange) {
             if (!e->isChasing) { // Not alerted yet
                 e->isChasing = 1; // Mark as alerted
+
+                // ★ 적 발견 -> 이미지 표시
+                show_enemy_image(state, e);
+
                 // 인식 로그 출력 (좌측 일반 로그)
                 char buf[128];
-                snprintf(buf, sizeof(buf), "%s이(가) 당신을 발견했습니다!", e->name);
+                if (e->chaseOnSight) {
+                    snprintf(buf, sizeof(buf), "%s이(가) 당신을 발견했습니다, 당신에게 접근합니다!", e->name);
+                } else {
+                    snprintf(buf, sizeof(buf), "%s이(가) 당신을 발견했습니다!", e->name);
+                }
                 ui_add_log(buf);
             }
         } else {
@@ -99,7 +120,10 @@ void combat_update_ai(GameState* state, float dt) {
             if (dist <= 1 && e->attackOnSight) {
                 if (e->attackCooldown <= 0) {
                     e->attackCooldown = e->attackInterval; // 쿨타임 리셋
-                    
+
+                    // ★ 적이 플레이어 공격 -> 이미지 표시
+                    show_enemy_image(state, e);
+
                     // 데미지 계산
                     int dmg = e->attackMin + rand() % (e->attackMax - e->attackMin + 1);
                     dmg -= p->defense;

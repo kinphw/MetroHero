@@ -215,3 +215,26 @@ void ui_draw_combat_log(void) {
         }
     }
 }
+
+// ★ 적 이미지 표시 (전투 박스 오른쪽 중앙)
+void ui_draw_enemy_image(const char* imagePath) {
+    if (!imagePath) return;
+
+    int x = COMBAT_LOG_X;
+    int w = COMBAT_LOG_W;
+    int h = COMBAT_LOG_H;
+
+    // 이미지 크기 및 위치 계산
+    int imgSize = 120;
+
+    // 박스 오른쪽에 위치 (픽셀 좌표)
+    int boxRightPx = (x + w) * 8;  // 박스 오른쪽 끝
+    int boxTopPx = COMBAT_LOG_Y * 16;  // 박스 상단
+    int boxHeightPx = h * 16;
+
+    // 오른쪽 중앙에 배치
+    int imgX = boxRightPx - imgSize - 16;  // 오른쪽에서 16px 여백
+    int imgY = boxTopPx + (boxHeightPx - imgSize) / 2;  // 수직 중앙
+
+    ui_draw_image(imgX, imgY, imgSize, imgSize, imagePath);
+}
