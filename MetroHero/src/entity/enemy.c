@@ -25,10 +25,15 @@ void enemy_init(Enemy* e, const EnemyConfig* config, int x, int y) {
     e->dialogueIndex = 0;
     e->dialogueColor = config->dialogueColor;
 
-    // AI Init
-    e->actionCooldown = 0.0f;
-    e->actionInterval = 1.0f; // 1초마다 행동
-    e->detectionRange = 8;
+    // AI Init (From Config)
+    e->chaseOnSight = config->chaseOnSight;
+    e->attackOnSight = config->attackOnSight;
+    e->detectionRange = config->detectionRange;
+    e->moveInterval = config->moveInterval;
+    e->attackInterval = config->attackInterval;
+    
+    e->moveCooldown = 0.0f;
+    e->attackCooldown = 0.0f;
     e->isChasing = 0;
 }
 

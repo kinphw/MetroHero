@@ -117,6 +117,9 @@ static const EnemyConfig ENEMIES[] = {
         5,              // maxHp
         1, 3,           // attackMin, Max
         0,              // defense
+        // AI: 선추격O, 선공O, 감지8, 이속1.0, 공속1.0
+        1, 1, 8, 1.0f, 1.0f,
+
         DIALOGUES_A,
         sizeof(DIALOGUES_A) / sizeof(DIALOGUES_A[0]),
         COLOR_BRIGHT_CYAN
@@ -127,6 +130,9 @@ static const EnemyConfig ENEMIES[] = {
         10,
         100, 100,
         0,
+        // AI: 선추격X(지키기), 선공O(접근하면), 감지5, 이속2.0(느림), 공속2.0(느림)
+        0, 1, 5, 2.0f, 2.0f,
+
         DIALOGUES_B,
         sizeof(DIALOGUES_B) / sizeof(DIALOGUES_B[0]),
         COLOR_RED

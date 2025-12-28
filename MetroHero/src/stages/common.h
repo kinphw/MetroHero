@@ -34,6 +34,13 @@ typedef struct {
     int attackMin;
     int attackMax;
     int defense;
+
+    // ★ AI 설정
+    int chaseOnSight;    // 1: 감지 시 즉시 추격
+    int attackOnSight;   // 1: 인접 시 선제 공격
+    int detectionRange;  // 감지 범위
+    float moveInterval;  // 이동 속도 (초 단위)
+    float attackInterval;// 공격 속도 (초 단위)
     
     // 대사 관련
     const char** dialogues;
