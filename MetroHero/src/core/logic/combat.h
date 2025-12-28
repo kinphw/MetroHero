@@ -8,12 +8,6 @@
 
 struct GameState; // Forward decl
 
-// 인접 적 체크 및 메시지 생성
-void combat_check_nearby_enemy(Map* m , Player* p);
-
-// 전투 시작
-void combat_attack_enemy(Player* p , Enemy* e , Map* m);
-
 // 실시간 공격 시도 (Space 키)
 void combat_try_attack(struct GameState* state);
 

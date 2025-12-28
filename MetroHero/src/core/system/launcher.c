@@ -11,7 +11,7 @@ static Texture2D titleTexture = { 0 };
 
 static void load_title_image(void) {
     if (titleTexture.id == 0) {
-        titleTexture = LoadTexture("assets/title.png");
+        titleTexture = LoadTexture("assets/title/title.png");
         if (titleTexture.id == 0) {
             // 실패 시 로깅?
         } else {

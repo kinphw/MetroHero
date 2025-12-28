@@ -17,18 +17,22 @@ void game_render(GameState* state) {
     // 2. 뷰포트 그리기 (항상 그림)
     ui_render_map_viewport(&state->map, &state->player, state->effectX, state->effectY, state->effectTimer);
 
-    // ★ In-Game Header Image (Logo)
-    // Screen Width: 1680px (SCREEN_W * 8)
-    // Image Size: 300x100
-    // Center X: (1680 - 300) / 2 = 690
-    // Y: 0 (Top padding area)
-    int headerW = 300;
+    // ★ In-Game Header Image (Logo + Stage)
+    // Screen Width: 1680px
+    // Single Image Size: 300x96 (assumed same size for both)
+    // Total Width: 300 + 300 = 600
+    int singleW = 300;
     int headerH = 96;
-    int headerX = (SCREEN_W * 8 - headerW) / 2;
-    int headerY = 0; // Top padding starts at 0 and is 96px high. 
+    int totalW = singleW * 2;
     
-    // Draw the image directly (batching handled by TextureMode)
-    ui_draw_image(headerX, headerY, headerW, headerH, "assets/title_on.png");
+    int headerX = (SCREEN_W * 8 - totalW) / 2;
+    int headerY = 0; 
+    
+    // Draw Title (Left)
+    ui_draw_image(headerX, headerY, singleW, headerH, "assets/title/title_on.png");
+    
+    // Draw Stage (Right - Attached)
+    ui_draw_image(headerX + singleW, headerY, singleW, headerH, "assets/title/title_s1.png");
 
     // 3. UI 그리기 (항상 그림 - 대화창이 오버레이됨)
     if (!state->inDialogue) {

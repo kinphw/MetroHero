@@ -64,9 +64,8 @@ void player_move(Player* p, const Map* m, int cmd) {
     Enemy* targetEnemy = map_get_enemy_at((Map*)m, nx, ny);
 
     if (targetEnemy != NULL) {
-        // ★ 적이 있으면 전투!
-        combat_attack_enemy(p, targetEnemy, (Map*)m);
-        return;  // 이동하지 않음
+        // ★ 적이 있으면 이동 불가 (공격은 Space 키로)
+        return;
     }
 
     // 일반 이동

@@ -212,7 +212,8 @@ void game_process_input(GameState* state) {
     }
 
     // 주변 체크
-    combat_check_nearby_enemy(&state->map, &state->player);
+    // 주변 체크 (Turn-based logic removed)
+    // combat_check_nearby_enemy(&state->map, &state->player);
 
     NPC* nearNpc = map_get_adjacent_npc(&state->map, state->player.x, state->player.y);
     if (nearNpc != NULL) {

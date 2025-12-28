@@ -29,6 +29,7 @@ void enemy_init(Enemy* e, const EnemyConfig* config, int x, int y) {
     e->actionCooldown = 0.0f;
     e->actionInterval = 1.0f; // 1초마다 행동
     e->detectionRange = 8;
+    e->isChasing = 0;
 }
 
 int enemy_is_at(const Enemy* e, int x, int y) {
