@@ -1,6 +1,7 @@
 #include <stddef.h> // NULL 정의 추가
 #include "game_internal.h"
 #include "../ui/ui.h"
+#include "../ui/text/render.h" // For ui_draw_image
 #include "../../world/glyph.h"
 #include "raylib.h"
 
@@ -15,6 +16,19 @@ void game_render(GameState* state) {
     
     // 2. 뷰포트 그리기 (항상 그림)
     ui_render_map_viewport(&state->map, &state->player);
+
+    // ★ In-Game Header Image (Logo)
+    // Screen Width: 1680px (SCREEN_W * 8)
+    // Image Size: 300x100
+    // Center X: (1680 - 300) / 2 = 690
+    // Y: 0 (Top padding area)
+    int headerW = 300;
+    int headerH = 96;
+    int headerX = (SCREEN_W * 8 - headerW) / 2;
+    int headerY = 0; // Top padding starts at 0 and is 96px high. 
+    
+    // Draw the image directly (batching handled by TextureMode)
+    ui_draw_image(headerX, headerY, headerW, headerH, "assets/title_on.png");
 
     // 3. UI 그리기 (항상 그림 - 대화창이 오버레이됨)
     if (!state->inDialogue) {

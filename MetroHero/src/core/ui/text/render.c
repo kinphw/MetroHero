@@ -43,6 +43,19 @@ static Texture2D GetCachedTexture(const char* path) {
     return (Texture2D){0};
 }
 
+// Helper to draw an image at pixel coordinates with custom size
+void ui_draw_image(int x, int y, int w, int h, const char* imagePath) {
+    if (!imagePath) return;
+
+    Texture2D tex = GetCachedTexture(imagePath);
+    if (tex.id != 0) {
+        Rectangle src = { 0.0f, 0.0f, (float)tex.width, (float)tex.height };
+        Rectangle dst = { (float)x, (float)y, (float)w, (float)h };
+        Vector2 origin = { 0.0f, 0.0f };
+        DrawTexturePro(tex, src, dst, origin, 0.0f, WHITE);
+    }
+}
+
 void ui_draw_tile(int x, int y, const char* imagePath) {
     if (!imagePath) return;
     
