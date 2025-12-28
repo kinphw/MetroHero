@@ -47,6 +47,7 @@ typedef struct {
     const char* name;
     const char* glyph;      // e.g. GLYPH_NPC_MERCHANT
     const char* imagePath;  // ★ 추가
+    const char* faceImagePath; // ★ 얼굴 이미지 경로 추가 (128x128)
     
     const char** dialogues;
     int dialogueCount;

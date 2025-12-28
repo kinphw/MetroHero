@@ -19,32 +19,52 @@ void ui_draw_dialogue(const NPC* npc) {
     
     ui_draw_box(x, y, w, h, "대화");
 
-    // Name
+    // Dynamic Header Height
+    int headerHeight = 2; // Default
+    if (npc->faceImagePath) {
+        headerHeight = 9; // ~144px space (9*16). Image is 128px.
+    }
+
+    // 1. Name
     char nameBuf[256];
     snprintf(nameBuf, sizeof(nameBuf), "💬 %s", npc->name);
     ui_draw_text_clipped(x + 2, y + 1, w - 4, nameBuf, NULL);
 
-    // Separator (Raylib Line)
-    // Grid y+2 -> Pixel y. Box lines are 2px thick.
-    // Center the line loosely in the character cell or align with design.
-    // Drawing a horizontal line using Fill Rectangle
+    // 2. Face Image (In expanded header)
+    if (npc->faceImagePath) {
+        int imgW = 128;
+        int imgH = 128;
+        int imgX = (x + w) * 8 - imgW - 16; // Right aligned with padding
+        int imgY = (y * 16) + 16; // Top padding (y*16 is box top, +16px down)
+        
+        ui_draw_image(imgX, imgY, imgW, imgH, npc->faceImagePath);
+    }
+
+    // 3. Separator (Below Header)
     int sepPxX = x * 8;
     int sepPxW = w * 8;
-    int sepPxY = (y + 2) * 16 + 7; // Middle of the cell roughly (16/2 = 8)
+    int sepPxY = (y + headerHeight) * 16 + 7;
     DrawRectangle(sepPxX, sepPxY, sepPxW, 2, WHITE);
 
-    // Dialogue Content
+    // Old face block removed since we moved it up
+    int faceWidthBytes = 0; // No longer needed
+
+
+    // 4. Dialogue Content (Full Width)
     const char* dialogue = npc->dialogues[npc->currentDialogue];
     int lineStart = 0;
     int lineNum = 0;
-    int maxLines = h - 6;
+    // content start: headerHeight + 1
+    // content end: h - 3 (bottom separator)
+    int contentStart = headerHeight + 1;
+    int maxLines = h - 3 - contentStart; // Remaining lines for text
 
-    for (int i = 3; i < h - 3 && lineNum < maxLines; i++) {
-        char lineBuf[256] = "";  // Temporary buffer for current line
+    for (int i = contentStart; i < h - 3 && lineNum < maxLines; i++) {
+        char lineBuf[256] = "";  
         
         int currentWidth = 0;
         const char* dialoguePtr = dialogue + lineStart;
-        int maxTextWidth = w - 4; // CONTENT_WIDTH - 2 due to padding
+        int maxTextWidth = w - 4; // Full width restored!
 
         int charsProcessed = 0;
 

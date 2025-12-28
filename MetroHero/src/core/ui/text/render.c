@@ -53,6 +53,11 @@ void ui_draw_image(int x, int y, int w, int h, const char* imagePath) {
         Rectangle dst = { (float)x, (float)y, (float)w, (float)h };
         Vector2 origin = { 0.0f, 0.0f };
         DrawTexturePro(tex, src, dst, origin, 0.0f, WHITE);
+    } else {
+        // ★ Debug Fallback: Red Box for missing image
+        DrawRectangleLines(x, y, w, h, RED);
+        // Optional: Draw text "IMG" inside?
+        // ui_draw_str_at(x/8, y/16, "?", "\033[31m");
     }
 }
 

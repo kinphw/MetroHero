@@ -158,12 +158,14 @@ static const NPCConfig NPCS[] = {
     {
         'A', "우건박", COLOR_BRIGHT_BLUE "읏" COLOR_RESET,
         "assets/old_man.png",
+        "assets/npc/1A_face.png", // ★ Added Face
         NPC_DIALOGUES_A, sizeof(NPC_DIALOGUES_A)/sizeof(NPC_DIALOGUES_A[0]),
         0, "general", 1 // canTrade=0 currently but shopType set? Original code had canTrade=0.
     },
     {
         'C', "시민", COLOR_BRIGHT_WHITE "민" COLOR_RESET,
         "assets/simin.png",
+        NULL, // No Face
         NPC_DIALOGUES_C, sizeof(NPC_DIALOGUES_C)/sizeof(NPC_DIALOGUES_C[0]),
         0, NULL, 0
     }
