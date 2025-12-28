@@ -26,7 +26,7 @@ static const ChestConfig CHESTS[] = {
     {'1', "armor",  "마나 갑옷"},
     {'2', "item",   "최대 HP +5"},
     {'3', "item",   "공격력 +2"},
-    {'4', "item",   "방어력 +2"},
+    {'4', "item",   "최대 HP +10"},
 };
 
 // ============================================
@@ -47,7 +47,8 @@ static const EnemyConfig ENEMIES[] = {
         "assets/enemy/1m.png",     // ★ 전투 박스 초상화 이미지
         3,              // maxHp
         1, 2,           // attackMin, Max
-        0,              // defense
+
+        // Defense removed
         // AI: 선추격O, 선공O, 감지6, 이속1.5, 공속1.5
         1, 1, 6, 1.5f, 1.5f,
 

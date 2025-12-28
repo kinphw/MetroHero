@@ -17,7 +17,7 @@ typedef struct {
 	int attackMin;
 	int attackMax;
 
-	int defense;
+
 
 	const char* weaponName;
 	const char* armorName;

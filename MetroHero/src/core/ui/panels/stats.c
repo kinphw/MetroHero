@@ -77,9 +77,7 @@ void ui_draw_stats(const Player* p) {
     snprintf(buf, sizeof(buf), " 공격력: %2d~%2d", p->attackMin, p->attackMax);
     ui_draw_text_clipped(x + 2, y + 5, w - 4, buf, NULL);
 
-    // Defense
-    snprintf(buf, sizeof(buf), " 방어력:  %3d", p->defense);
-    ui_draw_text_clipped(x + 2, y + 6, w - 4, buf, NULL);
+
 
     // ★ Direction - 개별 출력 + 공백 채우기
     const char* arrow = " ";

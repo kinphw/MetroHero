@@ -34,7 +34,7 @@ typedef struct {
     int maxHp;
     int attackMin;
     int attackMax;
-    int defense;
+
 
     // ★ AI 설정
     int chaseOnSight;    // 1: 감지 시 즉시 추격

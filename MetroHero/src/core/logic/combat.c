@@ -53,7 +53,7 @@ void combat_try_attack(GameState* state) {
         
         // 데미지 계산
         int dmg = p->attackMin + rand() % (p->attackMax - p->attackMin + 1);
-        dmg -= target->defense;
+        // dmg -= target->defense; // Defense removed
         if (dmg < 1) dmg = 1;
 
         target->hp -= dmg;
@@ -137,7 +137,7 @@ void combat_update_ai(GameState* state, float dt) {
 
                     // 데미지 계산
                     int dmg = e->attackMin + rand() % (e->attackMax - e->attackMin + 1);
-                    dmg -= p->defense;
+                    // dmg -= p->defense; // Defense removed
                     if (dmg < 1) dmg = 1;
 
                     p->hp -= dmg;

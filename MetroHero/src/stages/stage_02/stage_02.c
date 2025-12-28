@@ -57,7 +57,8 @@ static const EnemyConfig ENEMIES[] = {
         "assets/enemy/1b.png",       // ★ 전투 박스 초상화 이미지
         10,             // maxHp
         100, 100,       // attackMin, Max
-        0,              // defense
+
+        // Defense removed
         // AI: 선추격X, 선공O, 감지5, 이속2.0, 공속2.0
         0, 1, 5, 2.0f, 2.0f,
 

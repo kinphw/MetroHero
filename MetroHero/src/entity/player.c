@@ -24,7 +24,7 @@ void player_init(Player* p) {
     p->attackMin = 2;
     p->attackMax = 5;
 
-    p->defense = 0;
+
 
     p->weaponName = "";
     p->armorName = "";
@@ -103,12 +103,15 @@ void player_apply_item(Player* p, const char* itemType, const char* itemName) {
     if (strcmp(itemType, "armor") == 0) {
         p->armorName = itemName;
 
-        if (strcmp(itemName, "가죽 갑옷") == 0)
-            p->defense = 2;
-        else if (strcmp(itemName, "철 갑옷") == 0)
-            p->defense = 5;
-        else if (strcmp(itemName, "마나 갑옷") == 0)
-            p->defense = 10;
+        if (strcmp(itemName, "가죽 갑옷") == 0) {
+             // p->defense = 2; // Removed
+        }
+        else if (strcmp(itemName, "철 갑옷") == 0) {
+             // p->defense = 5; // Removed
+        }
+        else if (strcmp(itemName, "마나 갑옷") == 0) {
+             // p->defense = 10; // Removed
+        }
 
         ui_add_log("방어구를 착용했다!");
         return;
@@ -125,7 +128,7 @@ void player_apply_item(Player* p, const char* itemType, const char* itemName) {
             p->attackMax += 2;
         }
         else if (strcmp(itemName, "민첩의 물약") == 0) {
-            p->defense += 1;
+            // p->defense += 1; // Removed
         }
 
         ui_add_log("아이템 효과가 적용되었다!");

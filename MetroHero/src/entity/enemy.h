@@ -20,7 +20,7 @@ typedef struct {
 	//int attack;
     int attackMin;
 	int attackMax;
-	int defense;
+
 
     // ★ AI 관련
     int chaseOnSight;
