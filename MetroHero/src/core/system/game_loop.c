@@ -2,11 +2,14 @@
 // #include <windows.h> // Removed for Raylib
 
 #include "raylib.h"
+#include "../ui/ui.h"
+#include "../../world/glyph.h"
 
 void game_loop(GameState* state) {
     state->isRunning = 1;
 
     // 초기 상태 렌더링
+    ui_add_combat_log(COLOR_BRIGHT_RED "전투 시스템 준비 완료..." COLOR_RESET);
     game_render(state);
 
     while (!WindowShouldClose() && state->isRunning) {

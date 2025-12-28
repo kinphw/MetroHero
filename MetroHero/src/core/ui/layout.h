@@ -37,11 +37,18 @@
 #define DIALOGUE_W PANEL_WIDTH
 #define DIALOGUE_H (STATUS_H + EQUIP_H)
 
-// Log Panel
+// Log Panel (Left - General)
 #define LOG_X (SCREEN_PADDING_LEFT)
-#define LOG_Y (VIEWPORT_Y + VIEWPORT_H) // +2 padding removed
-#define LOG_W (VIEWPORT_W + PANEL_WIDTH)
+#define LOG_Y (VIEWPORT_Y + VIEWPORT_H) 
+#define LOG_W ((VIEWPORT_W + PANEL_WIDTH) / 2)
 #define LOG_H 14
 #define LOG_LINES 200
+
+// Combat Log Panel (Right - Combat)
+#define COMBAT_LOG_X (LOG_X + LOG_W)
+#define COMBAT_LOG_Y LOG_Y
+#define COMBAT_LOG_W ((VIEWPORT_W + PANEL_WIDTH) - LOG_W)
+#define COMBAT_LOG_H LOG_H
+#define COMBAT_LOG_LINES 200
 
 #endif

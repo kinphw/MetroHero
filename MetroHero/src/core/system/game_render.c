@@ -40,6 +40,7 @@ void game_render(GameState* state) {
         }
     }
     ui_draw_log();
+    ui_draw_combat_log();
     
     // 배칭 종료
     ui_end_texture_mode();

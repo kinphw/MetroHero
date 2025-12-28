@@ -159,33 +159,59 @@ void ui_add_log(const char* msg) {
     log_index = (log_index + 1) % LOG_LINES;
 }
 
+// Combat Log Buffer
+static char combat_log_buf[COMBAT_LOG_LINES][256];
+static int combat_log_index = 0;
+
 void ui_draw_log(void) {
     int x = LOG_X;
     int y = LOG_Y;
     int w = LOG_W;
     int h = LOG_H;
 
-    ui_draw_box(x, y, w, h, "대화");
+    ui_draw_box(x, y, w, h, "로그");
 
     int start = (log_index - (h - 2) + LOG_LINES) % LOG_LINES;
     for (int i = 0; i < h - 2; i++) {
         // Log text with potential ANSI
         const char* logText = log_buf[(start + i) % LOG_LINES];
 
-        // ★ 텍스트 그리기 - 실제 사용된 표시 폭을 반환받음
+        // ★ 텍스트 그리기
         int actualWidth = ui_draw_text_clipped(x + 2, y + 1 + i, w - 4, logText, NULL);
 
-        // ★ 남은 공간 명시적으로 공백으로 채우기 (오른쪽 테두리 정렬)
+        // ★ 남은 공간 공백 채우기
         int textEndX = x + 2 + actualWidth;
         for (int j = textEndX; j < x + w - 2; j++) {
             ui_draw_str_at(j, y + 1 + i, " ", NULL);
         }
     }
+}
 
-    // ★ 테두리 모서리 보호
-    // const char* borderCol = "\033[0m";
-    // ui_draw_str_at(x, y, "┌", borderCol);
-    // ui_draw_str_at(x + w - 1, y, "┐", borderCol);
-    // ui_draw_str_at(x, y + h - 1, "└", borderCol);
-    // ui_draw_str_at(x + w - 1, y + h - 1, "┘", borderCol);
+void ui_add_combat_log(const char* msg) {
+    snprintf(combat_log_buf[combat_log_index], sizeof(combat_log_buf[combat_log_index]), "%s", msg);
+    combat_log_index = (combat_log_index + 1) % COMBAT_LOG_LINES;
+}
+
+void ui_draw_combat_log(void) {
+    int x = COMBAT_LOG_X;
+    int y = COMBAT_LOG_Y;
+    int w = COMBAT_LOG_W;
+    int h = COMBAT_LOG_H;
+
+    ui_draw_box(x, y, w, h, "전투");
+
+    int start = (combat_log_index - (h - 2) + COMBAT_LOG_LINES) % COMBAT_LOG_LINES;
+    for (int i = 0; i < h - 2; i++) {
+        // Log text with potential ANSI
+        const char* logText = combat_log_buf[(start + i) % COMBAT_LOG_LINES];
+
+        // ★ 텍스트 그리기
+        int actualWidth = ui_draw_text_clipped(x + 2, y + 1 + i, w - 4, logText, NULL);
+
+        // ★ 남은 공간 공백 채우기
+        int textEndX = x + 2 + actualWidth;
+        for (int j = textEndX; j < x + w - 2; j++) {
+            ui_draw_str_at(j, y + 1 + i, " ", NULL);
+        }
+    }
 }

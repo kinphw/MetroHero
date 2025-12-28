@@ -7,5 +7,7 @@ void ui_draw_dialogue(const NPC* npc);
 void ui_clear_dialogue_area(void);
 void ui_add_log(const char* msg);
 void ui_draw_log(void);
+void ui_add_combat_log(const char* msg);
+void ui_draw_combat_log(void);
 
 #endif
