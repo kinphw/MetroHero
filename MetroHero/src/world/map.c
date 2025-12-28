@@ -342,7 +342,7 @@ void map_draw_viewport(const Map* m, const Player* p,
 
             // 6. Effect (Overlay)
             if (effectTimer > 0 && mx == effectX && my == effectY) {
-                 ui_draw_tile(screenX, screenY, "assets/effect_slash.png");
+                 ui_draw_tile(screenX, screenY, "assets/slash.png");
             }
         }
     }
