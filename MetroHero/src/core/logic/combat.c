@@ -158,3 +158,66 @@ void combat_try_attack(GameState* state) {
         // ui_add_combat_log("허공을 가랐다.");
     }
 }
+
+// ★ AI 업데이트 Implementation
+void combat_update_ai(GameState* state, float dt) {
+    Map* m = &state->map;
+    Player* p = &state->player;
+
+    for (int i = 0; i < m->enemyCount; i++) {
+        Enemy* e = &m->enemies[i];
+        if (!e->isAlive) continue;
+
+        // 쿨타임 감소
+        if (e->actionCooldown > 0) {
+            e->actionCooldown -= dt;
+            continue;
+        }
+
+        // 거리 계산 (Manhattan Distance)
+        int dx = p->x - e->x;
+        int dy = p->y - e->y;
+        int dist = abs(dx) + abs(dy);
+
+        // 행동 결정
+        if (dist <= 1) {
+            // 1. 공격 범위 (인접)
+            e->actionCooldown = e->actionInterval; // 쿨타임 리셋
+            
+            // 데미지 계산
+            int dmg = e->attackMin + rand() % (e->attackMax - e->attackMin + 1);
+            dmg -= p->defense;
+            if (dmg < 1) dmg = 1;
+
+            p->hp -= dmg;
+
+            char buf[128];
+            snprintf(buf, sizeof(buf), "☠ %s의 공격! %d 피해 (HP: %d)", e->name, dmg, p->hp);
+            ui_add_combat_log(buf);
+
+            if (p->hp <= 0) {
+                 ui_add_log("당신은 쓰러졌습니다...");
+            }
+        }
+        else if (dist <= e->detectionRange) {
+            // 2. 추적 범위 (이동)
+            e->actionCooldown = e->actionInterval; // 쿨타임 리셋
+            
+            int nextX = e->x;
+            int nextY = e->y;
+
+            // X축, Y축 중 더 먼 쪽을 좁힘 (단순 추적)
+            if (abs(dx) > abs(dy)) {
+                nextX += (dx > 0) ? 1 : -1;
+            } else {
+                nextY += (dy > 0) ? 1 : -1;
+            }
+
+            // 이동 가능 여부 확인
+            if (map_is_walkable(m, nextX, nextY) && !map_get_enemy_at(m, nextX, nextY)) {
+                e->x = nextX;
+                e->y = nextY;
+            }
+        }
+    }
+}

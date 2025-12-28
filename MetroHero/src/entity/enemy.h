@@ -21,6 +21,11 @@ typedef struct {
 	int attackMax;
 	int defense;
 
+    // ★ AI 관련
+    float actionCooldown;   // 행동 쿨타임 (0이 되면 행동 가능)
+    float actionInterval;   // 행동 간격 (초 단위, 예: 1.0f)
+    int detectionRange;     // 감지 범위 (칸 단위)
+
 	// 대사
 	const char** dialogues; // 문자열 배열 포인터
 	int dialogueCount;

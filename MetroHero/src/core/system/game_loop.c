@@ -3,7 +3,10 @@
 
 #include "raylib.h"
 #include "../ui/ui.h"
+#include "raylib.h"
+#include "../ui/ui.h"
 #include "../../world/glyph.h"
+#include "../logic/combat.h" // ★ 추가
 
 void game_loop(GameState* state) {
     state->isRunning = 1;
@@ -21,6 +24,9 @@ void game_loop(GameState* state) {
         // ★ 타이머 업데이트
         if (state->effectTimer > 0) state->effectTimer -= dt;
         if (state->player.attackCooldown > 0) state->player.attackCooldown -= dt;
+
+        // ★ 적 AI 업데이트
+        combat_update_ai(state, dt);
 
         // 렌더링 (매 프레임 호출)
         game_render(state);
