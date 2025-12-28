@@ -25,9 +25,9 @@ void ui_draw_equipment(const Player* p) {
     ui_draw_text_clipped(x + 2, y + 4, w - 4, buf, NULL);
 
     // ★ 테두리 모서리 보호
-    const char* borderCol = "\033[0m";
-    ui_draw_str_at(x, y, "┌", borderCol);
-    ui_draw_str_at(x + w - 1, y, "┐", borderCol);
-    ui_draw_str_at(x, y + h - 1, "└", borderCol);
-    ui_draw_str_at(x + w - 1, y + h - 1, "┘", borderCol);
+    // const char* borderCol = "\033[0m";
+    // ui_draw_str_at(x, y, "┌", borderCol);
+    // ui_draw_str_at(x + w - 1, y, "┐", borderCol);
+    // ui_draw_str_at(x, y + h - 1, "└", borderCol);
+    // ui_draw_str_at(x + w - 1, y + h - 1, "┘", borderCol);
 }

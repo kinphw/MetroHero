@@ -24,10 +24,14 @@ void ui_draw_dialogue(const NPC* npc) {
     snprintf(nameBuf, sizeof(nameBuf), "💬 %s", npc->name);
     ui_draw_text_clipped(x + 2, y + 1, w - 4, nameBuf, NULL);
 
-    // Separator
-    ui_draw_str_at(x, y + 2, "├", NULL);
-    for (int i = 1; i < w - 1; i++) ui_draw_str_at(x + i, y + 2, "─", NULL);
-    ui_draw_str_at(x + w - 1, y + 2, "┤", NULL);
+    // Separator (Raylib Line)
+    // Grid y+2 -> Pixel y. Box lines are 2px thick.
+    // Center the line loosely in the character cell or align with design.
+    // Drawing a horizontal line using Fill Rectangle
+    int sepPxX = x * 8;
+    int sepPxW = w * 8;
+    int sepPxY = (y + 2) * 16 + 7; // Middle of the cell roughly (16/2 = 8)
+    DrawRectangle(sepPxX, sepPxY, sepPxW, 2, WHITE);
 
     // Dialogue Content
     const char* dialogue = npc->dialogues[npc->currentDialogue];
@@ -101,10 +105,9 @@ void ui_draw_dialogue(const NPC* npc) {
         if (dialogue[lineStart] == '\0') break;
     }
 
-    // Bottom Separator
-    ui_draw_str_at(x, y + h - 3, "├", NULL);
-    for (int i = 1; i < w - 1; i++) ui_draw_str_at(x + i, y + h - 3, "─", NULL);
-    ui_draw_str_at(x + w - 1, y + h - 3, "┤", NULL);
+    // Bottom Separator (Raylib Line)
+    int botSepPxY = (y + h - 3) * 16 + 7;
+    DrawRectangle(sepPxX, botSepPxY, sepPxW, 2, WHITE);
 
     // Buttons
     char buttonText[64];
@@ -160,9 +163,9 @@ void ui_draw_log(void) {
     }
 
     // ★ 테두리 모서리 보호
-    const char* borderCol = "\033[0m";
-    ui_draw_str_at(x, y, "┌", borderCol);
-    ui_draw_str_at(x + w - 1, y, "┐", borderCol);
-    ui_draw_str_at(x, y + h - 1, "└", borderCol);
-    ui_draw_str_at(x + w - 1, y + h - 1, "┘", borderCol);
+    // const char* borderCol = "\033[0m";
+    // ui_draw_str_at(x, y, "┌", borderCol);
+    // ui_draw_str_at(x + w - 1, y, "┐", borderCol);
+    // ui_draw_str_at(x, y + h - 1, "└", borderCol);
+    // ui_draw_str_at(x + w - 1, y + h - 1, "┘", borderCol);
 }
