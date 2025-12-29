@@ -168,6 +168,9 @@
     <ClCompile Include="src\core\graphics\sprite_sheet.c">
       <Filter>src\core\graphics</Filter>
     </ClCompile>
+    <ClCompile Include="src\core\ui\panels\system_menu.c">
+      <Filter>src\core\ui\panels</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="src\core\game.h">
@@ -277,6 +280,9 @@
     </ClInclude>
     <ClInclude Include="src\core\graphics\sprite_sheet.h">
       <Filter>src\core\graphics</Filter>
+    </ClInclude>
+    <ClInclude Include="src\core\ui\panels\system_menu.h">
+      <Filter>src\core\ui\panels</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>

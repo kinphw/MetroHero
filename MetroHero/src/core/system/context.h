@@ -22,6 +22,10 @@ typedef struct {
     // ★ 인벤토리 모드 관련
     int inInventory;
     int inventoryCursor; // 선택된 아이템 인덱스
+    
+    // ★ 시스템 메뉴 관련
+    int inSystemMenu;
+    int systemMenuCursor;
 
     // ★ 이펙트 관련
     int effectX, effectY;

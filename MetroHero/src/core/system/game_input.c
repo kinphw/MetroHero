@@ -27,12 +27,13 @@ static int MapKeyToCmd(int key) {
         case KEY_S: case KEY_DOWN:  return 's';
         case KEY_A: case KEY_LEFT:  return 'a';
         case KEY_D: case KEY_RIGHT: return 'd';
-        case KEY_ZERO: case KEY_KP_0: case KEY_ENTER: return '0';
-        case KEY_SPACE: case KEY_Z: return 'f'; // Fight
-        case KEY_Q: return 'q';
-        case KEY_X: case KEY_ESCAPE: return 'x';
-        case KEY_T: return 't';
-        case KEY_I: return 'i'; // Added Map
+        
+        // Context Action (Space / Enter / Z)
+        case KEY_SPACE: case KEY_ENTER: case KEY_KP_ENTER: case KEY_Z: return ' '; 
+        
+        // Menu / Cancel (ESC / X)
+        case KEY_ESCAPE: case KEY_X: return 'x';
+        
         default: return 0;
     }
 }
@@ -102,49 +103,93 @@ static int GetRepeatingKey() {
 }
 
 // 입력 처리 및 로직 업데이트
+// 입력 처리 및 로직 업데이트
 void game_process_input(GameState* state) {
-    // ★ 사망 대기 모드: 엔터 입력만 받아서 엔딩 시네마틱으로 이동
+    // 1. 사망 상태 처리
     if (state->isPlayerDead) {
         int key = GetKeyPressed();
-        if (key == KEY_ENTER || key == KEY_KP_0 || key == KEY_ZERO) {
+        if (key == KEY_ENTER || key == KEY_SPACE) {
             cinematic_play_ending(1);
             state->isRunning = 0;
         }
-        return; // 사망 상태에서는 다른 입력 무시
+        return;
     }
 
-    // ★ 이동 키는 반복 입력 처리, 다른 키는 한 번만
-    int key = GetRepeatingKey();  // 이동 키 반복 처리
-    if (key == 0) {
-        // 이동 키가 아닌 다른 키 체크 (한 번만)
-        key = GetKeyPressed();
-    }
-
-    if (key == 0) return; // No input this frame
+    int key = GetRepeatingKey();
+    if (key == 0) key = GetKeyPressed();
+    if (key == 0) return;
 
     int cmd = MapKeyToCmd(key);
-    if (cmd == 0) return; // Unmapped key
+    if (cmd == 0) return;
 
-    // 1. 대화 모드 처리
+    // 2. 시스템 메뉴 처리
+    if (state->inSystemMenu) {
+        if (cmd == 'w' || cmd == 'a') { // UP
+            state->systemMenuCursor--;
+            if (state->systemMenuCursor < 0) state->systemMenuCursor = 0;
+        }
+        else if (cmd == 's' || cmd == 'd') { // DOWN
+            state->systemMenuCursor++;
+            if (state->systemMenuCursor > 2) state->systemMenuCursor = 2;
+        }
+        else if (cmd == ' ') { // SELECT
+            if (state->systemMenuCursor == 0) { // Inventory
+                state->inSystemMenu = 0;
+                state->inInventory = 1;
+                state->inventoryCursor = 0;
+            }
+            else if (state->systemMenuCursor == 1) { // Save
+                ui_add_log("게임을 저장했습니다. (가상)");
+                state->inSystemMenu = 0;
+            }
+            else if (state->systemMenuCursor == 2) { // Exit
+                state->isRunning = 0;
+                CloseWindow();
+            }
+        }
+        else if (cmd == 'x') { // Close Menu
+            state->inSystemMenu = 0;
+        }
+        return;
+    }
+
+    // 3. 인벤토리 처리
+    if (state->inInventory) {
+        if (cmd == 'x') {
+            state->inInventory = 0;
+        }
+        else if (cmd == 'w' || cmd == 'a') {
+            state->inventoryCursor--;
+            if (state->inventoryCursor < 0) state->inventoryCursor = 0;
+        }
+        else if (cmd == 's' || cmd == 'd') {
+            state->inventoryCursor++;
+            if (state->inventoryCursor >= state->player.inventory.count) 
+                state->inventoryCursor = state->player.inventory.count - 1;
+        }
+        else if (cmd == ' ') {
+             player_use_item(&state->player, state->inventoryCursor);
+        }
+        return;
+    }
+
+    // 4. 대화 모드 처리
     if (state->inDialogue && state->currentNPC != NULL) {
-        if (cmd == '0') {
+        if (cmd == ' ') { // NEXT
             if (state->currentNPC->currentDialogue == state->currentNPC->dialogueCount - 1) {
-                // 대화 끝
+                // End Dialogue
                 state->currentNPC->currentDialogue = 0;
                 state->inDialogue = 0;
                 state->currentNPC = NULL;
                 ui_clear_dialogue_area();
             }
             else {
-                // 다음 대화
+                // Next Line
                 npc_next_dialogue(state->currentNPC);
                 ui_draw_dialogue(state->currentNPC);
             }
         }
-        else if (cmd == 't' && state->currentNPC->canTrade) {
-            ui_add_log("거래 시스템은 곧 추가됩니다!");
-        }
-        else if (cmd == 'x') {
+        else if (cmd == 'x') { // CANCEL
             state->currentNPC->currentDialogue = 0;
             state->inDialogue = 0;
             state->currentNPC = NULL;
@@ -153,74 +198,27 @@ void game_process_input(GameState* state) {
         return;
     }
 
-    // 2. 일반 게임 모드
-    if (cmd == 'q') {
-        state->isRunning = 0;
-        CloseWindow();
+    // 5. 일반 게임 플레이
+    if (cmd == 'x') {
+        state->inSystemMenu = 1;
+        state->systemMenuCursor = 0;
         return;
     }
 
-    // ★ Open Inventory
-    if (cmd == 'i') {
-        state->inInventory = 1;
-        state->inventoryCursor = 0;
-        return;
+    ui_hide_combat_effect(); // Clear previous effects
+
+    // 이동
+    if (cmd == 'w' || cmd == 's' || cmd == 'a' || cmd == 'd') {
+        player_move(&state->player, &state->map, cmd);
     }
 
-    // ★ Inventory Mode Handling
-    if (state->inInventory) {
-        if (cmd == 'x' || cmd == 't' || cmd == 'i') { // ESC(x) or I(t mapped?) Wait map 'i'
-             // Need mapping for 'i'. MapKeyToCmd doesn't map 'I'.
-             // Let's rely on 'x' (ESC) to close. 
-             // Also add 'i' mapping in MapKeyToCmd below if needed, or just handle raw key here?
-             // Helper maps I -> ?
-             state->inInventory = 0;
-        }
-        else if (cmd == 'w' || cmd == 'a') { // UP (w/up)
-             state->inventoryCursor--;
-             if (state->inventoryCursor < 0) state->inventoryCursor = 0;
-        }
-        else if (cmd == 's' || cmd == 'd') { // DOWN (s/down)
-             state->inventoryCursor++;
-             if (state->inventoryCursor >= state->player.inventory.count) 
-                 state->inventoryCursor = state->player.inventory.count - 1;
-        }
-        else if (cmd == '0') { // Enter
-             player_use_item(&state->player, state->inventoryCursor);
-        }
-        return; // Consume input
-    }
-    
-    
-    // Toggle Inventory Key (Manual check removed, handled by cmd 'i')
-
-
-    // 행동 전 이펙트 클리어 (매 프레임 호출하긴 비효율적이나 input이 있을 때만 하므로 OK)
-    ui_hide_combat_effect();
-
-    int targetX = state->player.x;
-    int targetY = state->player.y;
-
-    switch (cmd) {
-    case 'w': targetY--; break;
-    case 's': targetY++; break;
-    case 'a': targetX--; break;
-    case 'd': targetX++; break;
-    }
-
-    // 이동 처리
-    player_move(&state->player, &state->map, cmd);
-
-    // ★ 실시간 공격 (f 키)
-    if (cmd == 'f') {
-        combat_try_attack(state);
-    }
-
-    // 상호작용 (0 키)
-    if (cmd == '0') {
+    // Context Action (Space)
+    if (cmd == ' ') {
         int tx = state->player.x + state->player.dirX;
         int ty = state->player.y + state->player.dirY;
+        int actionTaken = 0;
 
+        // A. Interact with NPC
         NPC* interactNpc = map_get_npc_at(&state->map, tx, ty);
         if (interactNpc != NULL) {
             if (interactNpc->useDialogueBox) {
@@ -239,31 +237,35 @@ void game_process_input(GameState* state) {
                 ui_add_log(msg);
                 npc_next_dialogue(interactNpc);
             }
+            actionTaken = 1;
         }
 
-        Chest* chest = map_get_chest_at(&state->map, tx, ty);
-        if (chest != NULL && !chest->isOpened) {
-            chest->isOpened = 1;
-            player_apply_item(&state->player, chest->itemType, chest->itemName);
-            char msg[128];
-            snprintf(msg, sizeof(msg), "📦 상자를 열었다! → %s 획득!", chest->itemName);
-            ui_add_log(msg);
+        // B. Open Chest
+        if (!actionTaken) {
+            Chest* chest = map_get_chest_at(&state->map, tx, ty);
+            if (chest != NULL && !chest->isOpened) {
+                chest->isOpened = 1;
+                player_apply_item(&state->player, chest->itemType, chest->itemName);
+                char msg[128];
+                snprintf(msg, sizeof(msg), "📦 상자를 열었다! → %s 획득!", chest->itemName);
+                ui_add_log(msg);
+                actionTaken = 1;
+            }
         }
 
-        Door* door = map_get_door_at(&state->map, tx, ty);
-        if (door != NULL && !door->isOpen) {
-            door->isOpen = 1;
-            ui_add_log("철컹! 문이 열렸다.");
-            // PlaySound("assets/door_open.wav"); // Optional
+        // C. Open Door
+        if (!actionTaken) {
+            Door* door = map_get_door_at(&state->map, tx, ty);
+            if (door != NULL && !door->isOpen) {
+                door->isOpen = 1;
+                ui_add_log("철컹! 문이 열렸다.");
+                actionTaken = 1;
+            }
         }
-    }
 
-    // 주변 체크
-    // 주변 체크 (Turn-based logic removed)
-    // combat_check_nearby_enemy(&state->map, &state->player);
-
-    NPC* nearNpc = map_get_adjacent_npc(&state->map, state->player.x, state->player.y);
-    if (nearNpc != NULL) {
-        // Log removed to reduce spam
+        // D. Attack (Default if no interaction)
+        if (!actionTaken) {
+             combat_try_attack(state);
+        }
     }
 }

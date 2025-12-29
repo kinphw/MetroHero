@@ -2,7 +2,8 @@
 #include "game_internal.h"
 #include "../ui/ui.h"
 #include "../ui/text/render.h" // For ui_draw_image
-#include "../ui/panels/inventory_panel.h" // Added
+#include "../ui/panels/inventory_panel.h"
+#include "../ui/panels/system_menu.h" // Added
 #include "../../world/glyph.h"
 #include "raylib.h"
 
@@ -22,6 +23,11 @@ void game_render(GameState* state) {
     if (state->inInventory) {
         // Draw Inventory ON TOP of map (Map is background)
         ui_draw_inventory_viewport(&state->player, state->inventoryCursor);
+    }
+    
+    // ★ 시스템 메뉴 오버레이 (최상위)
+    if (state->inSystemMenu) {
+        ui_draw_system_menu(state);
     }
 
     // ★ In-Game Header Image (Logo + Stage)
