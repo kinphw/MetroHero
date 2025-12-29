@@ -5,32 +5,148 @@
 #include "../world/map.h"
 #include "player.h"
 #include "../core/ui/ui.h"  // ★ ui_add_log 사용을 위해 추가
-#include "../core/logic/combat.h"  // ★ 추가
+#include "player.h"
+#include "../core/ui/ui.h"
+#include "../core/logic/combat.h"
+#include "item.h" // Added
+
+void player_update_stats(Player* p) {
+    // 1. Base Logic
+    p->maxHp = p->baseMaxHp;
+    p->attackMin = p->baseAttackMin;
+    p->attackMax = p->baseAttackMax;
+
+    // 2. Equipment Bonus
+    if (p->equippedWeapon) {
+        p->attackMin += p->equippedWeapon->attackBonus;
+        p->attackMax += p->equippedWeapon->attackBonus; // Min/Max shift together? Or spread? Plan says bonus adds to both.
+        p->weaponName = p->equippedWeapon->name;
+    } else {
+        p->weaponName = "맨주먹";
+    }
+
+    if (p->equippedArmor) {
+        p->maxHp += p->equippedArmor->hpBonus;
+        p->armorName = p->equippedArmor->name;
+    } else {
+        p->armorName = "평상복";
+    }
+
+    // HP Cap check?
+    if (p->hp > p->maxHp) p->hp = p->maxHp;
+}
 
 void player_init(Player* p) {
-    // ★ 맵 크기를 알 수 없으므로 기본값 설정
-    p->x = 20;  // 또는 map_init 후에 설정
+    // Init Item System first
+    item_system_init();
+
+    // ★ 기본 위치
+    p->x = 20; 
     p->y = 10;
 
     p->dirX = 0;
-    p->dirY = 1;   // 아래 방향을 기본값
+    p->dirY = 1;
 
-    // ★ 초기 스탯
-    p->maxHp = 10;
+    // ★ 초기 스탯 (Base)
+    p->baseMaxHp = 10;
     p->hp = 10;
-    //p->attack = 3;
+    
+    p->baseAttackMin = 1;
+    p->baseAttackMax = 3;
 
-    // ★ 공격력 범위 설정
-    p->attackMin = 2;
-    p->attackMax = 5;
+    inventory_init(&p->inventory);
+    p->equippedWeapon = NULL;
+    p->equippedArmor = NULL;
 
-
-
-    p->weaponName = "";
-    p->armorName = "";
-    p->item1 = "";
+    p->item1 = ""; // Legacy
     
     p->attackCooldown = 0.0f;
+
+    player_update_stats(p);
+}
+
+void player_use_item(Player* p, int index) {
+    const Item* item = inventory_get(&p->inventory, index);
+    if (!item) return;
+
+    if (item->type == ITEM_WEAPON) {
+        // Toggle Equip
+        if (p->equippedWeapon == item) {
+            p->equippedWeapon = NULL;
+            ui_add_log("무기를 해제했습니다.");
+        } else {
+            p->equippedWeapon = item;
+            char buf[128];
+            snprintf(buf, sizeof(buf), "%s(을)를 장착했습니다.", item->name);
+            ui_add_log(buf);
+        }
+        player_update_stats(p);
+    }
+    else if (item->type == ITEM_ARMOR) {
+        // Toggle Equip
+        if (p->equippedArmor == item) {
+            p->equippedArmor = NULL;
+            ui_add_log("방어구를 해제했습니다.");
+        } else {
+            p->equippedArmor = item;
+            char buf[128];
+            snprintf(buf, sizeof(buf), "%s(을)를 착용했습니다.", item->name);
+            ui_add_log(buf);
+        }
+        player_update_stats(p);
+    }
+    else if (item->type == ITEM_CONSUMABLE) {
+        // Apply Effect
+        int used = 0;
+        
+        if (item->hpBonus > 0) {
+            p->baseMaxHp += item->hpBonus; // Permanent or Temporary? Name says "Max HP +5" -> Permanent
+             // If it's just potion "HP Potion" -> hpBonus=0 usually in my init?
+             // Let's check init. HPPotion has hpBonus=0. "Max HP +5" has hpBonus=5.
+             // Wait, Potion handling:
+             // "HP Potion": desc="Recover 10". Logic needs to check name or add 'recoverAmount' to Item struct.
+             // Simplification: Check name for now.
+             
+             if (strcmp(item->name, "HP 포션") == 0) {
+                 p->hp += 10;
+                 if (p->hp > p->maxHp) p->hp = p->maxHp;
+                 ui_add_log("체력을 회복했습니다.");
+                 used = 1;
+             }
+             else if (strcmp(item->name, "대형 HP 포션") == 0) {
+                 p->hp += 30;
+                 if (p->hp > p->maxHp) p->hp = p->maxHp;
+                 ui_add_log("체력을 크게 회복했습니다.");
+                 used = 1;
+             }
+             else {
+                 // Permanent Stat Boost
+                 p->baseMaxHp += item->hpBonus;
+                 ui_add_log("최대 체력이 증가했습니다!");
+                 used = 1;
+             }
+             
+        }
+        else if (item->attackBonus > 0) {
+             p->baseAttackMin += item->attackBonus;
+             p->baseAttackMax += item->attackBonus;
+             ui_add_log("공격력이 증가했습니다!");
+             used = 1;
+        }
+        else if (strcmp(item->name, "HP 포션") == 0) { // Fallback if hpBonus was 0
+             p->hp += 10;
+             if (p->hp > p->maxHp) p->hp = p->maxHp;
+             ui_add_log("체력을 회복했습니다.");
+             used = 1;
+        }
+
+        player_update_stats(p);
+
+        // Consume (Remove from inventory)
+        if (used) {
+            inventory_remove_at(&p->inventory, index);
+        }
+    }
 }
 
 
@@ -76,62 +192,21 @@ void player_move(Player* p, const Map* m, int cmd) {
 }
 
 void player_apply_item(Player* p, const char* itemType, const char* itemName) {
-
-    // ======== 무기 적용 ========
-    if (strcmp(itemType, "weapon") == 0) {
-        p->weaponName = itemName;
-
-        // 무기 종류별 능력치 설정
-        if (strcmp(itemName, "초보자 검") == 0) {
-            p->attackMin = 1000;
-            p->attackMax = 10000;
-        }
-        else if (strcmp(itemName, "강철 검") == 0) {
-            p->attackMin = 20;
-            p->attackMax = 150;
-        }
-        else if (strcmp(itemName, "마력의 검") == 0) {
-            p->attackMin = 50;
-            p->attackMax = 200;
-        }
-
-        ui_add_log("무기를 장착했다!");
+    // 1. Find Item
+    const Item* it = item_get(itemName);
+    if (!it) {
+        char buf[128];
+        snprintf(buf, sizeof(buf), "알 수 없는 아이템: %s", itemName);
+        ui_add_log(buf);
         return;
     }
 
-    // ======== 방어구 적용 ========
-    if (strcmp(itemType, "armor") == 0) {
-        p->armorName = itemName;
-
-        if (strcmp(itemName, "가죽 갑옷") == 0) {
-             // p->defense = 2; // Removed
-        }
-        else if (strcmp(itemName, "철 갑옷") == 0) {
-             // p->defense = 5; // Removed
-        }
-        else if (strcmp(itemName, "마나 갑옷") == 0) {
-             // p->defense = 10; // Removed
-        }
-
-        ui_add_log("방어구를 착용했다!");
-        return;
-    }
-
-    // ======== 아이템 적용 (영구 버프 버전) ========
-    if (strcmp(itemType, "item") == 0) {
-        if (strcmp(itemName, "HP 포션") == 0) {
-            p->hp += 10;
-            if (p->hp > p->maxHp) p->hp = p->maxHp;
-        }
-        else if (strcmp(itemName, "힘의 물약") == 0) {
-            p->attackMin += 2;
-            p->attackMax += 2;
-        }
-        else if (strcmp(itemName, "민첩의 물약") == 0) {
-            // p->defense += 1; // Removed
-        }
-
-        ui_add_log("아이템 효과가 적용되었다!");
-        return;
+    // 2. Add to Inventory
+    if (inventory_add(&p->inventory, it)) {
+        char buf[128];
+        snprintf(buf, sizeof(buf), "%s을(를) 획득했다!", itemName);
+        ui_add_log(buf);
+    } else {
+        ui_add_log("인벤토리가 가득 찼습니다!");
     }
 }

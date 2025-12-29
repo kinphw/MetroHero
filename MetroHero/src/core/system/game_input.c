@@ -32,6 +32,7 @@ static int MapKeyToCmd(int key) {
         case KEY_Q: return 'q';
         case KEY_X: case KEY_ESCAPE: return 'x';
         case KEY_T: return 't';
+        case KEY_I: return 'i'; // Added Map
         default: return 0;
     }
 }
@@ -158,6 +159,41 @@ void game_process_input(GameState* state) {
         CloseWindow();
         return;
     }
+
+    // ★ Open Inventory
+    if (cmd == 'i') {
+        state->inInventory = 1;
+        state->inventoryCursor = 0;
+        return;
+    }
+
+    // ★ Inventory Mode Handling
+    if (state->inInventory) {
+        if (cmd == 'x' || cmd == 't' || cmd == 'i') { // ESC(x) or I(t mapped?) Wait map 'i'
+             // Need mapping for 'i'. MapKeyToCmd doesn't map 'I'.
+             // Let's rely on 'x' (ESC) to close. 
+             // Also add 'i' mapping in MapKeyToCmd below if needed, or just handle raw key here?
+             // Helper maps I -> ?
+             state->inInventory = 0;
+        }
+        else if (cmd == 'w' || cmd == 'a') { // UP (w/up)
+             state->inventoryCursor--;
+             if (state->inventoryCursor < 0) state->inventoryCursor = 0;
+        }
+        else if (cmd == 's' || cmd == 'd') { // DOWN (s/down)
+             state->inventoryCursor++;
+             if (state->inventoryCursor >= state->player.inventory.count) 
+                 state->inventoryCursor = state->player.inventory.count - 1;
+        }
+        else if (cmd == '0') { // Enter
+             player_use_item(&state->player, state->inventoryCursor);
+        }
+        return; // Consume input
+    }
+    
+    
+    // Toggle Inventory Key (Manual check removed, handled by cmd 'i')
+
 
     // 행동 전 이펙트 클리어 (매 프레임 호출하긴 비효율적이나 input이 있을 때만 하므로 OK)
     ui_hide_combat_effect();

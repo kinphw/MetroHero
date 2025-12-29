@@ -147,6 +147,15 @@
     <ClCompile Include="src\core\ui\panels\combat_log.c">
       <Filter>src\core\ui\panels</Filter>
     </ClCompile>
+    <ClCompile Include="src\core\ui\panels\inventory_panel.c">
+      <Filter>src\core\ui\panels</Filter>
+    </ClCompile>
+    <ClCompile Include="src\entity\inventory.c">
+      <Filter>src\entity</Filter>
+    </ClCompile>
+    <ClCompile Include="src\entity\item.c">
+      <Filter>src\entity</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="src\core\game.h">
@@ -241,6 +250,15 @@
     </ClInclude>
     <ClInclude Include="src\core\ui\panels\combat_log.h">
       <Filter>src\core\ui\panels</Filter>
+    </ClInclude>
+    <ClInclude Include="src\core\ui\panels\inventory_panel.h">
+      <Filter>src\core\ui\panels</Filter>
+    </ClInclude>
+    <ClInclude Include="src\entity\inventory.h">
+      <Filter>src\entity</Filter>
+    </ClInclude>
+    <ClInclude Include="src\entity\item.h">
+      <Filter>src\entity</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>

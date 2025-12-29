@@ -2,6 +2,7 @@
 #include "game_internal.h"
 #include "../ui/ui.h"
 #include "../ui/text/render.h" // For ui_draw_image
+#include "../ui/panels/inventory_panel.h" // Added
 #include "../../world/glyph.h"
 #include "raylib.h"
 
@@ -16,6 +17,12 @@ void game_render(GameState* state) {
     
     // 2. 뷰포트 그리기 (항상 그림)
     ui_render_map_viewport(&state->map, &state->player, state->effectX, state->effectY, state->effectTimer);
+
+    // ★ 인벤토리 오버레이
+    if (state->inInventory) {
+        // Draw Inventory ON TOP of map (Map is background)
+        ui_draw_inventory_viewport(&state->player, state->inventoryCursor);
+    }
 
     // ★ In-Game Header Image (Logo + Stage)
     // Screen Width: 1680px

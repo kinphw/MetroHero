@@ -19,6 +19,10 @@ typedef struct {
     int inDialogue;
     NPC* currentNPC;
 
+    // ★ 인벤토리 모드 관련
+    int inInventory;
+    int inventoryCursor; // 선택된 아이템 인덱스
+
     // ★ 이펙트 관련
     int effectX, effectY;
     float effectTimer;
