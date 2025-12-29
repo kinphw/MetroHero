@@ -22,19 +22,52 @@ void npc_init(NPC* npc, const NPCConfig* config, int x, int y) {
     
     // Copy Event Config
     npc->event = config->event;
+    
+    // Set Default Active
+    npc->activeDialogues = npc->dialogues;
+    npc->activeDialogueCount = npc->dialogueCount;
 }
 
 int npc_is_at(const NPC* npc, int x, int y) {
     return (npc->x == x && npc->y == y);
 }
 
-const char* npc_get_dialogue(NPC* npc) {
-    if (!npc->dialogues || npc->dialogueCount == 0) return "...";
-    return npc->dialogues[npc->currentDialogue];
+void npc_update_dialogue_state(NPC* npc, const EventRegistry* events, const StageData* stageData) {
+    if (!stageData || !events) return;
+
+    // Reset to Default First
+    npc->activeDialogues = npc->dialogues;
+    npc->activeDialogueCount = npc->dialogueCount;
+    
+    // Iterate Overrides (In Order)
+    // Later overrides overwrite earlier ones if conditions are met
+    for (int i = 0; i < stageData->overrideCount; i++) {
+        const DialogueOverride* ov = &stageData->overrides[i];
+        
+        // Check Target NPC
+        if (ov->npcTile == npc->tile) {
+            // Check Flag Condition
+            if (ov->reqFlag) {
+                int val = event_get_flag(events, ov->reqFlag);
+                int req = ov->reqVal > 0 ? ov->reqVal : 1;
+                
+                if (val >= req) {
+                     // Condition Met: Apply Override
+                     npc->activeDialogues = ov->newDialogues;
+                     npc->activeDialogueCount = ov->newDialogueCount;
+                }
+            }
+        }
+    }
+}
+
+const char* npc_get_dialogue(const NPC* npc) {
+    if (!npc->activeDialogues || npc->activeDialogueCount == 0) return "...";
+    return npc->activeDialogues[npc->currentDialogue % npc->activeDialogueCount];
 }
 
 void npc_next_dialogue(NPC* npc) {
-    if (npc->dialogueCount > 0) {
-        npc->currentDialogue = (npc->currentDialogue + 1) % npc->dialogueCount;
+    if (npc->activeDialogueCount > 0) {
+        npc->currentDialogue = (npc->currentDialogue + 1) % npc->activeDialogueCount;
     }
 }

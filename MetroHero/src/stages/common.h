@@ -105,6 +105,19 @@ typedef struct {
     const char* msg;        // 출력할 메시지 (파란색 자동 적용)
 } QuestConfig;
 
+// ★ Dialogue Override Config (Decoupled from NPCConfig)
+typedef struct {
+    char npcTile;           // 대상 NPC 타일 문자 (예: 'A')
+    const char* reqFlag;    // 발동 조건 플래그
+    int reqVal;             // 발동 값
+    
+    const char** newDialogues; // 교체할 대화 목록
+    int newDialogueCount;
+    
+    // Optional: New Event? (If talk reward also changes?)
+    // For now, only Dialogue changes. Reward is usually one-off via event.
+} DialogueOverride;
+
 // --- Stage Definition ---
 typedef struct {
     int stageId;
@@ -112,7 +125,6 @@ typedef struct {
     // 맵 데이터
     const char** mapLines;
     int mapHeight;
-    // width는 strlen(mapLines[0])으로 계산 가능
 
     // 상자 데이터
     const ChestConfig* chests;
@@ -133,6 +145,10 @@ typedef struct {
     // 퀘스트 데이터
     const QuestConfig* quests;
     int questCount;
+    
+    // ★ 대화 오버라이드 데이터
+    const DialogueOverride* overrides;
+    int overrideCount;
 
     // 시네마틱 (스토리)
     const Cinematic* intro;       // 스테이지 시작 시 재생

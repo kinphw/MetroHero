@@ -326,6 +326,9 @@ void game_process_input(GameState* state) {
         // A. Interact with NPC
         NPC* interactNpc = map_get_npc_at(&state->map, tx, ty);
         if (interactNpc != NULL) {
+            // ★ Update Dialogue State based on flags
+            npc_update_dialogue_state(interactNpc, &state->eventRegistry, state->currentStageData);
+
             // Check Event Condition
             int canInteract = 1;
             

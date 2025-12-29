@@ -104,29 +104,59 @@ static const char* NPC_DIALOGUES_C[] = {
     "적의 공격을 막아낸 이후에 반격하면 쉽게 이길 수 있을 것입니다.",
 };
 
+static const char* NPC_DIALOGUES_A_ALT[] = {
+    "야수를 물리치셨나요?\n야수를 물리쳐야만 이곳에서 나갈 수 있습니다...",
+    "야수를 물리치신 후에 돌아오세요..."    
+};
+
 static const NPCConfig NPCS[] = {
     {
-        'A', "우건박", COLOR_BRIGHT_BLUE "읏" COLOR_RESET,
-        "assets/old_man.png",
-        "assets/npc/1A_face.png",
-        NPC_DIALOGUES_A, sizeof(NPC_DIALOGUES_A)/sizeof(NPC_DIALOGUES_A[0]),
-        0, "general", 1,
-        // Event: Set 'receive_mission' + Give '철문열쇠1'
-        { NULL, 0, NULL, 0, "receive_mission", 1, "철문열쇠1", NULL } 
+        .tile = 'A',
+        .name = "역무원",
+        .glyph = "👮", // Police/Guard
+        .imagePath = "assets/old_man.png",
+        .faceImagePath = "assets/npc/1A_face.png",
+        .dialogues = NPC_DIALOGUES_A,
+        .dialogueCount = sizeof(NPC_DIALOGUES_A)/sizeof(NPC_DIALOGUES_A[0]),
+        .useDialogueBox = 1,
+        // Event: Give Key
+        .event = { .giveItem="철문열쇠1", .setFlag="receive_mission", .setVal=1 }
     },
     {
-        'B', "시민", COLOR_GREEN "웃" COLOR_RESET,
-        "assets/citizen_black.png",
-        NULL,
-        NPC_DIALOGUES_B, sizeof(NPC_DIALOGUES_B)/sizeof(NPC_DIALOGUES_B[0]),
-        0, "general", 0
+        .tile = 'B',
+        .name = "시민",
+        .glyph = COLOR_GREEN "웃" COLOR_RESET,
+        .imagePath = "assets/citizen_black.png", // Using same sprite for now
+        .faceImagePath = NULL,
+        .dialogues = NPC_DIALOGUES_B,
+        .dialogueCount = sizeof(NPC_DIALOGUES_B)/sizeof(NPC_DIALOGUES_B[0]),
+        .useDialogueBox = 0,
+        .canTrade = 0
     },
     {
-        'C', "안내원", COLOR_YELLOW "윽" COLOR_RESET,
-        "assets/citizen_black.png", // Using same sprite for now
-        NULL,
-        NPC_DIALOGUES_C, sizeof(NPC_DIALOGUES_C)/sizeof(NPC_DIALOGUES_C[0]),
-        0, "general", 0 // Dialogue Box
+        .tile = 'C',
+        .name = "안내원",
+        .glyph = COLOR_YELLOW "윽" COLOR_RESET,
+        .imagePath = "assets/citizen_black.png", // Using same sprite for now
+        .faceImagePath = NULL,
+        .dialogues = NPC_DIALOGUES_C,
+        .dialogueCount = sizeof(NPC_DIALOGUES_C)/sizeof(NPC_DIALOGUES_C[0]),
+        .useDialogueBox = 0,
+        .canTrade = 0
+    }
+};
+
+// ============================================
+// Stage 1 Dialogue Overrides (Dynamic Swap)
+// ============================================
+static const DialogueOverride DIALOGUE_OVERRIDES[] = {
+    // 1. 역무원 (A) - 미션 수락 후
+    { 
+        .npcTile = 'A', 
+        .reqFlag = "receive_mission", 
+        .reqVal = 1, 
+        .newDialogues = NPC_DIALOGUES_A_ALT, 
+        .newDialogueCount = sizeof(NPC_DIALOGUES_A_ALT)/sizeof(NPC_DIALOGUES_A_ALT[0])
     }
 };
 
@@ -206,6 +236,8 @@ const StageData STAGE_01_DATA = {
     .doorCount = sizeof(DOORS) / sizeof(DOORS[0]),
     .quests = QUESTS,
     .questCount = sizeof(QUESTS) / sizeof(QUESTS[0]),
+    .overrides = DIALOGUE_OVERRIDES,
+    .overrideCount = sizeof(DIALOGUE_OVERRIDES) / sizeof(DIALOGUE_OVERRIDES[0]),
     .intro = &INTRO_CINEMATIC,
     .outro = &CLEAR_CINEMATIC
 };

@@ -32,11 +32,21 @@ typedef struct {
 	const char* shopType;  // "weapon", "armor", "item" 등
     
     EventConfig event; // Added
+    
+    // ★ Active Dialogue (Updated dynamically)
+    const char** activeDialogues;
+    int activeDialogueCount;
 } NPC;
+#include "../core/logic/event.h"
+
 // 초기화
 void npc_init(NPC* npc, const NPCConfig* config, int x, int y);
 int npc_is_at(const NPC* npc , int x , int y);
-const char* npc_get_dialogue(NPC* npc);
+
+// Updates activeDialogues based on flags via Stage Overrides
+void npc_update_dialogue_state(NPC* npc, const EventRegistry* events, const StageData* stageData); // Updated
+
+const char* npc_get_dialogue(const NPC* npc); // Restored
 void npc_next_dialogue(NPC* npc);
 
 #endif

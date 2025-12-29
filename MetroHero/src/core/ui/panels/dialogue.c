@@ -52,7 +52,12 @@ void ui_draw_dialogue(const NPC* npc) {
 
 
     // 4. Dialogue Content (Full Width)
-    const char* dialogue = npc->dialogues[npc->currentDialogue];
+    const char* dialogue = "Loading...";
+    if (npc->activeDialogues && npc->activeDialogueCount > 0) {
+        int idx = npc->currentDialogue % npc->activeDialogueCount;
+        dialogue = npc->activeDialogues[idx];
+    }
+    
     int lineStart = 0;
     int lineNum = 0;
     // content start: headerHeight + 1
@@ -143,7 +148,7 @@ void ui_draw_dialogue(const NPC* npc) {
 
     // Buttons
     char buttonText[64];
-    if (npc->currentDialogue < npc->dialogueCount - 1) {
+    if (npc->activeDialogueCount > 0 && npc->currentDialogue < npc->activeDialogueCount - 1) {
         snprintf(buttonText, sizeof(buttonText), " [SPACE] 다음  [ESC] 닫기");
     }
     else {
