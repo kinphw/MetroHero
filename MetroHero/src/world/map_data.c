@@ -24,19 +24,19 @@ const TileDef GLOBAL_TILE_PALETTE[] = {
     // Walls (Blocked)
     { '#', "assets/tile/wall.png", 0, "Gray Wall" },
     { '%', "assets/wall.png", 0, "Brick Wall" },
-    { '&', "assets/wall.png", 0, "Iron Wall" },
-    { '$', "assets/wall.png", 0, "Glass Wall" },
+    { '&', "assets/tile/metal_wall.png", 0, "Iron Wall" },
+    { '$', "assets/tile/glass_wall.png", 0, "Glass Wall" },
     { 'O', "assets/tile/rock_obstacle.png", 0, "Rock" },
     { '!', "assets/tile/signpost.png", 0, "Signpost" },
     
     // Objects
     { '+', "assets/wall.png", 0, "Closed Door" }, // Placeholder
     { '/', "assets/floor.png", 1, "Open Door" },  // Placeholder
-    { 'T', "assets/wall.png", 0, "Tree" },
-    { 'B', "assets/wall.png", 0, "Barricade" },
-    { '=', "assets/floor.png", 1, "Rail" },
-    { 'S', "assets/floor.png", 1, "Stairs Down" },
-    { 'U', "assets/floor.png", 1, "Stairs Up" },
+    { 'T', "assets/tile/tree_dark.png", 0, "Dark Tree" },
+    { 't', "assets/tile/tree_light.png", 0, "Light Tree" },
+    { 'B', "assets/tile/barricade.png", 0, "Barricade" },
+    { '=', "assets/tile/rail_horizontal.png", 1, "Rail (Horizontal)" },
+    { '|', "assets/tile/rail_vertical.png", 1, "Rail (Vertical)" },
 
     // Special
     { '@', "assets/floor.png", 1, "Spawn Point" }, // Default floor

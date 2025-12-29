@@ -21,43 +21,57 @@ class TileParser:
         self.project_root = project_root
         self.tiles = {}
 
-        # Define tiles with actual image paths
+        # Start with minimal tiles (space and placeholders)
         self.special_tiles = {
-            ' ': TileDefinition(' ', ' ', None, True, "Empty Space"),  # Space character
-            '@': TileDefinition('@', '@', "MetroHero/assets/person_down.png", True, "Spawn Point"),
-            '.': TileDefinition('.', '·', "MetroHero/assets/floor.png", True, "Floor"),
-            '#': TileDefinition('#', '█', "MetroHero/assets/wall.png", False, "Wall"),
-            '=': TileDefinition('=', '═', "MetroHero/assets/floor.png", True, "Rail"),
-            '+': TileDefinition('+', '┼', "MetroHero/assets/door.png", True, "Door"),
-            '$': TileDefinition('$', '▓', "MetroHero/assets/door.png", False, "Event Door"),
+            ' ': TileDefinition(' ', ' ', None, True, "Empty Space"),
         }
 
-        # Add lowercase letters for enemies (a, b, c with known images)
-        enemy_images = {
-            'a': "MetroHero/assets/enemy/texture/cat.png",
-            'b': "MetroHero/assets/enemy/texture/security_robot.png",
-            'c': "MetroHero/assets/enemy/texture_sprite/1c.png",
-        }
+        # Add lowercase letters for enemies (placeholders, will be overridden by stage data)
         for i in range(ord('a'), ord('z') + 1):
             c = chr(i)
-            img_path = enemy_images.get(c, None)
-            self.special_tiles[c] = TileDefinition(c, c, img_path, True, f"Enemy {c.upper()}")
+            self.special_tiles[c] = TileDefinition(c, c, None, True, f"Enemy {c.upper()}")
 
-        # Add uppercase letters for NPCs
-        npc_images = {
-            'A': "MetroHero/assets/npc/1A_face.png",
-            'B': "MetroHero/assets/old_man.png",
-            'C': "MetroHero/assets/citizen_black.png",
-        }
+        # Add uppercase letters for NPCs (placeholders, will be overridden by stage data)
         for i in range(ord('A'), ord('Z') + 1):
             c = chr(i)
-            img_path = npc_images.get(c, None)
-            self.special_tiles[c] = TileDefinition(c, c, img_path, True, f"NPC {c}")
+            self.special_tiles[c] = TileDefinition(c, c, None, True, f"NPC {c}")
 
-        # Add numbers for chests
-        for i in range(10):
-            c = str(i)
-            self.special_tiles[c] = TileDefinition(c, c, "MetroHero/assets/chest_closed.png", True, f"Chest {c}")
+    def parse_map_data_c(self):
+        """Parse map_data.c for GLOBAL_TILE_PALETTE definitions"""
+        map_data_path = os.path.join(self.project_root, "MetroHero", "src", "world", "map_data.c")
+        if not os.path.exists(map_data_path):
+            print(f"Warning: {map_data_path} not found")
+            return
+
+        try:
+            with open(map_data_path, 'r', encoding='utf-8') as f:
+                content = f.read()
+
+            # Parse TileDef entries: { 'c', "path", walkable, "desc" }
+            tile_pattern = r'\{\s*\'(.)\'\s*,\s*"([^"]+)"\s*,\s*(\d+)\s*,\s*"([^"]+)"\s*\}'
+
+            for match in re.finditer(tile_pattern, content):
+                symbol = match.group(1)
+                image_path = match.group(2)
+                walkable = int(match.group(3))
+                desc = match.group(4)
+
+                # Convert to full path with MetroHero prefix
+                if not image_path.startswith("MetroHero/"):
+                    image_path = "MetroHero/" + image_path
+
+                # Update or create tile definition
+                self.special_tiles[symbol] = TileDefinition(
+                    symbol=symbol,
+                    glyph=symbol,
+                    image_path=image_path,
+                    walkable=bool(walkable),
+                    desc=desc
+                )
+                print(f"  Loaded tile '{symbol}': {desc} -> {image_path}")
+
+        except Exception as e:
+            print(f"Error parsing {map_data_path}: {e}")
 
     def parse_glyph_h(self):
         """Parse glyph.h for tile definitions (if needed for future expansion)"""
@@ -70,8 +84,23 @@ class TileParser:
         # Future: could parse actual definitions from glyph.h if format changes
         pass
 
+    def get_available_stages(self):
+        """Get list of available stage names"""
+        stages = []
+        stages_root = os.path.join(self.project_root, "MetroHero", "src", "stages")
+
+        if os.path.exists(stages_root):
+            for item in os.listdir(stages_root):
+                stage_dir = os.path.join(stages_root, item)
+                if os.path.isdir(stage_dir) and item.startswith("stage_"):
+                    stage_file = os.path.join(stage_dir, item + ".c")
+                    if os.path.exists(stage_file):
+                        stages.append(item)
+
+        return sorted(stages)
+
     def parse_stage_configs(self):
-        """Parse stage files to extract enemy and NPC image paths"""
+        """Parse ALL stage files to extract enemy and NPC image paths (legacy)"""
         stage_dirs = [
             os.path.join(self.project_root, "MetroHero", "src", "stages", "stage_01"),
             os.path.join(self.project_root, "MetroHero", "src", "stages", "stage_02"),
@@ -83,8 +112,19 @@ class TileParser:
             if os.path.exists(stage_file):
                 self._parse_stage_file(stage_file)
 
+    def parse_specific_stage(self, stage_name):
+        """Parse a specific stage file and return enemy/NPC configs"""
+        stage_dir = os.path.join(self.project_root, "MetroHero", "src", "stages", stage_name)
+        stage_file = os.path.join(stage_dir, stage_name + ".c")
+
+        if not os.path.exists(stage_file):
+            print(f"Stage file not found: {stage_file}")
+            return {}, {}
+
+        return self._parse_stage_file_detailed(stage_file)
+
     def _parse_stage_file(self, filepath):
-        """Parse a single stage file for enemy and NPC configs"""
+        """Parse a single stage file for enemy and NPC configs (legacy method)"""
         try:
             with open(filepath, 'r', encoding='utf-8') as f:
                 content = f.read()
@@ -122,14 +162,96 @@ class TileParser:
         except Exception as e:
             print(f"Error parsing {filepath}: {e}")
 
+    def _parse_stage_file_detailed(self, filepath):
+        """Parse a single stage file and return detailed enemy/NPC configs"""
+        enemies = {}  # {tile_char: {name, imagePath, ...}}
+        npcs = {}     # {tile_char: {name, imagePath, ...}}
+
+        try:
+            with open(filepath, 'r', encoding='utf-8') as f:
+                lines = f.readlines()
+
+            # Parse line by line, building up tile data
+            current_tile = None
+            current_name = None
+            current_image = None
+            in_struct = False
+
+            for line in lines:
+                # Detect start of struct
+                if '{' in line and not in_struct:
+                    in_struct = True
+                    current_tile = None
+                    current_name = None
+                    current_image = None
+
+                # Extract .tile
+                tile_match = re.search(r'\.tile\s*=\s*\'([a-zA-Z])\'', line)
+                if tile_match:
+                    current_tile = tile_match.group(1)
+
+                # Extract .name
+                name_match = re.search(r'\.name\s*=\s*"([^"]*)"', line)
+                if name_match:
+                    current_name = name_match.group(1)
+
+                # Extract .imagePath
+                image_match = re.search(r'\.imagePath\s*=\s*"([^"]+)"', line)
+                if image_match:
+                    current_image = image_match.group(1)
+
+                # Detect end of struct
+                if '}' in line and in_struct:
+                    in_struct = False
+
+                    # Save the collected data
+                    if current_tile and current_name and current_image:
+                        image_path = current_image
+                        if not image_path.startswith("MetroHero/"):
+                            image_path = "MetroHero/" + image_path
+
+                        if current_tile.islower():
+                            # Enemy
+                            enemies[current_tile] = {
+                                'name': current_name,
+                                'imagePath': image_path
+                            }
+                        elif current_tile.isupper():
+                            # NPC
+                            npcs[current_tile] = {
+                                'name': current_name,
+                                'imagePath': image_path
+                            }
+
+                    current_tile = None
+                    current_name = None
+                    current_image = None
+
+            print(f"Parsed {os.path.basename(filepath)}: {len(enemies)} enemies, {len(npcs)} NPCs")
+
+        except Exception as e:
+            print(f"Error parsing {filepath}: {e}")
+
+        return enemies, npcs
+
     def get_tile(self, symbol):
         """Get tile definition for a symbol"""
         return self.special_tiles.get(symbol)
 
     def get_all_common_tiles(self):
         """Get commonly used tiles for the palette"""
-        common = ['#', '.', '=', '+', '$', '@']
-        return [self.special_tiles[c] for c in common if c in self.special_tiles]
+        # Get all non-enemy, non-NPC, non-chest tiles
+        common_tiles = []
+        for symbol, tile_def in self.special_tiles.items():
+            # Skip space, enemies (lowercase), NPCs (uppercase), chests (digits)
+            if symbol == ' ':
+                continue
+            if symbol.islower() or symbol.isupper() or symbol.isdigit():
+                continue
+            common_tiles.append(tile_def)
+
+        # Sort by symbol for consistent display
+        return sorted(common_tiles, key=lambda t: t.symbol)
 
     def get_enemy_tiles(self):
         """Get enemy tiles (a-z)"""
@@ -141,4 +263,9 @@ class TileParser:
 
     def get_chest_tiles(self):
         """Get chest tiles (0-9)"""
-        return [self.special_tiles[str(i)] for i in range(10)]
+        chests = []
+        for i in range(10):
+            c = str(i)
+            if c in self.special_tiles:
+                chests.append(self.special_tiles[c])
+        return chests

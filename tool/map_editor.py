@@ -19,8 +19,16 @@ class MapEditor:
 
         # Tile parser
         self.parser = TileParser(self.project_root)
+        self.parser.parse_map_data_c()  # Load GLOBAL_TILE_PALETTE from map_data.c
         self.parser.parse_glyph_h()
-        self.parser.parse_stage_configs()  # Parse actual image paths from stage files
+
+        # Get available stages
+        self.available_stages = self.parser.get_available_stages()
+        self.current_stage = self.available_stages[0] if self.available_stages else "stage_01"
+
+        # Stage-specific enemies and NPCs
+        self.stage_enemies = {}
+        self.stage_npcs = {}
 
         # Map data
         self.map_width = 40
@@ -46,7 +54,10 @@ class MapEditor:
         """Preload all tile images into cache"""
         print("Preloading tile images...")
 
+        # Load common tiles
         for symbol, tile_def in self.parser.special_tiles.items():
+            if symbol.isalnum() and (symbol.islower() or symbol.isupper()):
+                continue  # Skip enemies/NPCs, load from stage data
             if tile_def.image_path:
                 full_path = os.path.join(self.project_root, tile_def.image_path)
                 if os.path.exists(full_path):
@@ -75,6 +86,43 @@ class MapEditor:
                 else:
                     print(f"  Not found: {full_path}")
 
+        # Load stage-specific enemies
+        for tile_char, enemy_data in self.stage_enemies.items():
+            image_path = enemy_data['imagePath']
+            full_path = os.path.join(self.project_root, image_path)
+            if os.path.exists(full_path) and image_path not in self.image_cache:
+                try:
+                    img = Image.open(full_path)
+
+                    # Handle sprite sheets
+                    if 'texture_sprite' in image_path or 'sprite' in image_path.lower():
+                        sprite_w = img.width // 2
+                        sprite_h = img.height // 2
+                        img = img.crop((0, 0, sprite_w, sprite_h))
+                        print(f"  Loaded sprite: {tile_char} ({enemy_data['name']}) -> {image_path}")
+                    else:
+                        print(f"  Loaded enemy: {tile_char} ({enemy_data['name']}) -> {image_path}")
+
+                    img = img.resize((self.tile_size, self.tile_size), Image.Resampling.LANCZOS)
+                    photo = ImageTk.PhotoImage(img)
+                    self.image_cache[image_path] = photo
+                except Exception as e:
+                    print(f"  Error loading {full_path}: {e}")
+
+        # Load stage-specific NPCs
+        for tile_char, npc_data in self.stage_npcs.items():
+            image_path = npc_data['imagePath']
+            full_path = os.path.join(self.project_root, image_path)
+            if os.path.exists(full_path) and image_path not in self.image_cache:
+                try:
+                    img = Image.open(full_path)
+                    img = img.resize((self.tile_size, self.tile_size), Image.Resampling.LANCZOS)
+                    photo = ImageTk.PhotoImage(img)
+                    self.image_cache[image_path] = photo
+                    print(f"  Loaded NPC: {tile_char} ({npc_data['name']}) -> {image_path}")
+                except Exception as e:
+                    print(f"  Error loading {full_path}: {e}")
+
         print(f"Preloaded {len(self.image_cache)} images")
 
     def setup_ui(self):
@@ -83,10 +131,31 @@ class MapEditor:
         main_frame = tk.Frame(self.root)
         main_frame.pack(fill=tk.BOTH, expand=True, padx=10, pady=10)
 
-        # Top: Tile Palette
-        palette_frame = tk.LabelFrame(main_frame, text="Tile Palette", padx=10, pady=10)
-        palette_frame.pack(fill=tk.X, pady=(0, 10))
-        self.setup_palette(palette_frame)
+        # Top: Stage Selector
+        stage_frame = tk.Frame(main_frame)
+        stage_frame.pack(fill=tk.X, pady=(0, 5))
+
+        tk.Label(stage_frame, text="Stage:", font=('Arial', 10, 'bold')).pack(side=tk.LEFT, padx=(0, 5))
+
+        self.stage_var = tk.StringVar(value=self.current_stage)
+        stage_dropdown = ttk.Combobox(stage_frame, textvariable=self.stage_var,
+                                      values=self.available_stages, state='readonly', width=15)
+        stage_dropdown.pack(side=tk.LEFT)
+        stage_dropdown.bind('<<ComboboxSelected>>', self.on_stage_change)
+
+        # Top: Tile Palette with collapse button
+        palette_header_frame = tk.Frame(main_frame)
+        palette_header_frame.pack(fill=tk.X, pady=(0, 5))
+
+        self.palette_collapsed = False
+        self.palette_toggle_btn = tk.Button(palette_header_frame, text="▼ Hide Palette",
+                                           command=self.toggle_palette, font=('Arial', 9))
+        self.palette_toggle_btn.pack(side=tk.LEFT)
+
+        self.palette_frame = tk.LabelFrame(main_frame, text="Tile Palette", padx=10, pady=10)
+        self.palette_frame.pack(fill=tk.X, pady=(0, 10))
+        self.load_stage_data(self.current_stage)
+        self.setup_palette(self.palette_frame)
 
         # Middle: Map Canvas + Controls
         canvas_frame = tk.Frame(main_frame)
@@ -154,6 +223,39 @@ class MapEditor:
         # Draw initial grid
         self.draw_map()
 
+    def load_stage_data(self, stage_name):
+        """Load enemy and NPC data for a specific stage"""
+        print(f"\nLoading stage: {stage_name}")
+        self.stage_enemies, self.stage_npcs = self.parser.parse_specific_stage(stage_name)
+
+        # Reload images for this stage
+        self.preload_images()
+
+    def toggle_palette(self):
+        """Toggle palette visibility"""
+        if self.palette_collapsed:
+            # Show palette
+            self.palette_frame.pack(fill=tk.X, pady=(0, 10), before=self.canvas.master.master)
+            self.palette_toggle_btn.config(text="▼ Hide Palette")
+            self.palette_collapsed = False
+        else:
+            # Hide palette
+            self.palette_frame.pack_forget()
+            self.palette_toggle_btn.config(text="▶ Show Palette")
+            self.palette_collapsed = True
+
+    def on_stage_change(self, event):
+        """Handle stage selection change"""
+        new_stage = self.stage_var.get()
+        if new_stage != self.current_stage:
+            self.current_stage = new_stage
+            self.load_stage_data(new_stage)
+
+            # Clear and rebuild palette
+            for widget in self.palette_frame.winfo_children():
+                widget.destroy()
+            self.setup_palette(self.palette_frame)
+
     def setup_palette(self, parent):
         """Setup tile palette with radio buttons and image previews"""
         # Common tiles
@@ -197,25 +299,32 @@ class MapEditor:
                 except:
                     pass
 
-        # Enemy tiles
-        enemy_frame = tk.LabelFrame(parent, text="Enemies (a-z)")
+        # Enemy tiles (from current stage)
+        enemy_frame = tk.LabelFrame(parent, text=f"Enemies ({self.current_stage})")
         enemy_frame.pack(side=tk.LEFT, padx=5, fill=tk.Y)
 
-        enemy_tiles = self.parser.get_enemy_tiles()[:5]  # Show first 5
-        for tile in enemy_tiles:
+        for tile_char, enemy_data in sorted(self.stage_enemies.items()):
             frame = tk.Frame(enemy_frame)
             frame.pack(anchor=tk.W, pady=2)
 
-            rb = tk.Radiobutton(frame, text=f"{tile.symbol} - {tile.desc}",
-                               variable=self.tile_var, value=tile.symbol,
+            rb = tk.Radiobutton(frame, text=f"{tile_char} - {enemy_data['name']}",
+                               variable=self.tile_var, value=tile_char,
                                command=self.on_tile_select)
             rb.pack(side=tk.LEFT)
 
-            if tile.image_path and tile.image_path in self.image_cache:
+            image_path = enemy_data['imagePath']
+            if image_path in self.image_cache:
                 preview_size = 16
                 try:
-                    full_path = os.path.join(self.project_root, tile.image_path)
+                    full_path = os.path.join(self.project_root, image_path)
                     img = Image.open(full_path)
+
+                    # Handle sprite sheets
+                    if 'texture_sprite' in image_path or 'sprite' in image_path.lower():
+                        sprite_w = img.width // 2
+                        sprite_h = img.height // 2
+                        img = img.crop((0, 0, sprite_w, sprite_h))
+
                     img = img.resize((preview_size, preview_size), Image.Resampling.LANCZOS)
                     photo = ImageTk.PhotoImage(img)
                     label = tk.Label(frame, image=photo, width=preview_size, height=preview_size)
@@ -224,24 +333,24 @@ class MapEditor:
                 except:
                     pass
 
-        # NPC tiles
-        npc_frame = tk.LabelFrame(parent, text="NPCs (A-Z)")
+        # NPC tiles (from current stage)
+        npc_frame = tk.LabelFrame(parent, text=f"NPCs ({self.current_stage})")
         npc_frame.pack(side=tk.LEFT, padx=5, fill=tk.Y)
 
-        npc_tiles = self.parser.get_npc_tiles()[:5]  # Show first 5
-        for tile in npc_tiles:
+        for tile_char, npc_data in sorted(self.stage_npcs.items()):
             frame = tk.Frame(npc_frame)
             frame.pack(anchor=tk.W, pady=2)
 
-            rb = tk.Radiobutton(frame, text=f"{tile.symbol} - {tile.desc}",
-                               variable=self.tile_var, value=tile.symbol,
+            rb = tk.Radiobutton(frame, text=f"{tile_char} - {npc_data['name']}",
+                               variable=self.tile_var, value=tile_char,
                                command=self.on_tile_select)
             rb.pack(side=tk.LEFT)
 
-            if tile.image_path and tile.image_path in self.image_cache:
+            image_path = npc_data['imagePath']
+            if image_path in self.image_cache:
                 preview_size = 16
                 try:
-                    full_path = os.path.join(self.project_root, tile.image_path)
+                    full_path = os.path.join(self.project_root, image_path)
                     img = Image.open(full_path)
                     img = img.resize((preview_size, preview_size), Image.Resampling.LANCZOS)
                     photo = ImageTk.PhotoImage(img)
@@ -320,14 +429,25 @@ class MapEditor:
                 x2 = x1 + self.tile_size
                 y2 = y1 + self.tile_size
 
-                # Get tile definition
-                tile_def = self.parser.get_tile(symbol)
+                # Get tile definition or stage-specific data
+                tile_def = None
+                image_path = None
+
+                # Check if it's a stage-specific enemy or NPC
+                if symbol in self.stage_enemies:
+                    image_path = self.stage_enemies[symbol]['imagePath']
+                elif symbol in self.stage_npcs:
+                    image_path = self.stage_npcs[symbol]['imagePath']
+                else:
+                    tile_def = self.parser.get_tile(symbol)
+                    if tile_def:
+                        image_path = tile_def.image_path
 
                 # Try to draw image first
                 drawn_image = False
-                if tile_def and tile_def.image_path and tile_def.image_path in self.image_cache:
+                if image_path and image_path in self.image_cache:
                     try:
-                        photo = self.image_cache[tile_def.image_path]
+                        photo = self.image_cache[image_path]
                         self.canvas.create_image(x1 + self.tile_size // 2,
                                                 y1 + self.tile_size // 2,
                                                 image=photo)
