@@ -338,6 +338,7 @@ void map_draw_viewport(const Map* m, const Player* p,
     int startPxX = startX * GRID_W;
     int startPxY = startY * GRID_H;
 
+    // Pass 1: Draw Map Tiles (Background)
     for (int sy = 0; sy < viewH; sy++) {
         int my = viewY + sy;
         int screenPxY = startPxY + sy * MAP_TILE_SIZE;
@@ -349,42 +350,106 @@ void map_draw_viewport(const Map* m, const Player* p,
             int screenPxX = startPxX + sx * MAP_TILE_SIZE;
             int screenGridX = startX + sx * 4;
 
-            if (mx < 0 || mx >= m->width ||
-                my < 0 || my >= m->height)
-            {
-                continue;
-            }
+            if (mx >= 0 && mx < m->width && my >= 0 && my < m->height) {
+                 // 1. Draw Tile
+                 char t = m->tiles[my][mx];
+                 const TileDef* def = map_get_tile_def(t);
+                 const char* img = NULL;
+                 
+                 if (def && def->imagePath) {
+                     img = def->imagePath;
+                 }
+                 
+                 // Debug / Default
+                 if (!img) {
+                     // Fallback
+                     if (t != ' ') img = "assets/floor_stone.png"; 
+                 }
 
-            // 1. Base Tile (Background)
-            const TileDef* def = map_get_tile_def(m->tiles[my][mx]);
-            if (def && def->imagePath) {
-                ui_draw_image(screenPxX, screenPxY, MAP_TILE_SIZE, MAP_TILE_SIZE, def->imagePath);
-            } else if (def) {
-                // Glyph Fallback (Centered in 32x32 block)
-                ui_draw_str_at(screenGridX + 1, screenGridY, def->glyph, NULL);
+                 if (img) {
+                     ui_draw_image(screenPxX, screenPxY, MAP_TILE_SIZE, MAP_TILE_SIZE, img);
+                 } else if (def) {
+                      // Text Fallback (Legacy)
+                      // ui_draw_str_at(screenGridX, screenGridY, def->glyph, NULL);
+                 }
+                 
+                 // 2. Chest (treated as Tile-ish object, or Entity?)
+                 // Chests are stationary, can be drawn here.
+                 // But strictly they are entities. Let's draw here for now or move to Pass 2?
+                 // Chests are usually 1x1. Safe to draw here?
+                 // If Chest is 1x1, it's fine.
+                 Chest* chest = map_get_chest_at((Map*)m, mx, my);
+                 if (chest != NULL) {
+                     if (chest->isOpened) {
+                         ui_draw_image(screenPxX, screenPxY, MAP_TILE_SIZE, MAP_TILE_SIZE, "assets/chest_open.png");
+                     } else {
+                         if (chest->imagePath) {
+                             ui_draw_image(screenPxX, screenPxY, MAP_TILE_SIZE, MAP_TILE_SIZE, chest->imagePath);
+                         } else {
+                             ui_draw_image(screenPxX, screenPxY, MAP_TILE_SIZE, MAP_TILE_SIZE, "assets/chest_closed.png");
+                         }
+                     }
+                 }
             }
+        }
+    }
 
-            // 2. Chest (Overlay)
-            Chest* chest = map_get_chest_at((Map*)m, mx, my);
-            if (chest != NULL) {
-                if (chest->isOpened) {
-                     ui_draw_image(screenPxX, screenPxY, MAP_TILE_SIZE, MAP_TILE_SIZE, "assets/chest_open.png");
-                } else {
-                    if (chest->imagePath) {
-                         ui_draw_image(screenPxX, screenPxY, MAP_TILE_SIZE, MAP_TILE_SIZE, chest->imagePath);
-                    } else {
-                         ui_draw_image(screenPxX, screenPxY, MAP_TILE_SIZE, MAP_TILE_SIZE, "assets/chest_closed.png");
-                    }
-                }
-            }
+    // Pass 2: Draw Entities (Foreground - Players, NPCs, Enemies, Doors)
+    // Sorted by Y (Loop Order)
+    for (int sy = 0; sy < viewH; sy++) {
+        int my = viewY + sy;
+        int screenPxY = startPxY + sy * MAP_TILE_SIZE;
+        int screenGridY = startY + sy * 2; 
+
+        for (int sx = 0; sx < viewW; sx++) {
+            int mx = viewX + sx;
+            int screenPxX = startPxX + sx * MAP_TILE_SIZE;
+            int screenGridX = startX + sx * 4;
+            
+            if (mx < 0 || mx >= m->width || my < 0 || my >= m->height) continue;
 
             // 3. Enemy (Overlay)
             Enemy* enemy = map_get_enemy_at((Map*)m, mx, my);
             if (enemy != NULL) {
-                if (enemy->imagePath) {
-                    ui_draw_image(screenPxX, screenPxY, MAP_TILE_SIZE, MAP_TILE_SIZE, enemy->imagePath);
-                } else {
-                    ui_draw_str_at(screenGridX + 1, screenGridY, enemy->glyph, NULL);
+                // Only draw if we are at the top-left corner of the enemy
+                if (mx == enemy->x && my == enemy->y) {
+                    // Check Sprite Sheet
+                    if (enemy->spriteSheet.texture.id != 0) {
+                        // Direction Mapping for 2x2 Sheet
+                        // Top-Left: Right (0) -> 0,0
+                        // Top-Right: Left (1) -> 0,1
+                        // Bottom-Left: Up (2) -> 1,0
+                        // Bottom-Right: Down (3) -> 1,1
+                        int row = 0, col = 0;
+                        if (enemy->direction == 0) { row = 0; col = 0; }
+                        else if (enemy->direction == 1) { row = 0; col = 1; }
+                        else if (enemy->direction == 2) { row = 1; col = 0; }
+                        else if (enemy->direction == 3) { row = 1; col = 1; }
+                        
+                        // Draw scaled sprite
+                        sprite_draw(&enemy->spriteSheet, row, col, 
+                                    screenPxX, screenPxY, 
+                                    MAP_TILE_SIZE * enemy->width, 
+                                    MAP_TILE_SIZE * enemy->height);
+                                    
+                        // ★ Debug: Size Validation for Multi-Tile Enemies
+                        /*
+                        if (enemy->width > 1 || enemy->height > 1) {
+                            DrawRectangleLines(screenPxX, screenPxY, 
+                                               MAP_TILE_SIZE * enemy->width, 
+                                               MAP_TILE_SIZE * enemy->height, 
+                                               GREEN);
+                        }
+                        */
+                    }
+                    else if (enemy->imagePath) {
+                        ui_draw_image(screenPxX, screenPxY, 
+                                      MAP_TILE_SIZE * enemy->width, 
+                                      MAP_TILE_SIZE * enemy->height, 
+                                      enemy->imagePath);
+                    } else {
+                        ui_draw_str_at(screenGridX + 1, screenGridY, enemy->glyph, NULL);
+                    }
                 }
             }
 

@@ -38,10 +38,25 @@ void enemy_init(Enemy* e, const EnemyConfig* config, int x, int y) {
     e->isChasing = 0;
     e->isProvoked = 0; // ★ 초기화
     
+    // Copy Multi-Tile & Sprite Sheet
+    e->width = config->width > 0 ? config->width : 1;
+    e->height = config->height > 0 ? config->height : 1;
+    e->direction = 3; // Default Down
+    
+    // Load Sprite Sheet if cols/rows specified
+    if ((config->spriteRows > 1 || config->spriteCols > 1) && e->imagePath) {
+        sprite_load(&e->spriteSheet, e->imagePath, config->spriteRows, config->spriteCols);
+    } else {
+        e->spriteSheet.texture.id = 0; // Empty
+    }
+    
     // Copy Event Config
     e->event = config->event;
 }
 
 int enemy_is_at(const Enemy* e, int x, int y) {
-    return (e->isAlive && e->x == x && e->y == y);
+    if (!e->isAlive) return 0;
+    // Bounding Box Check
+    return (x >= e->x && x < e->x + e->width &&
+            y >= e->y && y < e->y + e->height);
 }

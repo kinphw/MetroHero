@@ -17,7 +17,7 @@ static const char* MAP_LINES[] = {
 "          #.#          ",
 "###########.###########",
 "#.....................#",
-"#......a.....a.....a..#",
+"#..................c..#",
 "#.....................#",
 "#######################"
 };
@@ -53,32 +53,55 @@ static const char* DIALOGUES_B[] = {
 
 static const EnemyConfig ENEMIES[] = {
     {
-        'a', "맹혹한고양이", "🐈",
-        "assets/cat.png",           // 맵 타일 이미지
-        "assets/enemy/1a.png",      // ★ 전투 박스 초상화 이미지
-        5,              // maxHp
-        1, 3,           // attackMin, Max
-        // Defense removed
-        // AI: 선추격O, 선공O, 감지8, 이속1.0, 공속1.0
-        1, 1, 8, 1.0f, 1.0f,
-
-        DIALOGUES_A,
-        sizeof(DIALOGUES_A) / sizeof(DIALOGUES_A[0]),
-        COLOR_BRIGHT_CYAN
+        .tile = 'a', 
+        .name = "맹혹한고양이", 
+        .glyph = "🐈",
+        .imagePath = "assets/enemy/texture/cat.png",
+        .portraitPath = "assets/enemy/portrait/1a.png",
+        .width = 1, .height = 1,
+        .maxHp = 5,
+        .attackMin = 1, .attackMax = 3,
+        .chaseOnSight = 1, .attackOnSight = 1, 
+        .detectionRange = 8, 
+        .moveInterval = 1.0f, .attackInterval = 1.0f,
+        .dialogues = DIALOGUES_A,
+        .dialogueCount = sizeof(DIALOGUES_A) / sizeof(DIALOGUES_A[0]),
+        .dialogueColor = COLOR_BRIGHT_CYAN
     },
     {
-        'b', "최악의로보트 아카카", COLOR_RED "🤖" COLOR_RESET,
-        "assets/security_robot.png", // 맵 타일 이미지
-        "assets/enemy/1b.png",       // ★ 전투 박스 초상화 이미지
-        10,
-        100, 100,
-        // Defense removed
-        // AI: 선추격X(지키기), 선공O(접근하면), 감지5, 이속2.0(느림), 공속2.0(느림)
-        0, 0, 5, 2.0f, 2.0f,
-
-        DIALOGUES_B,
-        sizeof(DIALOGUES_B) / sizeof(DIALOGUES_B[0]),
-        COLOR_RED
+        .tile = 'b', 
+        .name = "최악의로보트 아카카", 
+        .glyph = COLOR_RED "🤖" COLOR_RESET,
+        .imagePath = "assets/enemy/texture/security_robot.png",
+        .portraitPath = "assets/enemy/portrait/1b.png",
+        .width = 1, .height = 1,
+        .maxHp = 10,
+        .attackMin = 100, .attackMax = 100, // Insta-kill logic (Guard)
+        .chaseOnSight = 0, .attackOnSight = 0, // Guard mode
+        .detectionRange = 5, 
+        .moveInterval = 2.0f, .attackInterval = 2.0f,
+        .dialogues = DIALOGUES_B,
+        .dialogueCount = sizeof(DIALOGUES_B) / sizeof(DIALOGUES_B[0]),
+        .dialogueColor = COLOR_RED
+    },
+    {
+        // ★ Boss C (Multi-Tile)
+        .tile = 'c',
+        .name = "SCP-682",
+        .glyph = "👹",
+        .imagePath = "assets/enemy/texture_sprite/1c.png", // Use Sprite Sheet
+        .portraitPath = "assets/enemy/portrait/1c.png", 
+        .width = 2, .height = 2,
+        .spriteRows = 2, .spriteCols = 2, // 2x2 Sprite Sheet
+        
+        .maxHp = 50,
+        .attackMin = 5, .attackMax = 10,
+        .chaseOnSight = 1, .attackOnSight = 1,
+        .detectionRange = 10,
+        .moveInterval = 0.8f, .attackInterval = 1.5f,
+        .dialogues = NULL, 
+        .dialogueCount = 0,
+        .dialogueColor = COLOR_BRIGHT_RED
     }
 };
 

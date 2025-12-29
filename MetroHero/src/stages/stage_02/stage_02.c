@@ -52,19 +52,23 @@ static const char* DIALOGUES_B[] = {
 
 static const EnemyConfig ENEMIES[] = {
     {
-        'b', "경비로봇", COLOR_RED "🤖" COLOR_RESET,
-        "assets/security_robot.png", // 맵 타일 이미지
-        "assets/enemy/1b.png",       // ★ 전투 박스 초상화 이미지
-        10,             // maxHp
-        100, 100,       // attackMin, Max
-
-        // Defense removed
+        .tile = 'b', 
+        .name = "경비로봇", 
+        .glyph = COLOR_RED "🤖" COLOR_RESET,
+        .imagePath = "assets/security_robot.png", // 맵 타일 이미지
+        .portraitPath = "assets/enemy/1b.png",       // ★ 전투 박스 초상화 이미지
+        .width = 1, .height = 1,
+        .maxHp = 10,             
+        .attackMin = 100, .attackMax = 100,
+        
         // AI: 선추격X, 선공O, 감지5, 이속2.0, 공속2.0
-        0, 1, 5, 2.0f, 2.0f,
+        .chaseOnSight = 0, .attackOnSight = 1, 
+        .detectionRange = 5, 
+        .moveInterval = 2.0f, .attackInterval = 2.0f,
 
-        DIALOGUES_B,
-        sizeof(DIALOGUES_B) / sizeof(DIALOGUES_B[0]),
-        COLOR_RED
+        .dialogues = DIALOGUES_B,
+        .dialogueCount = sizeof(DIALOGUES_B) / sizeof(DIALOGUES_B[0]),
+        .dialogueColor = COLOR_RED
     }
 };
 

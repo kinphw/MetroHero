@@ -42,19 +42,23 @@ static const char* DIALOGUES_M[] = {
 
 static const EnemyConfig ENEMIES[] = {
     {
-        'm', "몬스터", COLOR_YELLOW "몹" COLOR_RESET,
-        "assets/monster.png",      // 맵 타일 이미지
-        "assets/enemy/1m.png",     // ★ 전투 박스 초상화 이미지
-        3,              // maxHp
-        1, 2,           // attackMin, Max
+        .tile = 'm', 
+        .name = "몬스터", 
+        .glyph = COLOR_YELLOW "몹" COLOR_RESET,
+        .imagePath = "assets/monster.png",      // 맵 타일 이미지
+        .portraitPath = "assets/enemy/1m.png",     // ★ 전투 박스 초상화 이미지
+        .width = 1, .height = 1,
+        .maxHp = 3,              
+        .attackMin = 1, .attackMax = 2,           
 
-        // Defense removed
         // AI: 선추격O, 선공O, 감지6, 이속1.5, 공속1.5
-        1, 1, 6, 1.5f, 1.5f,
+        .chaseOnSight = 1, .attackOnSight = 1, 
+        .detectionRange = 6, 
+        .moveInterval = 1.5f, .attackInterval = 1.5f,
 
-        DIALOGUES_M,
-        sizeof(DIALOGUES_M) / sizeof(DIALOGUES_M[0]),
-        COLOR_YELLOW
+        .dialogues = DIALOGUES_M,
+        .dialogueCount = sizeof(DIALOGUES_M) / sizeof(DIALOGUES_M[0]),
+        .dialogueColor = COLOR_YELLOW
     }
 };
 

@@ -52,6 +52,14 @@ typedef struct {
     const char* glyph;      // e.g. "🐈"
     const char* imagePath;  // 맵 타일 이미지
     const char* portraitPath; // ★ 전투 박스 초상화 이미지
+    
+    // ★ Multi-Tile & Sprite Sheet
+    int width, height; // Size in tiles (default 1x1)
+    
+    // Animation/SpriteSheet Config
+    int spriteRows; // if > 1, treat imagePath as sheet
+    int spriteCols; // if > 1, treat imagePath as sheet
+    
     int maxHp;
     int attackMin;
     int attackMax;

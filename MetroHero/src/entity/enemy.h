@@ -2,6 +2,7 @@
 #define ENEMY_H
 
 #include "../stages/common.h"
+#include "../core/graphics/sprite_sheet.h" // Added
 
 #define MAX_ENEMIES 50  // 맵당 최대 적 수
 
@@ -15,6 +16,12 @@ typedef struct {
     const char* glyph;
     const char* imagePath;     // 맵 타일 이미지 (예: assets/cat.png)
     const char* portraitPath;  // ★ 전투 박스 초상화 이미지 (예: assets/enemy/1a.png)
+    
+    // ★ Multi-Tile & Sprite Sheet Support
+    int width, height; 
+    SpriteSheet spriteSheet; // Runtime Sprite Sheet
+    int direction; // 0: Right, 1: Left, 2: Up, 3: Down
+    
 	int maxHp;
 	int hp;
 	//int attack;
