@@ -19,6 +19,7 @@ void enemy_init(Enemy* e, const EnemyConfig* config, int x, int y) {
     
     e->attackMin = config->attackMin;
     e->attackMax = config->attackMax;
+    e->expReward = config->expReward; // ★ Added
 
 
     e->dialogues = config->dialogues;
