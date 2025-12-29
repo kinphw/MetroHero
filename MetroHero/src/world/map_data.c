@@ -15,42 +15,44 @@
 // ========================
 const TileDef GLOBAL_TILE_PALETTE[] = {
     // Floors (Walkable)
-    { '.', "\033[48;5;240m..\033[0m", "assets/tile/floor.png", 1, "Tiled Floor" },
-    { ',', "\033[32m,,\033[0m",        "assets/floor.png", 1, "Grass Floor" },
-    { '-', "\033[48;5;235m--\033[0m",   "assets/floor.png", 1, "Paved Floor" },
-    { '_', "\033[93m..\033[0m",        "assets/floor.png", 1, "Dirt Floor" },
-    { '~', "\033[44m  \033[0m",        "assets/floor.png", 1, "Water" },
+    { '.', "assets/tile/floor.png", 1, "Tiled Floor" },
+    { ',', "assets/tile/grass_floor.png", 1, "Grass Floor" },
+    { '-', "assets/tile/gravel_floor.png", 1, "Gravel Floor" },
+    { '_', "assets/tile/dirt_floor.png", 1, "Dirt Floor" },
+    { '~', "assets/tile/water.png", 0, "Water" },
 
     // Walls (Blocked)
-    { '#', "\033[48;5;236m  \033[0m",  "assets/tile/wall.png", 0, "Gray Wall" },
-    { '%', "\033[48;5;124m  \033[0m",  "assets/wall.png", 0, "Brick Wall" },
-    { '&', "\033[48;5;22m  \033[0m",   "assets/wall.png", 0, "Iron Wall" },
-    { '$', "\033[48;5;123m  \033[0m",  "assets/wall.png", 0, "Glass Wall" },
+    { '#', "assets/tile/wall.png", 0, "Gray Wall" },
+    { '%', "assets/wall.png", 0, "Brick Wall" },
+    { '&', "assets/wall.png", 0, "Iron Wall" },
+    { '$', "assets/wall.png", 0, "Glass Wall" },
+    { 'O', "assets/tile/rock_obstacle.png", 0, "Rock" },
+    { '!', "assets/tile/signpost.png", 0, "Signpost" },
     
     // Objects
-    { '+', "🚪",                      "assets/wall.png", 0, "Closed Door" }, // Placeholder
-    { '/', "\033[30m▒▒\033[0m",        "assets/floor.png", 1, "Open Door" },  // Placeholder
-    { 'T', "🌲",                      "assets/wall.png", 0, "Tree" },
-    { 'B', "🚧",                      "assets/wall.png", 0, "Barricade" },
-    { '=', "||",                      "assets/floor.png", 1, "Rail" },
-    { 'S', "▼▼",                      "assets/floor.png", 1, "Stairs Down" },
-    { 'U', "▲▲",                      "assets/floor.png", 1, "Stairs Up" },
+    { '+', "assets/wall.png", 0, "Closed Door" }, // Placeholder
+    { '/', "assets/floor.png", 1, "Open Door" },  // Placeholder
+    { 'T', "assets/wall.png", 0, "Tree" },
+    { 'B', "assets/wall.png", 0, "Barricade" },
+    { '=', "assets/floor.png", 1, "Rail" },
+    { 'S', "assets/floor.png", 1, "Stairs Down" },
+    { 'U', "assets/floor.png", 1, "Stairs Up" },
 
     // Special
-    { '@', "  ",                      "assets/floor.png", 1, "Spawn Point" }, // Default floor
+    { '@', "assets/floor.png", 1, "Spawn Point" }, // Default floor
     
     // Chests (0-9) - Blocked
     // Note: Chest graphics are handled dynamically or via ChestConfig, but mapping here helps fallback
-    { '0', "📦",  "assets/entity/chest_closed.png", 0, "Chest 0" },
-    { '1', "📦",  "assets/entity/chest_closed.png", 0, "Chest 1" },
-    { '2', "📦",  "assets/entity/chest_closed.png", 0, "Chest 2" },
-    { '3', "📦",  "assets/entity/chest_closed.png", 0, "Chest 3" },
-    { '4', "📦",  "assets/entity/chest_closed.png", 0, "Chest 4" },
-    { '5', "📦",  "assets/entity/chest_closed.png", 0, "Chest 5" },
-    { '6', "📦",  "assets/entity/chest_closed.png", 0, "Chest 6" },
-    { '7', "📦",  "assets/entity/chest_closed.png", 0, "Chest 7" },
-    { '8', "📦",  "assets/entity/chest_closed.png", 0, "Chest 8" },
-    { '9', "📦",  "assets/entity/chest_closed.png", 0, "Chest 9" },
+    { '0', "assets/entity/chest_closed.png", 0, "Chest 0" },
+    { '1', "assets/entity/chest_closed.png", 0, "Chest 1" },
+    { '2', "assets/entity/chest_closed.png", 0, "Chest 2" },
+    { '3', "assets/entity/chest_closed.png", 0, "Chest 3" },
+    { '4', "assets/entity/chest_closed.png", 0, "Chest 4" },
+    { '5', "assets/entity/chest_closed.png", 0, "Chest 5" },
+    { '6', "assets/entity/chest_closed.png", 0, "Chest 6" },
+    { '7', "assets/entity/chest_closed.png", 0, "Chest 7" },
+    { '8', "assets/entity/chest_closed.png", 0, "Chest 8" },
+    { '9', "assets/entity/chest_closed.png", 0, "Chest 9" },
 };
 const int GLOBAL_TILE_PALETTE_COUNT = sizeof(GLOBAL_TILE_PALETTE) / sizeof(GLOBAL_TILE_PALETTE[0]);
 

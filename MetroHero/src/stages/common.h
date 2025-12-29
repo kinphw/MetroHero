@@ -10,7 +10,7 @@
 // --- Tile Definition (Global Palette) ---
 typedef struct {
     char symbol;          // 맵 문자 (예: '#')
-    const char* glyph;    // 글리프 문자열 (예: GLYPH_WALL_GRAY) - Debug/Legacy용
+    // const char* glyph; // Removed (Legacy)
     const char* imagePath;// 이미지 경로 (예: "assets/wall.png") - Raylib용
     int walkable;         // 1 = 이동 가능, 0 = 이동 불가
     const char* desc;     // 설명 (디버깅용)

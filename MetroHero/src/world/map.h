@@ -48,7 +48,7 @@ typedef struct {
 void map_init(Map* m , int stageNumber);
 int map_is_walkable(const Map* m, int x, int y);
 int map_check_los(Map* m, int x1, int y1, int x2, int y2); // ★ 시야 체크
-const char* tile_to_glyph(char t);
+// const char* tile_to_glyph(char t); // Removed
 void map_find_spawn(Map* m);
 void map_load_enemies(Map* m);
 Enemy* map_get_enemy_at(Map* m , int x , int y);

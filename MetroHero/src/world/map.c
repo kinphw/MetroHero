@@ -19,14 +19,7 @@ const TileDef* map_get_tile_def(char symbol) {
     return NULL;
 }
 
-// 타일 문자를 렌더링 문자로 변환
-const char* tile_to_glyph(char t) {
-    const TileDef* def = map_get_tile_def(t);
-    if (def) {
-        return def->glyph;
-    }
-    return GLYPH_EMPTY;
-}
+// tile_to_glyph removed (Legacy)
 
 
 // ★ 스폰 포인트 찾기
@@ -368,9 +361,6 @@ void map_draw_viewport(const Map* m, const Player* p,
 
                  if (img) {
                      ui_draw_image(screenPxX, screenPxY, MAP_TILE_SIZE, MAP_TILE_SIZE, img);
-                 } else if (def) {
-                      // Text Fallback (Legacy)
-                      // ui_draw_str_at(screenGridX, screenGridY, def->glyph, NULL);
                  }
                  
                  // 2. Chest (treated as Tile-ish object, or Entity?)
