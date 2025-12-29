@@ -31,3 +31,25 @@ const Item* inventory_get(const Inventory* inv, int index) {
     if (index < 0 || index >= inv->count) return NULL;
     return inv->items[index];
 }
+
+// Check if inventory has item by name
+int inventory_has_item(const Inventory* inv, const char* name) {
+    if (!name) return 0;
+    for (int i = 0; i < inv->count; i++) {
+        if (inv->items[i] && strcmp(inv->items[i]->name, name) == 0) {
+            return 1;
+        }
+    }
+    return 0;
+}
+
+// Remove item by name (first occurrence)
+void inventory_remove_item_by_name(Inventory* inv, const char* name) {
+    if (!name) return;
+    for (int i = 0; i < inv->count; i++) {
+        if (inv->items[i] && strcmp(inv->items[i]->name, name) == 0) {
+            inventory_remove_at(inv, i);
+            return;
+        }
+    }
+}

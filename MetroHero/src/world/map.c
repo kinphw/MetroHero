@@ -513,26 +513,33 @@ void map_load_doors(Map* m) {
     
     for (int y = 0; y < m->height; y++) {
         for (int x = 0; x < m->width; x++) {
-            if (m->tiles[y][x] == '%') {
+            char t = m->tiles[y][x];
+            int isDoor = 0;
+            EventConfig evt = {0};
+
+            // 1. Default Door (%)
+            if (t == '%') {
+                isDoor = 1;
+                // No event by default
+            } 
+            // 2. Custom Door Symbols
+            else if (stageData && stageData->doorCount > 0) {
+                for (int i = 0; i < stageData->doorCount; i++) {
+                     if (stageData->doors[i].symbol == t) {
+                         isDoor = 1;
+                         evt = stageData->doors[i].event;
+                         break;
+                     }
+                }
+            }
+
+            if (isDoor) {
                  if (m->doorCount < MAX_DOORS) {
                      Door* d = &m->doors[m->doorCount];
                      d->x = x;
                      d->y = y;
                      d->isOpen = 0; // 닫힌 상태로 시작
-                     
-                     // Initialize Event (Empty)
-                     memset(&d->event, 0, sizeof(EventConfig));
-                     
-                     // Apply Specific Config if exists
-                     if (stageData && stageData->doorCount > 0) {
-                         for (int i = 0; i < stageData->doorCount; i++) {
-                             if (stageData->doors[i].x == x && stageData->doors[i].y == y) {
-                                 // Copy Event Config
-                                 d->event = stageData->doors[i].event;
-                                 break;
-                             }
-                         }
-                     }
+                     d->event = evt;
 
                      m->doorCount++;
 

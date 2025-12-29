@@ -20,8 +20,17 @@ typedef struct {
 typedef struct {
     const char* reqFlag;      // 요구 플래그 (NULL이면 조건 없음)
     int reqVal;               // 요구 값 (보통 1)
+    
+    // ★ Key Item Config
+    const char* reqItem;      // 요구 아이템 이름
+    int consumeItem;          // 1: 사용 시 아이템 소모, 0: 유지
+    
     const char* setFlag;      // 완료 후 설정/증가할 플래그 (NULL이면 없음)
     int setVal;               // 설정 값 (0이면 +1 증가)
+    
+    // ★ Reward Config
+    const char* giveItem;     // 완료 후 지급할 아이템 이름
+
     const char* failMsg;      // 조건 불충족 시 메시지
 } EventConfig;
 
@@ -85,7 +94,7 @@ typedef struct {
 
 // --- Door Configuration (New) ---
 typedef struct {
-    int x, y;               // 문 위치 (좌표 지정 필요)
+    char symbol;            // 문 문자 (예: '$', 'D') - '%'는 기본값
     EventConfig event;      // 잠금 조건 등
 } DoorConfig;
 

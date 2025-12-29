@@ -15,4 +15,8 @@ int inventory_add(Inventory* inv, const Item* item);
 void inventory_remove_at(Inventory* inv, int index);
 const Item* inventory_get(const Inventory* inv, int index);
 
+// Helper for Event System
+int inventory_has_item(const Inventory* inv, const char* name);
+void inventory_remove_item_by_name(Inventory* inv, const char* name);
+
 #endif

@@ -193,6 +193,29 @@ void game_process_input(GameState* state) {
         if (cmd == ' ') { // NEXT
             if (state->currentNPC->currentDialogue == state->currentNPC->dialogueCount - 1) {
                 // End Dialogue
+                // ★ Trigger Event Flag on Completion
+                if (state->currentNPC->event.setFlag) {
+                    if (state->currentNPC->event.setVal > 0) {
+                        event_set_flag(&state->eventRegistry, state->currentNPC->event.setFlag, state->currentNPC->event.setVal);
+                    } else {
+                        event_add_flag(&state->eventRegistry, state->currentNPC->event.setFlag, 1);
+                    }
+                }
+                
+                // ★ Item Reward (Dialogue End)
+                if (state->currentNPC->event.giveItem) {
+                    const Item* it = item_get(state->currentNPC->event.giveItem);
+                    if (it && !inventory_has_item(&state->player.inventory, it->name)) { // Unique give
+                         if (inventory_add(&state->player.inventory, it)) {
+                             char msg[128];
+                             snprintf(msg, sizeof(msg), "%s을(를) 받았다!", it->name);
+                             ui_add_log(msg);
+                         } else {
+                             ui_add_log("가방이 가득 차서 받을 수 없다!");
+                         }
+                    }
+                }
+
                 state->currentNPC->currentDialogue = 0;
                 state->inDialogue = 0;
                 state->currentNPC = NULL;
@@ -244,23 +267,37 @@ void game_process_input(GameState* state) {
         NPC* interactNpc = map_get_npc_at(&state->map, tx, ty);
         if (interactNpc != NULL) {
             // Check Event Condition
-            // Check Event Condition
             int canInteract = 1;
+            
+            // 1. Flag Check
             if (interactNpc->event.reqFlag) {
                  int val = event_get_flag(&state->eventRegistry, interactNpc->event.reqFlag);
                  int req = interactNpc->event.reqVal > 0 ? interactNpc->event.reqVal : 1;
-                 
-                 if (val < req) {
+                 if (val < req) canInteract = 0;
+            }
+            
+            // 2. Item Check
+            if (canInteract && interactNpc->event.reqItem) {
+                 if (!inventory_has_item(&state->player.inventory, interactNpc->event.reqItem)) {
                      canInteract = 0;
-                     if (interactNpc->event.failMsg) {
-                         ui_add_log(interactNpc->event.failMsg);
-                     } else {
-                         //ui_add_log("지금은 대화할 수 없는 것 같다."); // Default message optional
-                     }
                  }
             }
 
-            if (canInteract) {
+            if (!canInteract) {
+                 if (interactNpc->event.failMsg) {
+                     ui_add_log(interactNpc->event.failMsg);
+                 } else {
+                     //ui_add_log("조건이 부족하다.");
+                 }
+            } else {
+                // Success: Consume Item if needed
+                if (interactNpc->event.reqItem && interactNpc->event.consumeItem) {
+                    inventory_remove_item_by_name(&state->player.inventory, interactNpc->event.reqItem);
+                    char msg[128];
+                    snprintf(msg, sizeof(msg), "%s을(를) 사용했다.", interactNpc->event.reqItem);
+                    ui_add_log(msg);
+                }
+
                 if (interactNpc->useDialogueBox) {
                     state->inDialogue = 1;
                     state->currentNPC = interactNpc;
@@ -278,15 +315,27 @@ void game_process_input(GameState* state) {
                     npc_next_dialogue(interactNpc);
                 }
                 
-                // Trigger Effect (On Interaction Start? Or End? Usually End, but for simple flags Start is OK)
-                // For complex RPGs, set flag after dialogue ends. But here we do it on start for simplicity unless 'useDialogueBox'
-                // Actually, let's do it on START for now, or maybe only if not re-triggerable?
-                // `setVal` 0 means increment.
-                if (interactNpc->event.setFlag) {
-                    if (interactNpc->event.setVal > 0) {
-                        event_set_flag(&state->eventRegistry, interactNpc->event.setFlag, interactNpc->event.setVal);
-                    } else {
-                        event_add_flag(&state->eventRegistry, interactNpc->event.setFlag, 1);
+                // Trigger Effect (Simple Flag / Item Reward)
+                int triggerNow = !interactNpc->useDialogueBox;
+                
+                if (triggerNow) {
+                    // Flag
+                    if (interactNpc->event.setFlag) {
+                        if (interactNpc->event.setVal > 0) event_set_flag(&state->eventRegistry, interactNpc->event.setFlag, interactNpc->event.setVal);
+                        else event_add_flag(&state->eventRegistry, interactNpc->event.setFlag, 1);
+                    }
+                    // Item Reward
+                    if (interactNpc->event.giveItem) {
+                        const Item* it = item_get(interactNpc->event.giveItem);
+                        if (it && !inventory_has_item(&state->player.inventory, it->name)) { // Unique give
+                             if (inventory_add(&state->player.inventory, it)) {
+                                 char msg[128];
+                                 snprintf(msg, sizeof(msg), "%s을(를) 받았다!", it->name);
+                                 ui_add_log(msg);
+                             } else {
+                                 ui_add_log("가방이 가득 차서 받을 수 없다!");
+                             }
+                        }
                     }
                 }
             }
@@ -298,30 +347,47 @@ void game_process_input(GameState* state) {
             Chest* chest = map_get_chest_at(&state->map, tx, ty);
             if (chest != NULL && !chest->isOpened) {
                 
-                // Check Event Condition
                 int canOpen = 1;
+                // 1. Flag Check
                 if (chest->event.reqFlag) {
                     int val = event_get_flag(&state->eventRegistry, chest->event.reqFlag);
                     int req = chest->event.reqVal > 0 ? chest->event.reqVal : 1;
-                    if (val < req) {
+                    if (val < req) canOpen = 0;
+                }
+                // 2. Item Check
+                if (canOpen && chest->event.reqItem) {
+                    if (!inventory_has_item(&state->player.inventory, chest->event.reqItem)) {
                         canOpen = 0;
-                        if (chest->event.failMsg) ui_add_log(chest->event.failMsg);
-                        else ui_add_log("잠겨있다.");
                     }
                 }
-                
-                if (canOpen) {
+
+                if (!canOpen) {
+                     if (chest->event.failMsg) ui_add_log(chest->event.failMsg);
+                     else ui_add_log("잠겨있다.");
+                } else {
+                    // Success
+                    if (chest->event.reqItem && chest->event.consumeItem) {
+                        inventory_remove_item_by_name(&state->player.inventory, chest->event.reqItem);
+                        char msg[128];
+                        snprintf(msg, sizeof(msg), "%s을(를) 사용했다.", chest->event.reqItem);
+                        ui_add_log(msg);
+                    }
+
                     chest->isOpened = 1;
                     player_apply_item(&state->player, chest->itemType, chest->itemName);
                     char msg[128];
                     snprintf(msg, sizeof(msg), "📦 상자를 열었다! → %s 획득!", chest->itemName);
                     ui_add_log(msg);
-                    audio_play_sfx("door_creak"); // SFX Added
+                    audio_play_sfx("door_creak"); 
                     
                     // Trigger
                     if (chest->event.setFlag) {
                         if (chest->event.setVal > 0) event_set_flag(&state->eventRegistry, chest->event.setFlag, chest->event.setVal);
                         else event_add_flag(&state->eventRegistry, chest->event.setFlag, 1);
+                    }
+                    if (chest->event.giveItem) {
+                         const Item* it = item_get(chest->event.giveItem);
+                         if (it) inventory_add(&state->player.inventory, it);
                     }
                 }
                 actionTaken = 1;
@@ -333,24 +399,36 @@ void game_process_input(GameState* state) {
             Door* door = map_get_door_at(&state->map, tx, ty);
             if (door != NULL && !door->isOpen) {
                 
-                // Check Event Condition
                 int canOpen = 1;
+                // 1. Flag Check
                 if (door->event.reqFlag) {
                     int val = event_get_flag(&state->eventRegistry, door->event.reqFlag);
                     int req = door->event.reqVal > 0 ? door->event.reqVal : 1;
-                    if (val < req) {
+                    if (val < req) canOpen = 0;
+                }
+                // 2. Item Check
+                if (canOpen && door->event.reqItem) {
+                    if (!inventory_has_item(&state->player.inventory, door->event.reqItem)) {
                         canOpen = 0;
-                        if (door->event.failMsg) ui_add_log(door->event.failMsg);
-                        else ui_add_log("문이 잠겨있다.");
                     }
                 }
                 
-                if (canOpen) {
+                if (!canOpen) {
+                     if (door->event.failMsg) ui_add_log(door->event.failMsg);
+                     else ui_add_log("문이 잠겨있다.");
+                } else {
+                    // Success
+                    if (door->event.reqItem && door->event.consumeItem) {
+                        inventory_remove_item_by_name(&state->player.inventory, door->event.reqItem);
+                        char msg[128];
+                        snprintf(msg, sizeof(msg), "%s을(를) 사용했다.", door->event.reqItem);
+                        ui_add_log(msg);
+                    }
+
                     door->isOpen = 1;
                     ui_add_log("철컹! 문이 열렸다.");
-                    audio_play_sfx("door_creak"); // SFX Added
+                    audio_play_sfx("door_creak"); 
                     
-                    // Trigger
                     if (door->event.setFlag) {
                         if (door->event.setVal > 0) event_set_flag(&state->eventRegistry, door->event.setFlag, door->event.setVal);
                         else event_add_flag(&state->eventRegistry, door->event.setFlag, 1);

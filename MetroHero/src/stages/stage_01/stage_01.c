@@ -11,10 +11,10 @@ static const char* MAP_LINES[] = {
 "#.@..............A...1#",
 "#.......C............2#",
 "###########.###########",
-"          #%#             ",
-"          #.#             ",
-"          #.#             ",
-"          #.#             ",
+"          #$#          ", // Replaced % with $ for Event Door
+"          #.#          ",
+"          #.#          ",
+"          #.#          ",
 "###########.###########",
 "#.....................#",
 "#......a.....a.....a..#",
@@ -26,9 +26,10 @@ static const char* MAP_LINES[] = {
 // Stage 1 Chests
 // ============================================
 static const ChestConfig CHESTS[] = {
-    {'0', "weapon", "초보자 검"},
-    {'1', "armor",  "가죽 갑옷"},
-    {'2', "item",   "HP 포션"},
+    // receive_mission Flag checking added
+    {'0', "weapon", "초보자 검", NULL, { .reqFlag="receive_mission", .reqVal=1, .failMsg="역무원에게 말을 먼저 걸어야 할 것 같다." } },
+    {'1', "armor",  "가죽 갑옷", NULL, { .reqFlag="receive_mission", .reqVal=1, .failMsg="역무원에게 말을 먼저 걸어야 할 것 같다." } },
+    {'2', "item",   "HP 포션",   NULL, { .reqFlag="receive_mission", .reqVal=1, .failMsg="역무원에게 말을 먼저 걸어야 할 것 같다." } },
     {'3', "item",   "민첩의 물약"},
     {'4', "item",   "힘의 물약"},
 };
@@ -90,6 +91,7 @@ static const char* NPC_DIALOGUES_A[] = {
     "으으윽... 도와주세요...\n누구신지 모르겠지만 제발 도와주세요...\n저는 성균관대역의 역무원입니다...",
     "당신이 나타나기 직전에 갑자기 거대한 굉음과 함께 역이 혼란에 빠졌습니다...",    
     "저 아래의 문 밖에 무서운 야수가 위협하고 있어요.. 제발 야수를 물리쳐 주십시오..",
+    "제 뒤에 있는 장비를 챙겨가세요. 행운을 빕니다!" // Added confirmation line
 };
 
 static const char* NPC_DIALOGUES_B[] = {
@@ -106,9 +108,11 @@ static const NPCConfig NPCS[] = {
     {
         'A', "우건박", COLOR_BRIGHT_BLUE "읏" COLOR_RESET,
         "assets/old_man.png",
-        "assets/npc/1A_face.png", // ★ Added Face
+        "assets/npc/1A_face.png",
         NPC_DIALOGUES_A, sizeof(NPC_DIALOGUES_A)/sizeof(NPC_DIALOGUES_A[0]),
-        0, "general", 1 // canTrade=0 currently but shopType set? Original code had canTrade=0.
+        0, "general", 1,
+        // Event: Set 'receive_mission' + Give '철문열쇠1'
+        { NULL, 0, NULL, 0, "receive_mission", 1, "철문열쇠1", NULL } 
     },
     {
         'B', "시민", COLOR_GREEN "웃" COLOR_RESET,
@@ -119,11 +123,19 @@ static const NPCConfig NPCS[] = {
     },
     {
         'C', "안내원", COLOR_YELLOW "윽" COLOR_RESET,
-        "assets/citizen_black.png",
+        "assets/citizen_black.png", // Using same sprite for now
         NULL,
         NPC_DIALOGUES_C, sizeof(NPC_DIALOGUES_C)/sizeof(NPC_DIALOGUES_C[0]),
-        0, "general", 0
+        0, "general", 0 // Dialogue Box
     }
+};
+
+// ============================================
+// Stage 1 Doors (New)
+// ============================================
+static const DoorConfig DOORS[] = {
+    // Symbol $, Req '철문열쇠1', Consume=1
+    { '$', { NULL, 0, "철문열쇠1", 1, NULL, 0, NULL, "열쇠가 필요하다." } }
 };
 
 // ============================================
@@ -132,7 +144,7 @@ static const NPCConfig NPCS[] = {
 
 // --- Intro ---
 static const CinematicLine INTRO_LINES[] = {
-    { "", STYLE_NORMAL, 300, NULL }, // Reverted to NULL
+    { "", STYLE_NORMAL, 300, NULL }, 
     { "[ STAGE 1 ]", STYLE_TITLE, 500, NULL },
     { "", STYLE_NORMAL, 200, NULL },
     { "성균관대역", STYLE_SUBTITLE, 800, NULL },
@@ -148,7 +160,7 @@ static const Cinematic INTRO_CINEMATIC = {
     COLOR_WHITE
 };
 
-// --- Outro (Clear) ---
+// --- Outro ---
 static const CinematicLine CLEAR_LINES[] = {
     { "", STYLE_NORMAL, 300, NULL },
     { "★ STAGE CLEAR ★", STYLE_TITLE, 800, NULL },
@@ -181,8 +193,8 @@ const StageData STAGE_01_DATA = {
     .enemyCount = sizeof(ENEMIES) / sizeof(ENEMIES[0]),
     .npcs = NPCS,
     .npcCount = sizeof(NPCS) / sizeof(NPCS[0]),
-    .doors = NULL,
-    .doorCount = 0,
+    .doors = DOORS,
+    .doorCount = sizeof(DOORS) / sizeof(DOORS[0]),
     .intro = &INTRO_CINEMATIC,
     .outro = &CLEAR_CINEMATIC
 };

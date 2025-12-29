@@ -43,6 +43,9 @@ void item_system_init(void) {
     register_item("최대 HP +5", ITEM_CONSUMABLE, 0, 5, "최대 체력을 5 늘려줍니다.");
     register_item("최대 HP +10", ITEM_CONSUMABLE, 0, 10, "최대 체력을 10 늘려줍니다.");
     register_item("공격력 +2", ITEM_CONSUMABLE, 2, 0, "공격력을 2 늘려줍니다.");
+
+    // Stage 1 Key Items
+    register_item("철문열쇠1", ITEM_ETC, 0, 0, "지하철 역무원이 준 열쇠다.");
 }
 
 const Item* item_get(const char* name) {
