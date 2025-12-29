@@ -63,16 +63,21 @@ void combat_try_attack(GameState* state) {
         audio_play_sfx("sword_hit"); // SFX Added
 
         char buf[128];
-        snprintf(buf, sizeof(buf), "⚔ %s에게 %d 피해! (HP: %d)", target->name, dmg, target->hp);
+        snprintf(buf, sizeof(buf), "%s⚔ %s에게 %d 피해! (HP: %d)%s", COLOR_YELLOW, target->name, dmg, target->hp, COLOR_RESET);
         ui_add_combat_log(buf); // 우측 전투 로그에 출력
 
         if (target->hp <= 0) {
             target->isAlive = 0;
             // ★ 적 처치 -> 이미지 유지 (이미 표시됨)
             // 맵 타일 정리 (적 제거) - 추후 자동 clean up
-             snprintf(buf, sizeof(buf), "★ %s 처치!", target->name);
+             snprintf(buf, sizeof(buf), "%s★ %s 처치!%s", COLOR_BRIGHT_GREEN, target->name, COLOR_RESET);
              ui_add_combat_log(buf);
              audio_play_sfx("explosion"); // SFX Added
+             
+             // ★ Award EXP
+             if (target->expReward > 0) {
+                 player_add_exp(p, target->expReward); 
+             }
              
              // Trigger Event
              if (target->event.setFlag) {
@@ -186,7 +191,7 @@ void combat_update_ai(GameState* state, float dt) {
                     audio_play_sfx("claw_hit"); 
 
                     char buf[128];
-                    snprintf(buf, sizeof(buf), "☠ %s의 공격! %d 피해 (HP: %d)", e->name, dmg, p->hp);
+                    snprintf(buf, sizeof(buf), "%s☠ %s의 공격! %d 피해 (HP: %d)%s", COLOR_RED, e->name, dmg, p->hp, COLOR_RESET);
                     ui_add_combat_log(buf);
 
                     if (p->hp <= 0) {

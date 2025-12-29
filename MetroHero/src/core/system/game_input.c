@@ -128,6 +128,11 @@ static void check_quest_updates(GameState* state) {
                     snprintf(logBuf, sizeof(logBuf), "%s📘 퀘스트 갱신! %s", COLOR_BRIGHT_YELLOW, q->msg);
                     ui_add_log(logBuf);
                     
+                    // ★ Award Quest EXP
+                    if (q->expReward > 0) {
+                        player_add_exp(&state->player, q->expReward);
+                    }
+                    
                     audio_play_sfx("cinematic_blip"); 
                 }
             }
@@ -256,7 +261,8 @@ void game_process_input(GameState* state) {
     // 4. 대화 모드 처리
     if (state->inDialogue && state->currentNPC != NULL) {
         if (cmd == ' ') { // NEXT
-            if (state->currentNPC->currentDialogue == state->currentNPC->dialogueCount - 1) {
+            // ★ Use activeDialogueCount for dynamic dialogue support
+            if (state->currentNPC->currentDialogue == state->currentNPC->activeDialogueCount - 1) {
                 // End Dialogue
                 // ★ Trigger Event Flag on Completion
                 if (state->currentNPC->event.setFlag) {

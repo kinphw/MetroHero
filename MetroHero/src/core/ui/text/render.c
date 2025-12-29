@@ -115,8 +115,9 @@ void ui_load_font(void) {
     int countSymbols = 0x26FF - 0x2600 + 1;
     int countEmojis = 0x1F9FF - 0x1F300 + 1;
     int countCJKSymbols = 0x303F - 0x3000 + 1;
+    int countArrows = 0x21FF - 0x2190 + 1; // Added
     
-    int codepointCount = countASCII + countHangul + countBox + countSymbols + countEmojis + countCJKSymbols;
+    int codepointCount = countASCII + countHangul + countBox + countSymbols + countEmojis + countCJKSymbols + countArrows;
     int* codepoints = (int*)malloc(codepointCount * sizeof(int));
     
     int index = 0;
@@ -142,6 +143,10 @@ void ui_load_font(void) {
     }
     // CJK Symbols and Punctuation (「, 」 etc.)
     for (int i = 0x3000; i <= 0x303F; i++) {
+        codepoints[index++] = i;
+    }
+    // ★ Arrows (For UI messages like →)
+    for (int i = 0x2190; i <= 0x21FF; i++) {
         codepoints[index++] = i;
     }
 

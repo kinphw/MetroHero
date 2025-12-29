@@ -15,6 +15,11 @@ typedef struct {
 	int hp;
 	int maxHp;
     int baseMaxHp; // 기본 체력
+    
+    // ★ Level System
+    int level;
+    int exp;
+    int expNext; // XP required for next level
 
 	// 공격력 (Base + Weapon)
 	int attackMin;
@@ -42,6 +47,7 @@ typedef struct {
 
 void player_init(Player* p);
 void player_update_stats(Player* p);
+void player_add_exp(Player* p, int amount); // ★ Added
 void player_use_item(Player* p, int index);
 void player_move(Player* p , struct Map* m , int cmd);  // ★ const 제거
 

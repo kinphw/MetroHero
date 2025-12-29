@@ -63,6 +63,7 @@ typedef struct {
     int maxHp;
     int attackMin;
     int attackMax;
+    int expReward; // ★ Added
 
 
     // ★ AI 설정
@@ -111,6 +112,7 @@ typedef struct {
     const char* reqFlag;    // 발동 조건 플래그
     int reqVal;             // 발동 값 (이상일 때)
     const char* msg;        // 출력할 메시지 (파란색 자동 적용)
+    int expReward;          // ★ Added
 } QuestConfig;
 
 // ★ Dialogue Override Config (Decoupled from NPCConfig)

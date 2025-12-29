@@ -27,6 +27,7 @@ typedef struct {
 	//int attack;
     int attackMin;
 	int attackMax;
+    int expReward; // ★ Added
 
 
     // ★ AI 관련

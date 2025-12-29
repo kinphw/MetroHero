@@ -23,6 +23,7 @@ class TileParser:
 
         # Define tiles with actual image paths
         self.special_tiles = {
+            ' ': TileDefinition(' ', ' ', None, True, "Empty Space"),  # Space character
             '@': TileDefinition('@', '@', "MetroHero/assets/person_down.png", True, "Spawn Point"),
             '.': TileDefinition('.', '·', "MetroHero/assets/floor.png", True, "Floor"),
             '#': TileDefinition('#', '█', "MetroHero/assets/wall.png", False, "Wall"),
@@ -68,6 +69,58 @@ class TileParser:
         # For now, we use the hardcoded special_tiles
         # Future: could parse actual definitions from glyph.h if format changes
         pass
+
+    def parse_stage_configs(self):
+        """Parse stage files to extract enemy and NPC image paths"""
+        stage_dirs = [
+            os.path.join(self.project_root, "MetroHero", "src", "stages", "stage_01"),
+            os.path.join(self.project_root, "MetroHero", "src", "stages", "stage_02"),
+            os.path.join(self.project_root, "MetroHero", "src", "stages", "stage_03"),
+        ]
+
+        for stage_dir in stage_dirs:
+            stage_file = os.path.join(stage_dir, os.path.basename(stage_dir) + ".c")
+            if os.path.exists(stage_file):
+                self._parse_stage_file(stage_file)
+
+    def _parse_stage_file(self, filepath):
+        """Parse a single stage file for enemy and NPC configs"""
+        try:
+            with open(filepath, 'r', encoding='utf-8') as f:
+                content = f.read()
+
+            # Parse EnemyConfig entries
+            enemy_pattern = r'\.tile\s*=\s*\'([a-z])\'\s*,.*?\.imagePath\s*=\s*"([^"]+)"'
+            for match in re.finditer(enemy_pattern, content, re.DOTALL):
+                tile_char = match.group(1)
+                image_path = match.group(2)
+
+                # Convert to full path with MetroHero prefix
+                if not image_path.startswith("MetroHero/"):
+                    image_path = "MetroHero/" + image_path
+
+                # Update the tile definition
+                if tile_char in self.special_tiles:
+                    self.special_tiles[tile_char].image_path = image_path
+                    print(f"  Updated enemy '{tile_char}': {image_path}")
+
+            # Parse NPCConfig entries
+            npc_pattern = r'\.tile\s*=\s*\'([A-Z])\'\s*,.*?\.imagePath\s*=\s*"([^"]+)"'
+            for match in re.finditer(npc_pattern, content, re.DOTALL):
+                tile_char = match.group(1)
+                image_path = match.group(2)
+
+                # Convert to full path with MetroHero prefix
+                if not image_path.startswith("MetroHero/"):
+                    image_path = "MetroHero/" + image_path
+
+                # Update the tile definition
+                if tile_char in self.special_tiles:
+                    self.special_tiles[tile_char].image_path = image_path
+                    print(f"  Updated NPC '{tile_char}': {image_path}")
+
+        except Exception as e:
+            print(f"Error parsing {filepath}: {e}")
 
     def get_tile(self, symbol):
         """Get tile definition for a symbol"""

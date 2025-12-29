@@ -66,7 +66,8 @@ static const EnemyConfig ENEMIES[] = {
         .moveInterval = 1.0f, .attackInterval = 1.0f,
         .dialogues = DIALOGUES_A,
         .dialogueCount = sizeof(DIALOGUES_A) / sizeof(DIALOGUES_A[0]),
-        .dialogueColor = COLOR_BRIGHT_CYAN
+        .dialogueColor = COLOR_BRIGHT_CYAN,
+        .expReward = 50 // 2 kills = Level Up
     },
     {
         .tile = 'b', 
@@ -82,7 +83,8 @@ static const EnemyConfig ENEMIES[] = {
         .moveInterval = 2.0f, .attackInterval = 2.0f,
         .dialogues = DIALOGUES_B,
         .dialogueCount = sizeof(DIALOGUES_B) / sizeof(DIALOGUES_B[0]),
-        .dialogueColor = COLOR_RED
+        .dialogueColor = COLOR_RED,
+        .expReward = 200
     },
     {
         // ★ Boss C (Multi-Tile)
@@ -101,7 +103,8 @@ static const EnemyConfig ENEMIES[] = {
         .moveInterval = 0.8f, .attackInterval = 1.5f,
         .dialogues = NULL, 
         .dialogueCount = 0,
-        .dialogueColor = COLOR_BRIGHT_RED
+        .dialogueColor = COLOR_BRIGHT_RED,
+        .expReward = 1000 // Boss Reward
     }
 };
 
@@ -120,11 +123,14 @@ static const char* NPC_DIALOGUES_A[] = {
 static const char* NPC_DIALOGUES_B[] = {
     "으아아아악!!!",
     "집에 가고싶어!!!!",
+    "사람살려!!! 괴물이야!!!",    
 };
 
 static const char* NPC_DIALOGUES_C[] = {
-    "적의 공격이 무섭나요? 0 키를 눌러서 방패를 사용하세요.",
-    "적의 공격을 막아낸 이후에 반격하면 쉽게 이길 수 있을 것입니다.",
+    "적의 공격이 너무나 강력한가요? 0 키를 눌러서 방패를 사용하세요.",
+    "적의 공격을 먼저 막아낸 이후에 방어를 풀고 반격하세요!",
+    "그리고 다시 적이 공격해올때까지 방어태세를 취하세요.",    
+    "반복하면 어떤 적이든 이길 수 있습니다.",        
 };
 
 static const char* NPC_DIALOGUES_A_ALT[] = {
@@ -197,7 +203,7 @@ static const DoorConfig DOORS[] = {
 static const QuestConfig QUESTS[] = {
     // 퀘스트 1: 역무원 대화
     // 초기 상태는 game.c에서 설정 or "start_quest" 플래그 사용
-    { "receive_mission", 1, "목표: 맹혹한 고양이를 처치하고 길을 뚫어라." }
+    { "receive_mission", 1, "목표: 맹혹한 고양이를 처치하고 길을 뚫어라.", 50 }
 };
 
 // ============================================

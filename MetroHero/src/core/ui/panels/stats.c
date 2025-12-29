@@ -31,51 +31,57 @@ void ui_draw_stats(const Player* p) {
 
     char buf[128];
 
-    // ★ HP Bar - 개별 문자로 그리기 (정확한 폭 제어)
-    ui_draw_str_at(x + 2, y + 2, "HP: ", NULL);
-    // ★ HP Bar - Raylib 도형 그리기
-    ui_draw_str_at(x + 2, y + 2, "HP: ", NULL);
+    // 1. Level & Name
+    snprintf(buf, sizeof(buf), "Lv.%d", p->level);
+    ui_draw_str_at(x + 2, y + 2, buf, COLOR_BRIGHT_YELLOW);
+
+    // 2. HP Bar
+    int barX = (x + 2) * 8; 
+    int barY = (y + 3) * 16 + 4; // y+3 line
+    int barW = 100;
+    int barH = 10;
     
-    // Calculate Pixels
-    // "HP: " is 4 chars width = 4 * 16px (full width) / 2 = 32px? 
-    // display_width("HP: ") returns grid units (4). 4 * 8px = 32px.
-    int hpLabelWidthPx = 4 * 8; 
-    
-    int barX = (x + 2) * 8 + hpLabelWidthPx; // Start after "HP: "
-    int barY = (y + 2) * 16;
-    
-    // Bar dimensions
-    // Width: Fill remaining space inside box with some padding?
-    // Previous loop was 10 chars -> 10 * 8 = 80px.
-    int barW = 80; 
-    int barH = 14; // Slightly smaller than 16 to fit nicely vertically
-    int barYOffset = 1; // Center vertically in the cell (16 - 14)/2 = 1
-    
-    // Draw Background (Dark Red/Gray)
-    DrawRectangle(barX, barY + barYOffset, barW, barH, DARKGRAY);
-    
-    // Draw Foreground (Red/Green based on HP?)
+    // Background
+    DrawRectangle(barX, barY, barW, barH, DARKGRAY);
+    // Foreground (Red)
     if (p->maxHp > 0) {
-        float hpPercent = (float)p->hp / (float)p->maxHp;
-        if (hpPercent < 0) hpPercent = 0;
-        if (hpPercent > 1) hpPercent = 1;
-        
-        int fillW = (int)(barW * hpPercent);
-        
-        // Color choice: Red for HP usually
-        DrawRectangle(barX, barY + barYOffset, fillW, barH, RED);
+        float pct = (float)p->hp / (float)p->maxHp;
+        if (pct < 0) pct = 0; if (pct > 1) pct = 1;
+        DrawRectangle(barX, barY, (int)(barW * pct), barH, RED);
     }
+    DrawRectangleLines(barX, barY, barW, barH, WHITE);
     
-    // Draw Border
-    DrawRectangleLines(barX, barY + barYOffset, barW, barH, WHITE);
-
     // HP Text
-    snprintf(buf, sizeof(buf), "     %3d / %3d", p->hp, p->maxHp);
-    ui_draw_text_clipped(x + 2, y + 3, w - 4, buf, NULL);
+    snprintf(buf, sizeof(buf), "HP %d/%d", p->hp, p->maxHp);
+    ui_draw_text_clipped(x + 2, y + 4, w - 4, buf, NULL);
 
-    // Attack
-    snprintf(buf, sizeof(buf), " 공격력: %2d~%2d", p->attackMin, p->attackMax);
-    ui_draw_text_clipped(x + 2, y + 5, w - 4, buf, NULL);
+    // 3. XP Bar
+    int expBarY = (y + 5) * 16 + 4;
+    
+    // Background
+    DrawRectangle(barX, expBarY, barW, barH, DARKGRAY);
+    // Foreground (Blue)
+    if (p->expNext > 0) {
+        float pct = (float)p->exp / (float)p->expNext;
+        if (pct < 0) pct = 0; if (pct > 1) pct = 1;
+        DrawRectangle(barX, expBarY, (int)(barW * pct), barH, BLUE);
+    } else {
+        // Max Level?
+        DrawRectangle(barX, expBarY, barW, barH, GOLD);
+    }
+    DrawRectangleLines(barX, expBarY, barW, barH, WHITE);
+
+    // XP Text
+    if (p->expNext > 0)
+        snprintf(buf, sizeof(buf), "XP %d/%d", p->exp, p->expNext);
+    else
+        snprintf(buf, sizeof(buf), "XP MAX");
+        
+    ui_draw_text_clipped(x + 2, y + 6, w - 4, buf, NULL);
+
+    // 4. Attack
+    snprintf(buf, sizeof(buf), "공격력 %d~%d", p->attackMin, p->attackMax);
+    ui_draw_text_clipped(x + 2, y + 8, w - 4, buf, NULL);
 
 
 

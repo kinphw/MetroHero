@@ -9,9 +9,45 @@
 #include "../core/ui/ui.h"
 #include "../core/logic/combat.h"
 #include "item.h" // Added
+#include "../world/glyph.h" // Added for colors
+
+// ★ Level Table Definition
+#define MAX_LEVEL 10
+typedef struct {
+    int hp;
+    int attackMin;
+    int attackMax;
+    int reqExp; // Total EXP required to reach NEXT level
+} LevelData;
+
+static const LevelData LEVEL_TABLE[MAX_LEVEL + 1] = {
+    { 0, 0, 0, 0 }, // Lv 0 (Unused)
+    { 10, 1, 3, 100 },   // Lv 1. Next Lv at 100 XP.
+    { 15, 2, 4, 300 },   // Lv 2. Next Lv at 300 XP.
+    { 25, 3, 6, 600 },   // Lv 3. Next Lv at 600 XP.
+    { 40, 5, 8, 1000 },  // Lv 4.
+    { 60, 7, 10, 1500 }, // Lv 5.
+    { 80, 10, 14, 2200 }, // Lv 6.
+    { 110, 13, 18, 3000 }, // Lv 7.
+    { 150, 16, 22, 4000 }, // Lv 8.
+    { 200, 20, 28, 5500 }, // Lv 9.
+    { 300, 25, 35, 99999 }, // Lv 10 (Max)
+};
 
 void player_update_stats(Player* p) {
-    // 1. Base Logic
+    // 1. Base Logic from Level Table
+    int lv = p->level;
+    if (lv < 1) lv = 1;
+    if (lv > MAX_LEVEL) lv = MAX_LEVEL;
+
+    // Set Base Stats
+    p->baseMaxHp = LEVEL_TABLE[lv].hp;
+    p->baseAttackMin = LEVEL_TABLE[lv].attackMin;
+    p->baseAttackMax = LEVEL_TABLE[lv].attackMax;
+    
+    // Set Next Level EXP
+    p->expNext = LEVEL_TABLE[lv].reqExp;
+
     p->maxHp = p->baseMaxHp;
     p->attackMin = p->baseAttackMin;
     p->attackMax = p->baseAttackMax;
@@ -19,7 +55,7 @@ void player_update_stats(Player* p) {
     // 2. Equipment Bonus
     if (p->equippedWeapon) {
         p->attackMin += p->equippedWeapon->attackBonus;
-        p->attackMax += p->equippedWeapon->attackBonus; // Min/Max shift together? Or spread? Plan says bonus adds to both.
+        p->attackMax += p->equippedWeapon->attackBonus; // Bonus adds to both min and max
         p->weaponName = p->equippedWeapon->name;
     } else {
         p->weaponName = "맨주먹";
@@ -36,6 +72,50 @@ void player_update_stats(Player* p) {
     if (p->hp > p->maxHp) p->hp = p->maxHp;
 }
 
+// ★ Add Experience Logic
+void player_add_exp(Player* p, int amount) {
+    if (amount <= 0) return;
+    
+    // Log Gain
+    char buf[128];
+    snprintf(buf, sizeof(buf), "%s+%d EXP%s", COLOR_BRIGHT_BLUE, amount, COLOR_RESET);
+    ui_add_log(buf);
+
+    p->exp += amount;
+    
+    // Check Level Up Loop
+    while (p->level < MAX_LEVEL && p->exp >= p->expNext) {
+        p->level++;
+        
+        // Level Up Effect
+        ui_add_log(COLOR_BRIGHT_YELLOW "★ 레벨 업! ★" COLOR_RESET);
+        
+        // Stat Increase Feedback
+        int oldHp = p->baseMaxHp;
+        int oldAtt = p->baseAttackMin;
+        
+        player_update_stats(p);
+        
+        // Heal on Level Up?
+        p->hp = p->maxHp; 
+        
+        char msg[128];
+        snprintf(msg, sizeof(msg), "최대 체력 %d -> %d / 공격력 %d -> %d", 
+                 oldHp, p->baseMaxHp, oldAtt, p->baseAttackMin);
+        ui_add_log(msg);
+        
+        // Play Sound
+        audio_play_sfx("level_up"); // TODO: Add SFX
+    }
+    
+    if (p->level >= MAX_LEVEL) {
+        p->expNext = 0; // Max Level
+    } else {
+        // Ensure expNext is correct (handled in update_stats)
+        // Check if expNext needs update? Yes, update_stats does it.
+    }
+}
+
 void player_init(Player* p) {
     // Init Item System first
     item_system_init();
@@ -47,12 +127,13 @@ void player_init(Player* p) {
     p->dirX = 0;
     p->dirY = 1;
 
-    // ★ 초기 스탯 (Base)
-    p->baseMaxHp = 10;
-    p->hp = 10;
+    // ★ 초기 레벨 설정
+    p->level = 1;
+    p->exp = 0;
     
-    p->baseAttackMin = 1;
-    p->baseAttackMax = 3;
+    // ★ Init Stats from Table
+    player_update_stats(p);
+    p->hp = p->maxHp; // Full HP start
 
     inventory_init(&p->inventory);
     p->equippedWeapon = NULL;

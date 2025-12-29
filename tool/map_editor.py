@@ -20,12 +20,13 @@ class MapEditor:
         # Tile parser
         self.parser = TileParser(self.project_root)
         self.parser.parse_glyph_h()
+        self.parser.parse_stage_configs()  # Parse actual image paths from stage files
 
         # Map data
         self.map_width = 40
         self.map_height = 25
         self.tile_size = 24  # pixels
-        self.map_data = [['.' for _ in range(self.map_width)] for _ in range(self.map_height)]
+        self.map_data = [[' ' for _ in range(self.map_width)] for _ in range(self.map_height)]
 
         # Current selected tile
         self.selected_tile = '#'
@@ -50,12 +51,25 @@ class MapEditor:
                 full_path = os.path.join(self.project_root, tile_def.image_path)
                 if os.path.exists(full_path):
                     try:
-                        # Load and resize to tile_size
+                        # Load image
                         img = Image.open(full_path)
+
+                        # Check if this is a sprite sheet (texture_sprite directory)
+                        if 'texture_sprite' in tile_def.image_path or 'sprite' in tile_def.image_path.lower():
+                            # Extract top-left tile from sprite sheet
+                            # Assume 2x2 sprite sheet, extract first cell
+                            sprite_w = img.width // 2
+                            sprite_h = img.height // 2
+                            img = img.crop((0, 0, sprite_w, sprite_h))
+                            print(f"  Loaded sprite: {symbol} -> {tile_def.image_path} (extracted first tile)")
+                        else:
+                            print(f"  Loaded: {symbol} -> {tile_def.image_path}")
+
+                        # Resize to tile_size
                         img = img.resize((self.tile_size, self.tile_size), Image.Resampling.LANCZOS)
                         photo = ImageTk.PhotoImage(img)
                         self.image_cache[tile_def.image_path] = photo
-                        print(f"  Loaded: {symbol} -> {tile_def.image_path}")
+
                     except Exception as e:
                         print(f"  Error loading {full_path}: {e}")
                 else:
@@ -82,14 +96,17 @@ class MapEditor:
         canvas_container = tk.Frame(canvas_frame)
         canvas_container.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
 
-        self.canvas = tk.Canvas(canvas_container, bg='black',
-                               width=self.map_width * self.tile_size,
-                               height=self.map_height * self.tile_size)
+        self.canvas = tk.Canvas(canvas_container, bg='black')
 
         h_scroll = tk.Scrollbar(canvas_container, orient=tk.HORIZONTAL, command=self.canvas.xview)
         v_scroll = tk.Scrollbar(canvas_container, orient=tk.VERTICAL, command=self.canvas.yview)
 
         self.canvas.configure(xscrollcommand=h_scroll.set, yscrollcommand=v_scroll.set)
+
+        # Set scrollregion to allow scrolling
+        self.canvas.configure(scrollregion=(0, 0,
+                                           self.map_width * self.tile_size,
+                                           self.map_height * self.tile_size))
 
         h_scroll.pack(side=tk.BOTTOM, fill=tk.X)
         v_scroll.pack(side=tk.RIGHT, fill=tk.Y)
@@ -129,6 +146,11 @@ class MapEditor:
         self.canvas.bind('<B1-Motion>', self.on_canvas_drag)
         self.canvas.bind('<ButtonRelease-1>', self.on_canvas_release)
 
+        # Right-click to erase (fill with space)
+        self.canvas.bind('<Button-3>', self.on_canvas_right_click)
+        self.canvas.bind('<B3-Motion>', self.on_canvas_right_drag)
+        self.canvas.bind('<ButtonRelease-3>', self.on_canvas_release)
+
         # Draw initial grid
         self.draw_map()
 
@@ -139,6 +161,16 @@ class MapEditor:
         common_frame.pack(side=tk.LEFT, padx=5)
 
         self.tile_var = tk.StringVar(value='#')
+
+        # Add space tile manually first
+        space_tile = self.parser.get_tile(' ')
+        if space_tile:
+            frame = tk.Frame(common_frame)
+            frame.pack(anchor=tk.W, pady=2)
+            rb = tk.Radiobutton(frame, text=f"[SPACE] - {space_tile.desc}",
+                               variable=self.tile_var, value=' ',
+                               command=self.on_tile_select)
+            rb.pack(side=tk.LEFT)
 
         common_tiles = self.parser.get_all_common_tiles()
         for tile in common_tiles:
@@ -253,6 +285,7 @@ class MapEditor:
     def get_tile_color(self, symbol):
         """Get color for a tile symbol"""
         colors = {
+            ' ': '#000000',  # Black (Empty)
             '#': '#808080',  # Gray (Wall)
             '.': '#2C2C2C',  # Dark gray (Floor)
             '=': '#FFD700',  # Gold (Rail)
@@ -318,8 +351,8 @@ class MapEditor:
 
     def canvas_to_grid(self, canvas_x, canvas_y):
         """Convert canvas coordinates to grid coordinates"""
-        grid_x = canvas_x // self.tile_size
-        grid_y = canvas_y // self.tile_size
+        grid_x = int(canvas_x // self.tile_size)
+        grid_y = int(canvas_y // self.tile_size)
 
         if 0 <= grid_x < len(self.map_data[0]) and 0 <= grid_y < len(self.map_data):
             return grid_x, grid_y
@@ -356,6 +389,32 @@ class MapEditor:
         self.is_drawing = False
         self.last_drawn = None
 
+    def on_canvas_right_click(self, event):
+        """Handle right-click to erase (fill with space)"""
+        canvas_x = self.canvas.canvasx(event.x)
+        canvas_y = self.canvas.canvasy(event.y)
+
+        grid_x, grid_y = self.canvas_to_grid(canvas_x, canvas_y)
+        if grid_x is not None:
+            self.map_data[grid_y][grid_x] = ' '
+            self.is_drawing = True
+            self.last_drawn = (grid_x, grid_y)
+            self.draw_map()
+
+    def on_canvas_right_drag(self, event):
+        """Handle right-click drag to erase"""
+        if not self.is_drawing:
+            return
+
+        canvas_x = self.canvas.canvasx(event.x)
+        canvas_y = self.canvas.canvasy(event.y)
+
+        grid_x, grid_y = self.canvas_to_grid(canvas_x, canvas_y)
+        if grid_x is not None and (grid_x, grid_y) != self.last_drawn:
+            self.map_data[grid_y][grid_x] = ' '
+            self.last_drawn = (grid_x, grid_y)
+            self.draw_map()
+
     def resize_map(self):
         """Resize the map"""
         try:
@@ -366,8 +425,8 @@ class MapEditor:
                 messagebox.showerror("Error", "Map size must be between 1 and 100")
                 return
 
-            # Create new map data
-            new_data = [['.' for _ in range(new_width)] for _ in range(new_height)]
+            # Create new map data filled with spaces (not floor)
+            new_data = [[' ' for _ in range(new_width)] for _ in range(new_height)]
 
             # Copy old data
             for y in range(min(len(self.map_data), new_height)):
@@ -378,9 +437,10 @@ class MapEditor:
             self.map_width = new_width
             self.map_height = new_height
 
-            # Resize canvas
-            self.canvas.config(width=self.map_width * self.tile_size,
-                             height=self.map_height * self.tile_size)
+            # Update scrollregion for new size
+            self.canvas.configure(scrollregion=(0, 0,
+                                               self.map_width * self.tile_size,
+                                               self.map_height * self.tile_size))
 
             self.draw_map()
 
@@ -465,10 +525,10 @@ class MapEditor:
                 new_data.append(list(line))
                 max_width = max(max_width, len(line))
 
-            # Pad shorter lines
+            # Pad shorter lines with spaces (not floor)
             for row in new_data:
                 while len(row) < max_width:
-                    row.append('.')
+                    row.append(' ')
 
             self.map_data = new_data
             self.map_height = len(new_data)
@@ -477,9 +537,10 @@ class MapEditor:
             self.height_var.set(str(self.map_height))
             self.width_var.set(str(self.map_width))
 
-            # Resize canvas
-            self.canvas.config(width=self.map_width * self.tile_size,
-                             height=self.map_height * self.tile_size)
+            # Update scrollregion for new size
+            self.canvas.configure(scrollregion=(0, 0,
+                                               self.map_width * self.tile_size,
+                                               self.map_height * self.tile_size))
 
             self.draw_map()
             import_window.destroy()
