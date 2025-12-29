@@ -177,6 +177,7 @@ void game_process_input(GameState* state) {
             cinematic_play_ending(1);
             state->isRunning = 0;
         }
+        return; // ★ Stop processing other inputs if dead
     }
 
     // ★ Defense Check (Real-time polling)

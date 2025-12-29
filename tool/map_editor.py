@@ -30,12 +30,38 @@ class MapEditor:
         # Current selected tile
         self.selected_tile = '#'
 
+        # Image cache for tiles
+        self.image_cache = {}  # {image_path: PhotoImage}
+        self.preload_images()
+
         # UI Setup
         self.setup_ui()
 
         # Drawing state
         self.is_drawing = False
         self.last_drawn = None
+
+    def preload_images(self):
+        """Preload all tile images into cache"""
+        print("Preloading tile images...")
+
+        for symbol, tile_def in self.parser.special_tiles.items():
+            if tile_def.image_path:
+                full_path = os.path.join(self.project_root, tile_def.image_path)
+                if os.path.exists(full_path):
+                    try:
+                        # Load and resize to tile_size
+                        img = Image.open(full_path)
+                        img = img.resize((self.tile_size, self.tile_size), Image.Resampling.LANCZOS)
+                        photo = ImageTk.PhotoImage(img)
+                        self.image_cache[tile_def.image_path] = photo
+                        print(f"  Loaded: {symbol} -> {tile_def.image_path}")
+                    except Exception as e:
+                        print(f"  Error loading {full_path}: {e}")
+                else:
+                    print(f"  Not found: {full_path}")
+
+        print(f"Preloaded {len(self.image_cache)} images")
 
     def setup_ui(self):
         """Setup the main UI layout"""
@@ -107,7 +133,7 @@ class MapEditor:
         self.draw_map()
 
     def setup_palette(self, parent):
-        """Setup tile palette with radio buttons"""
+        """Setup tile palette with radio buttons and image previews"""
         # Common tiles
         common_frame = tk.LabelFrame(parent, text="Common Tiles")
         common_frame.pack(side=tk.LEFT, padx=5)
@@ -116,10 +142,28 @@ class MapEditor:
 
         common_tiles = self.parser.get_all_common_tiles()
         for tile in common_tiles:
-            rb = tk.Radiobutton(common_frame, text=f"{tile.symbol} - {tile.desc}",
+            frame = tk.Frame(common_frame)
+            frame.pack(anchor=tk.W, pady=2)
+
+            rb = tk.Radiobutton(frame, text=f"{tile.symbol} - {tile.desc}",
                                variable=self.tile_var, value=tile.symbol,
                                command=self.on_tile_select)
-            rb.pack(anchor=tk.W)
+            rb.pack(side=tk.LEFT)
+
+            # Show small preview if image exists
+            if tile.image_path and tile.image_path in self.image_cache:
+                preview_size = 16
+                try:
+                    full_path = os.path.join(self.project_root, tile.image_path)
+                    img = Image.open(full_path)
+                    img = img.resize((preview_size, preview_size), Image.Resampling.LANCZOS)
+                    photo = ImageTk.PhotoImage(img)
+                    # Store reference to prevent garbage collection
+                    label = tk.Label(frame, image=photo, width=preview_size, height=preview_size)
+                    label.image = photo
+                    label.pack(side=tk.LEFT, padx=5)
+                except:
+                    pass
 
         # Enemy tiles
         enemy_frame = tk.LabelFrame(parent, text="Enemies (a-z)")
@@ -127,10 +171,26 @@ class MapEditor:
 
         enemy_tiles = self.parser.get_enemy_tiles()[:5]  # Show first 5
         for tile in enemy_tiles:
-            rb = tk.Radiobutton(enemy_frame, text=f"{tile.symbol} - {tile.desc}",
+            frame = tk.Frame(enemy_frame)
+            frame.pack(anchor=tk.W, pady=2)
+
+            rb = tk.Radiobutton(frame, text=f"{tile.symbol} - {tile.desc}",
                                variable=self.tile_var, value=tile.symbol,
                                command=self.on_tile_select)
-            rb.pack(anchor=tk.W)
+            rb.pack(side=tk.LEFT)
+
+            if tile.image_path and tile.image_path in self.image_cache:
+                preview_size = 16
+                try:
+                    full_path = os.path.join(self.project_root, tile.image_path)
+                    img = Image.open(full_path)
+                    img = img.resize((preview_size, preview_size), Image.Resampling.LANCZOS)
+                    photo = ImageTk.PhotoImage(img)
+                    label = tk.Label(frame, image=photo, width=preview_size, height=preview_size)
+                    label.image = photo
+                    label.pack(side=tk.LEFT, padx=5)
+                except:
+                    pass
 
         # NPC tiles
         npc_frame = tk.LabelFrame(parent, text="NPCs (A-Z)")
@@ -138,10 +198,26 @@ class MapEditor:
 
         npc_tiles = self.parser.get_npc_tiles()[:5]  # Show first 5
         for tile in npc_tiles:
-            rb = tk.Radiobutton(npc_frame, text=f"{tile.symbol} - {tile.desc}",
+            frame = tk.Frame(npc_frame)
+            frame.pack(anchor=tk.W, pady=2)
+
+            rb = tk.Radiobutton(frame, text=f"{tile.symbol} - {tile.desc}",
                                variable=self.tile_var, value=tile.symbol,
                                command=self.on_tile_select)
-            rb.pack(anchor=tk.W)
+            rb.pack(side=tk.LEFT)
+
+            if tile.image_path and tile.image_path in self.image_cache:
+                preview_size = 16
+                try:
+                    full_path = os.path.join(self.project_root, tile.image_path)
+                    img = Image.open(full_path)
+                    img = img.resize((preview_size, preview_size), Image.Resampling.LANCZOS)
+                    photo = ImageTk.PhotoImage(img)
+                    label = tk.Label(frame, image=photo, width=preview_size, height=preview_size)
+                    label.image = photo
+                    label.pack(side=tk.LEFT, padx=5)
+                except:
+                    pass
 
         # Chest tiles
         chest_frame = tk.LabelFrame(parent, text="Chests (0-9)")
@@ -149,10 +225,26 @@ class MapEditor:
 
         chest_tiles = self.parser.get_chest_tiles()[:5]  # Show first 5
         for tile in chest_tiles:
-            rb = tk.Radiobutton(chest_frame, text=f"{tile.symbol} - {tile.desc}",
+            frame = tk.Frame(chest_frame)
+            frame.pack(anchor=tk.W, pady=2)
+
+            rb = tk.Radiobutton(frame, text=f"{tile.symbol} - {tile.desc}",
                                variable=self.tile_var, value=tile.symbol,
                                command=self.on_tile_select)
-            rb.pack(anchor=tk.W)
+            rb.pack(side=tk.LEFT)
+
+            if tile.image_path and tile.image_path in self.image_cache:
+                preview_size = 16
+                try:
+                    full_path = os.path.join(self.project_root, tile.image_path)
+                    img = Image.open(full_path)
+                    img = img.resize((preview_size, preview_size), Image.Resampling.LANCZOS)
+                    photo = ImageTk.PhotoImage(img)
+                    label = tk.Label(frame, image=photo, width=preview_size, height=preview_size)
+                    label.image = photo
+                    label.pack(side=tk.LEFT, padx=5)
+                except:
+                    pass
 
     def on_tile_select(self):
         """Handle tile selection"""
@@ -195,17 +287,34 @@ class MapEditor:
                 x2 = x1 + self.tile_size
                 y2 = y1 + self.tile_size
 
-                color = self.get_tile_color(symbol)
+                # Get tile definition
+                tile_def = self.parser.get_tile(symbol)
 
-                # Draw tile
-                self.canvas.create_rectangle(x1, y1, x2, y2,
-                                            fill=color, outline='#444444')
+                # Try to draw image first
+                drawn_image = False
+                if tile_def and tile_def.image_path and tile_def.image_path in self.image_cache:
+                    try:
+                        photo = self.image_cache[tile_def.image_path]
+                        self.canvas.create_image(x1 + self.tile_size // 2,
+                                                y1 + self.tile_size // 2,
+                                                image=photo)
+                        drawn_image = True
 
-                # Draw symbol
-                self.canvas.create_text(x1 + self.tile_size // 2,
-                                       y1 + self.tile_size // 2,
-                                       text=symbol, fill='white',
-                                       font=('Courier', 12, 'bold'))
+                        # Draw border
+                        self.canvas.create_rectangle(x1, y1, x2, y2,
+                                                    fill='', outline='#333333', width=1)
+                    except Exception as e:
+                        print(f"Error drawing image for {symbol}: {e}")
+
+                # Fallback: draw colored rectangle with symbol
+                if not drawn_image:
+                    color = self.get_tile_color(symbol)
+                    self.canvas.create_rectangle(x1, y1, x2, y2,
+                                                fill=color, outline='#444444')
+                    self.canvas.create_text(x1 + self.tile_size // 2,
+                                           y1 + self.tile_size // 2,
+                                           text=symbol, fill='white',
+                                           font=('Courier', 10, 'bold'))
 
     def canvas_to_grid(self, canvas_x, canvas_y):
         """Convert canvas coordinates to grid coordinates"""
