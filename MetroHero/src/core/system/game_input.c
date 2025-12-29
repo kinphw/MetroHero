@@ -117,10 +117,17 @@ void game_process_input(GameState* state) {
 
     // ★ Defense Check (Real-time polling)
     // Must be checked every frame regardless of GetKeyPressed
+    int wasDefending = state->player.isDefending; // Added
+    
     if (IsKeyDown(KEY_KP_0) || IsKeyDown(KEY_ZERO)) {
         state->player.isDefending = 1;
     } else {
         state->player.isDefending = 0;
+    }
+
+    // Play SFX on activation
+    if (!wasDefending && state->player.isDefending) {
+        audio_play_sfx("shield_equip");
     }
 
     int key = GetRepeatingKey();
@@ -214,6 +221,11 @@ void game_process_input(GameState* state) {
     }
 
     ui_hide_combat_effect(); // Clear previous effects
+
+    // ★ Defense Block: Cannot move or attack while defending
+    if (state->player.isDefending) {
+        return;
+    }
 
     // Defense Check moved to top
 

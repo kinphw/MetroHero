@@ -14,7 +14,7 @@ typedef struct {
     Sound sound;
 } SoundAsset;
 
-#define SFX_COUNT 6
+#define SFX_COUNT 7
 static SoundAsset sfx[SFX_COUNT];
 static const char* sfxNames[SFX_COUNT] = {
     "claw_hit",
@@ -22,7 +22,8 @@ static const char* sfxNames[SFX_COUNT] = {
     "explosion",
     "sword_hit",
     "sword_swing",
-    "text_blip"
+    "text_blip",
+    "shield_equip"
 };
 
 void audio_init(void) {
