@@ -3,7 +3,9 @@
 #include "../ui/ui.h"
 #include "../ui/text/render.h" // For ui_draw_image
 #include "../ui/panels/inventory_panel.h"
-#include "../ui/panels/system_menu.h" // Added
+#include "../ui/panels/inventory_panel.h"
+#include "../ui/panels/system_menu.h"
+#include "../ui/panels/quest_panel.h" // Added
 #include "../../world/glyph.h"
 #include "raylib.h"
 
@@ -51,6 +53,7 @@ void game_render(GameState* state) {
     if (!state->inDialogue) {
         ui_draw_stats(&state->player);
         ui_draw_equipment(&state->player);
+        ui_draw_quest_tracker(state->activeQuestMsg); // Added
     } else {
         if (state->currentNPC != NULL) {
             ui_draw_dialogue(state->currentNPC);

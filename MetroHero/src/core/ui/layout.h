@@ -37,17 +37,23 @@
 #define STATUS_W PANEL_WIDTH
 #define STATUS_H 14
 
-// Equipment Panel
+// Equipment Panel (Reduced Height)
 #define EQUIP_X PANEL_X
 #define EQUIP_Y (STATUS_Y + STATUS_H)
 #define EQUIP_W PANEL_WIDTH
-#define EQUIP_H 16
+#define EQUIP_H 8
 
-// Dialogue Panel (Overlays Status + Equip)
+// ★ Quest Tracker Panel (New - Below Equipment)
+#define QUEST_X PANEL_X
+#define QUEST_Y (EQUIP_Y + EQUIP_H)
+#define QUEST_W PANEL_WIDTH
+#define QUEST_H 8
+
+// Dialogue Panel (Overlays Status + Equip + Quest)
 #define DIALOGUE_X PANEL_X
 #define DIALOGUE_Y (SCREEN_PADDING_TOP)
 #define DIALOGUE_W PANEL_WIDTH
-#define DIALOGUE_H (STATUS_H + EQUIP_H)
+#define DIALOGUE_H (STATUS_H + EQUIP_H + QUEST_H)
 
 // Log Panel (Left - General)
 #define LOG_X (SCREEN_PADDING_LEFT)

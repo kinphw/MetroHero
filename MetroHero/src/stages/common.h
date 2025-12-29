@@ -98,6 +98,13 @@ typedef struct {
     EventConfig event;      // 잠금 조건 등
 } DoorConfig;
 
+// ★ Quest Config
+typedef struct {
+    const char* reqFlag;    // 발동 조건 플래그
+    int reqVal;             // 발동 값 (이상일 때)
+    const char* msg;        // 출력할 메시지 (파란색 자동 적용)
+} QuestConfig;
+
 // --- Stage Definition ---
 typedef struct {
     int stageId;
@@ -122,6 +129,10 @@ typedef struct {
     // 문 데이터 (이벤트 문)
     const DoorConfig* doors;
     int doorCount;
+
+    // 퀘스트 데이터
+    const QuestConfig* quests;
+    int questCount;
 
     // 시네마틱 (스토리)
     const Cinematic* intro;       // 스테이지 시작 시 재생

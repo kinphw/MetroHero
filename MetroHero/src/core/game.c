@@ -8,7 +8,8 @@
 #include "../cinematic/cinematic.h"
 #include "../world/map.h"
 #include "../entity/player.h"
-#include "audio/audio.h" // Added
+#include "audio/audio.h" 
+#include "../stages/stage_01/stage_01.h" // Added
 
 // 게임 세션 시작 (새 게임)
 void game_run_new_session(void) {
@@ -42,6 +43,12 @@ void game_run_new_session(void) {
     state.isRunning = 1;
     state.inDialogue = 0;
     state.currentNPC = NULL;
+
+    state.currentNPC = NULL;
+    
+    // Set Stage Data & Initial Quest
+    state.currentStageData = &STAGE_01_DATA;
+    snprintf(state.activeQuestMsg, sizeof(state.activeQuestMsg), "목표: 역무원을 찾아 대화하라.");
 
     // 초기 화면 그리기 (렌더링 모듈에서 일부 수행하지만, 전체 클리어는 여기서 하는게 깔끔할 수 있음)
     ui_clear_buffer();

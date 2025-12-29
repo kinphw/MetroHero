@@ -139,6 +139,15 @@ static const DoorConfig DOORS[] = {
 };
 
 // ============================================
+// Stage 1 Quests
+// ============================================
+static const QuestConfig QUESTS[] = {
+    // 퀘스트 1: 역무원 대화
+    // 초기 상태는 game.c에서 설정 or "start_quest" 플래그 사용
+    { "receive_mission", 1, "목표: 맹혹한 고양이를 처치하고 길을 뚫어라." }
+};
+
+// ============================================
 // Stage 1 Story (Cinematics)
 // ============================================
 
@@ -195,6 +204,8 @@ const StageData STAGE_01_DATA = {
     .npcCount = sizeof(NPCS) / sizeof(NPCS[0]),
     .doors = DOORS,
     .doorCount = sizeof(DOORS) / sizeof(DOORS[0]),
+    .quests = QUESTS,
+    .questCount = sizeof(QUESTS) / sizeof(QUESTS[0]),
     .intro = &INTRO_CINEMATIC,
     .outro = &CLEAR_CINEMATIC
 };

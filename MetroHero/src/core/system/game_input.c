@@ -103,6 +103,52 @@ static int GetRepeatingKey() {
     return 0;
 }
 
+// Check Quests based on current flags
+static void check_quest_updates(GameState* state) {
+    if (!state->currentStageData || !state->currentStageData->quests) return;
+
+    for (int i = 0; i < state->currentStageData->questCount; i++) {
+        const QuestConfig* q = &state->currentStageData->quests[i];
+        if (q->reqFlag && q->msg) {
+            int val = event_get_flag(&state->eventRegistry, q->reqFlag);
+            int req = q->reqVal > 0 ? q->reqVal : 1;
+            
+            if (val >= req) {
+                // Check if this is a NEW quest update (avoid spamming log?)
+                // Actually, if we just want to track the "Current" quest, we simply update the tracker msg.
+                // But we don't want to log "Quest Updated" every frame.
+                // We can compare with current activeQuestMsg?
+                
+                // If it's different, update it. 
+                // Note: This logic assumes Quests are ordered by progression! 
+                // Use the LAST matches quest as the active one? Or FIRST?
+                // Typically sequential quests: Q1 done -> Q2 active.
+                // So we want the LATEST quest that matches conditions? 
+                // Or maybe the conditions should be strict (Flag A=1 AND Flag B=0).
+                // For now, let's just trigger when flag matches.
+                // If we want to prevent overwrite, we need a "Quest Index" or "Priority".
+                // Simple approach: The msg itself IS the tracker state.
+                
+                if (strcmp(state->activeQuestMsg, q->msg) != 0) {
+                    snprintf(state->activeQuestMsg, sizeof(state->activeQuestMsg), "%s", q->msg);
+                    char log[512];
+                    snprintf(log, sizeof(log), "📘 퀘스트 갱신! \n%s", q->msg);
+                    ui_add_log(log);
+                    audio_play_sfx("cinematic_blip"); // Reuse blip sfx for quest
+                }
+            }
+        }
+    }
+}
+
+// Wrapper to set flag and check quests
+static void trigger_event_flag(GameState* state, const char* flag, int val) {
+    if (val > 0) event_set_flag(&state->eventRegistry, flag, val);
+    else event_add_flag(&state->eventRegistry, flag, 1);
+    
+    check_quest_updates(state);
+}
+
 // 입력 처리 및 로직 업데이트
 // 입력 처리 및 로직 업데이트
 void game_process_input(GameState* state) {
@@ -195,11 +241,7 @@ void game_process_input(GameState* state) {
                 // End Dialogue
                 // ★ Trigger Event Flag on Completion
                 if (state->currentNPC->event.setFlag) {
-                    if (state->currentNPC->event.setVal > 0) {
-                        event_set_flag(&state->eventRegistry, state->currentNPC->event.setFlag, state->currentNPC->event.setVal);
-                    } else {
-                        event_add_flag(&state->eventRegistry, state->currentNPC->event.setFlag, 1);
-                    }
+                    trigger_event_flag(state, state->currentNPC->event.setFlag, state->currentNPC->event.setVal);
                 }
                 
                 // ★ Item Reward (Dialogue End)
@@ -318,13 +360,10 @@ void game_process_input(GameState* state) {
                 // Trigger Effect (Simple Flag / Item Reward)
                 int triggerNow = !interactNpc->useDialogueBox;
                 
-                if (triggerNow) {
-                    // Flag
-                    if (interactNpc->event.setFlag) {
-                        if (interactNpc->event.setVal > 0) event_set_flag(&state->eventRegistry, interactNpc->event.setFlag, interactNpc->event.setVal);
-                        else event_add_flag(&state->eventRegistry, interactNpc->event.setFlag, 1);
-                    }
-                    // Item Reward
+                // ★ Only trigger here if NOT using Dialogue Box (Simple Float Text)
+                if (!interactNpc->useDialogueBox && interactNpc->event.setFlag) {
+                    trigger_event_flag(state, interactNpc->event.setFlag, interactNpc->event.setVal);
+                }    // Item Reward
                     if (interactNpc->event.giveItem) {
                         const Item* it = item_get(interactNpc->event.giveItem);
                         if (it && !inventory_has_item(&state->player.inventory, it->name)) { // Unique give
@@ -338,9 +377,8 @@ void game_process_input(GameState* state) {
                         }
                     }
                 }
+                actionTaken = 1;
             }
-            actionTaken = 1;
-        }
 
         // B. Open Chest
         if (!actionTaken) {
@@ -382,8 +420,7 @@ void game_process_input(GameState* state) {
                     
                     // Trigger
                     if (chest->event.setFlag) {
-                        if (chest->event.setVal > 0) event_set_flag(&state->eventRegistry, chest->event.setFlag, chest->event.setVal);
-                        else event_add_flag(&state->eventRegistry, chest->event.setFlag, 1);
+                        trigger_event_flag(state, chest->event.setFlag, chest->event.setVal);
                     }
                     if (chest->event.giveItem) {
                          const Item* it = item_get(chest->event.giveItem);
@@ -430,8 +467,7 @@ void game_process_input(GameState* state) {
                     audio_play_sfx("door_creak"); 
                     
                     if (door->event.setFlag) {
-                        if (door->event.setVal > 0) event_set_flag(&state->eventRegistry, door->event.setFlag, door->event.setVal);
-                        else event_add_flag(&state->eventRegistry, door->event.setFlag, 1);
+                        trigger_event_flag(state, door->event.setFlag, door->event.setVal);
                     }
                 }
                 actionTaken = 1;

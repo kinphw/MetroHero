@@ -13,7 +13,11 @@
 typedef struct {
     Map map;
     Player player;
-    EventRegistry eventRegistry; // Added
+    EventRegistry eventRegistry; 
+    
+    // ★ Quest Data
+    const StageData* currentStageData;
+    char activeQuestMsg[256];
     
     int isRunning;      // 게임 루프 실행 여부
     

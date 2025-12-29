@@ -34,6 +34,7 @@
     <ClCompile Include="src\core\ui\panels\effect.c" />
     <ClCompile Include="src\core\ui\panels\equipment.c" />
     <ClCompile Include="src\core\ui\panels\inventory_panel.c" />
+    <ClCompile Include="src\core\ui\panels\quest_panel.c" />
     <ClCompile Include="src\core\ui\panels\stats.c" />
     <ClCompile Include="src\core\ui\panels\system_menu.c" />
     <ClCompile Include="src\core\ui\text\glyph.c" />
@@ -72,6 +73,7 @@
     <ClInclude Include="src\core\ui\panels\effect.h" />
     <ClInclude Include="src\core\ui\panels\equipment.h" />
     <ClInclude Include="src\core\ui\panels\inventory_panel.h" />
+    <ClInclude Include="src\core\ui\panels\quest_panel.h" />
     <ClInclude Include="src\core\ui\panels\stats.h" />
     <ClInclude Include="src\core\ui\panels\system_menu.h" />
     <ClInclude Include="src\core\ui\text\glyph.h" />
