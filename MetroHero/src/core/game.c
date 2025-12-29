@@ -7,6 +7,7 @@
 #include "../cinematic/cinematic.h"
 #include "../world/map.h"
 #include "../entity/player.h"
+#include "audio/audio.h" // Added
 
 // 게임 세션 시작 (새 게임)
 void game_run_new_session(void) {
@@ -23,6 +24,9 @@ void game_run_new_session(void) {
 
     // 스테이지 1 시작
     cinematic_play_stage_start(1);
+    
+    // Play Stage 1 BGM
+    audio_play_music("assets/bgm/gap_of_winter.mp3");
 
     // 플레이어 배치
     state.player.x = state.map.spawnX;
