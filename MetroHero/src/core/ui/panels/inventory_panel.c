@@ -2,6 +2,7 @@
 #include "../layout.h"
 #include "../text/render.h"
 #include "../widgets/box.h"
+#include "raylib.h" // Added for DrawRectangle
 #include <stdio.h>
 
 // Draw Inventory covering the Map Viewport
@@ -11,18 +12,16 @@ void ui_draw_inventory_viewport(const Player* p, int cursor) {
     int w = VIEWPORT_W;
     int h = VIEWPORT_H;
 
-    // 1. Draw Box (Cover Map)
-    // Dark background to indicate modal
-    // Raylib DrawRectangle logic is inside ui_draw_box? No, ui_draw_box is clear?
-    // Let's rely on ui_draw_box clearing the bg or drawing on top.
-    // viewport is 120x30 chars.
-    
-    // Draw solid background first to hide map
-    // Convert grid to pixels: x*8, y*16, w*8, h*16
-    // DrawRectangle(x*8, y*16, w*8, h*16, BLACK); // Need Raylib or backend func? 
-    // ui_draw_box usually handles borders. We want a clear window.
-    
-    // Using ui_draw_box with title
+    // 1. Draw Opaque Background (Cover Map)
+    // Convert grid to pixels
+    int px = x * GRID_W;
+    int py = y * GRID_H;
+    int pw = w * GRID_W;
+    int ph = h * GRID_H;
+
+    DrawRectangle(px, py, pw, ph, BLACK);
+
+    // 2. Draw Box with Title
     ui_draw_box(x, y, w, h, "INVENTORY");
 
     // 2. List Items
