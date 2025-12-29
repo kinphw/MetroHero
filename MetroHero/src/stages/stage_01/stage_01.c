@@ -165,15 +165,17 @@ static const Cinematic CLEAR_CINEMATIC = {
 // Stage Package
 // ============================================
 const StageData STAGE_01_DATA = {
-    1, // ID
-    MAP_LINES,
-    sizeof(MAP_LINES) / sizeof(MAP_LINES[0]),
-    CHESTS,
-    sizeof(CHESTS) / sizeof(CHESTS[0]),
-    ENEMIES,
-    sizeof(ENEMIES) / sizeof(ENEMIES[0]),
-    NPCS,
-    sizeof(NPCS) / sizeof(NPCS[0]),
-    &INTRO_CINEMATIC,
-    &CLEAR_CINEMATIC
+    .stageId = 1,
+    .mapLines = MAP_LINES,
+    .mapHeight = sizeof(MAP_LINES) / sizeof(MAP_LINES[0]),
+    .chests = CHESTS,
+    .chestCount = sizeof(CHESTS) / sizeof(CHESTS[0]),
+    .enemies = ENEMIES,
+    .enemyCount = sizeof(ENEMIES) / sizeof(ENEMIES[0]),
+    .npcs = NPCS,
+    .npcCount = sizeof(NPCS) / sizeof(NPCS[0]),
+    .doors = NULL,
+    .doorCount = 0,
+    .intro = &INTRO_CINEMATIC,
+    .outro = &CLEAR_CINEMATIC
 };

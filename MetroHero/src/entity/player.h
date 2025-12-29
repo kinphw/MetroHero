@@ -33,6 +33,10 @@ typedef struct {
 
     // ★ 전투 관련 (실시간)
     float attackCooldown; // 0보다 크면 공격 불가
+    
+    // ★ 방어 관련
+    int isDefending;
+    SpriteSheet shieldSprite;
 
 } Player;
 

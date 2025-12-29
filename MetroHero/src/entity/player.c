@@ -65,6 +65,13 @@ void player_init(Player* p) {
     // Load Sprite Sheet
     // 2 rows, 6 columns
     sprite_load(&p->spriteSheet, "assets/player/player_sheet.png", 2, 6);
+    
+    // Shield Sprite
+    // 1 row, 4 columns
+    sprite_load(&p->shieldSprite, "assets/player/player_shield.png", 1, 4);
+    p->isDefending = 0;
+    
+    printf("[PLAYER] Init Complete. Shield Texture ID: %u\n", p->shieldSprite.texture.id);
 
     player_update_stats(p);
 }

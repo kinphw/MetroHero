@@ -152,6 +152,9 @@ void combat_update_ai(GameState* state, float dt) {
                     // dmg -= p->defense; // Defense removed
                     if (dmg < 1) dmg = 1;
 
+                    // ★ Shield Defense
+                    if (p->isDefending) dmg = 1;
+
                     p->hp -= dmg;
                     audio_play_sfx("claw_hit"); // SFX Added
 

@@ -406,20 +406,36 @@ void map_draw_viewport(const Map* m, const Player* p,
 
             // 6. Player (Overlay)
             if (mx == p->x && my == p->y) {
-                // Determine Sprite Index based on direction
-                int row = 0;
-                int col = 0;
+                if (p->isDefending) {
+                     // ★ Shield Mode
+                     // 1 Row, 4 Cols
+                     // 0: Down, 1: Up, 2: Right, 3: Left
+                     int row = 0;
+                     int col = 0;
+                     
+                     if (p->dirX == 0 && p->dirY == 1) col = 0;      // Down
+                     else if (p->dirX == 0 && p->dirY == -1) col = 1; // Up
+                     else if (p->dirX == 1) col = 2;                  // Right
+                     else if (p->dirX == -1) col = 3;                 // Left
+                     
+                     sprite_draw(&p->shieldSprite, row, col, screenPxX, screenPxY, MAP_TILE_SIZE, MAP_TILE_SIZE);
+                } else {
+                    // ★ Normal Mode
+                    // Determine Sprite Index based on direction
+                    int row = 0;
+                    int col = 0;
 
-                // 1행x1열 (Down) -> 0,0
-                if (p->dirX == 0 && p->dirY == 1) { row = 0; col = 0; }
-                // 2행x4열 (Left) -> 1,3
-                else if (p->dirX == -1) { row = 1; col = 3; }
-                // 1행x5열 (Up) -> 0,4
-                else if (p->dirX == 0 && p->dirY == -1) { row = 0; col = 4; }
-                // 1행x6열 (Right) -> 0,5
-                else if (p->dirX == 1) { row = 0; col = 5; }
-                
-                sprite_draw(&p->spriteSheet, row, col, screenPxX, screenPxY, MAP_TILE_SIZE, MAP_TILE_SIZE);
+                    // 1행x1열 (Down) -> 0,0
+                    if (p->dirX == 0 && p->dirY == 1) { row = 0; col = 0; }
+                    // 2행x4열 (Left) -> 1,3
+                    else if (p->dirX == -1) { row = 1; col = 3; }
+                    // 1행x5열 (Up) -> 0,4
+                    else if (p->dirX == 0 && p->dirY == -1) { row = 0; col = 4; }
+                    // 1행x6열 (Right) -> 0,5
+                    else if (p->dirX == 1) { row = 0; col = 5; }
+                    
+                    sprite_draw(&p->spriteSheet, row, col, screenPxX, screenPxY, MAP_TILE_SIZE, MAP_TILE_SIZE);
+                }
             }
 
             // 7. Effect (Overlay)

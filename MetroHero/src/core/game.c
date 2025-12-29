@@ -1,5 +1,6 @@
 #define _CRT_SECURE_NO_WARNINGS
 #include <stdio.h>
+#include <string.h> // Added
 #include <stdlib.h>
 #include "game.h"
 #include "system/game_internal.h"
@@ -12,7 +13,9 @@
 // 게임 세션 시작 (새 게임)
 void game_run_new_session(void) {
     // 1. 상태 초기화
-    GameState state = { 0 };  // 모든 필드 0/NULL 초기화
+    // 1. 상태 초기화
+    static GameState state; // Large struct on heap/BSS
+    memset(&state, 0, sizeof(state)); // Ensure zero init every run
 
     // ui_init(); // Moved to main.c
 
