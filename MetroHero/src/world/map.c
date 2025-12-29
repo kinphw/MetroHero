@@ -381,12 +381,12 @@ void map_draw_viewport(const Map* m, const Player* p,
                  Chest* chest = map_get_chest_at((Map*)m, mx, my);
                  if (chest != NULL) {
                      if (chest->isOpened) {
-                         ui_draw_image(screenPxX, screenPxY, MAP_TILE_SIZE, MAP_TILE_SIZE, "assets/chest_open.png");
+                         ui_draw_image(screenPxX, screenPxY, MAP_TILE_SIZE, MAP_TILE_SIZE, "assets/entity/chest_open.png");
                      } else {
                          if (chest->imagePath) {
                              ui_draw_image(screenPxX, screenPxY, MAP_TILE_SIZE, MAP_TILE_SIZE, chest->imagePath);
                          } else {
-                             ui_draw_image(screenPxX, screenPxY, MAP_TILE_SIZE, MAP_TILE_SIZE, "assets/chest_closed.png");
+                             ui_draw_image(screenPxX, screenPxY, MAP_TILE_SIZE, MAP_TILE_SIZE, "assets/entity/chest_closed.png");
                          }
                      }
                  }
@@ -466,7 +466,7 @@ void map_draw_viewport(const Map* m, const Player* p,
             // 5. Door (Overlay)
             Door* door = map_get_door_at((Map*)m, mx, my);
             if (door != NULL && !door->isOpen) {
-                ui_draw_image(screenPxX, screenPxY, MAP_TILE_SIZE, MAP_TILE_SIZE, "assets/door.png");
+                ui_draw_image(screenPxX, screenPxY, MAP_TILE_SIZE, MAP_TILE_SIZE, "assets/entity/door.png");
             }
 
             // 6. Player (Overlay)
@@ -505,7 +505,7 @@ void map_draw_viewport(const Map* m, const Player* p,
 
             // 7. Effect (Overlay)
             if (effectTimer > 0 && mx == effectX && my == effectY) {
-                 ui_draw_image(screenPxX, screenPxY, MAP_TILE_SIZE, MAP_TILE_SIZE, "assets/slash.png");
+                 ui_draw_image(screenPxX, screenPxY, MAP_TILE_SIZE, MAP_TILE_SIZE, "assets/player/slash.png");
             }
         }
     }

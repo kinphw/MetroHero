@@ -15,14 +15,14 @@
 // ========================
 const TileDef GLOBAL_TILE_PALETTE[] = {
     // Floors (Walkable)
-    { '.', "\033[48;5;240m..\033[0m", "assets/floor.png", 1, "Tiled Floor" },
+    { '.', "\033[48;5;240m..\033[0m", "assets/tile/floor.png", 1, "Tiled Floor" },
     { ',', "\033[32m,,\033[0m",        "assets/floor.png", 1, "Grass Floor" },
     { '-', "\033[48;5;235m--\033[0m",   "assets/floor.png", 1, "Paved Floor" },
     { '_', "\033[93m..\033[0m",        "assets/floor.png", 1, "Dirt Floor" },
     { '~', "\033[44m  \033[0m",        "assets/floor.png", 1, "Water" },
 
     // Walls (Blocked)
-    { '#', "\033[48;5;236m  \033[0m",  "assets/wall.png", 0, "Gray Wall" },
+    { '#', "\033[48;5;236m  \033[0m",  "assets/tile/wall.png", 0, "Gray Wall" },
     { '%', "\033[48;5;124m  \033[0m",  "assets/wall.png", 0, "Brick Wall" },
     { '&', "\033[48;5;22m  \033[0m",   "assets/wall.png", 0, "Iron Wall" },
     { '$', "\033[48;5;123m  \033[0m",  "assets/wall.png", 0, "Glass Wall" },
@@ -41,16 +41,16 @@ const TileDef GLOBAL_TILE_PALETTE[] = {
     
     // Chests (0-9) - Blocked
     // Note: Chest graphics are handled dynamically or via ChestConfig, but mapping here helps fallback
-    { '0', "📦",  "assets/chest_closed.png", 0, "Chest 0" },
-    { '1', "📦",  "assets/chest_closed.png", 0, "Chest 1" },
-    { '2', "📦",  "assets/chest_closed.png", 0, "Chest 2" },
-    { '3', "📦",  "assets/chest_closed.png", 0, "Chest 3" },
-    { '4', "📦",  "assets/chest_closed.png", 0, "Chest 4" },
-    { '5', "📦",  "assets/chest_closed.png", 0, "Chest 5" },
-    { '6', "📦",  "assets/chest_closed.png", 0, "Chest 6" },
-    { '7', "📦",  "assets/chest_closed.png", 0, "Chest 7" },
-    { '8', "📦",  "assets/chest_closed.png", 0, "Chest 8" },
-    { '9', "📦",  "assets/chest_closed.png", 0, "Chest 9" },
+    { '0', "📦",  "assets/entity/chest_closed.png", 0, "Chest 0" },
+    { '1', "📦",  "assets/entity/chest_closed.png", 0, "Chest 1" },
+    { '2', "📦",  "assets/entity/chest_closed.png", 0, "Chest 2" },
+    { '3', "📦",  "assets/entity/chest_closed.png", 0, "Chest 3" },
+    { '4', "📦",  "assets/entity/chest_closed.png", 0, "Chest 4" },
+    { '5', "📦",  "assets/entity/chest_closed.png", 0, "Chest 5" },
+    { '6', "📦",  "assets/entity/chest_closed.png", 0, "Chest 6" },
+    { '7', "📦",  "assets/entity/chest_closed.png", 0, "Chest 7" },
+    { '8', "📦",  "assets/entity/chest_closed.png", 0, "Chest 8" },
+    { '9', "📦",  "assets/entity/chest_closed.png", 0, "Chest 9" },
 };
 const int GLOBAL_TILE_PALETTE_COUNT = sizeof(GLOBAL_TILE_PALETTE) / sizeof(GLOBAL_TILE_PALETTE[0]);
 
