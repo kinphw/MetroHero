@@ -62,6 +62,10 @@ void player_init(Player* p) {
     
     p->attackCooldown = 0.0f;
 
+    // Load Sprite Sheet
+    // 2 rows, 6 columns
+    sprite_load(&p->spriteSheet, "assets/player/player_sheet.png", 2, 6);
+
     player_update_stats(p);
 }
 

@@ -2,10 +2,11 @@
 #define PLAYER_H
 
 struct Map;
-
+#include "../core/graphics/sprite_sheet.h" // Added
 #include "inventory.h"
 
 typedef struct {
+    SpriteSheet spriteSheet; // Added
 	int x , y;
 
 	int dirX;

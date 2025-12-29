@@ -1,5 +1,6 @@
 #include "launcher.h"
 #include "raylib.h"
+#include "../audio/audio.h" // Added
 #include "../ui/ui.h" // For ui_begin_texture_mode etc if needed, or just raylib
 #include "../ui/layout.h"
 #include "../ui/text/render.h"
@@ -28,6 +29,7 @@ static void unload_title_image(void) {
 
 GameMode game_menu(void) {
     load_title_image();
+    audio_play_music("assets/bgm/tunnel_ambience.mp3"); // Start Title BGM
     
     int selectedOption = 0;
     const int optionCount = 3;
@@ -35,6 +37,8 @@ GameMode game_menu(void) {
     
     // 메뉴 루프
     while (!WindowShouldClose()) {
+        audio_update(); // Update Stream
+
         // --- Input Handling ---
         if (IsKeyPressed(KEY_DOWN)) {
             selectedOption = (selectedOption + 1) % optionCount;

@@ -58,6 +58,12 @@
     <Filter Include="src\stages\stage_03">
       <UniqueIdentifier>{8fe6919d-0b0b-49c5-9b9c-ae815436879d}</UniqueIdentifier>
     </Filter>
+    <Filter Include="src\core\audio">
+      <UniqueIdentifier>{945f09a4-66c1-4809-955e-5c3e56c29707}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="src\core\graphics">
+      <UniqueIdentifier>{2db1f696-e3dd-496c-ba20-4c5eb01edba3}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="src\main.c">
@@ -155,6 +161,12 @@
     </ClCompile>
     <ClCompile Include="src\entity\item.c">
       <Filter>src\entity</Filter>
+    </ClCompile>
+    <ClCompile Include="src\core\audio\audio.c">
+      <Filter>src\core\audio</Filter>
+    </ClCompile>
+    <ClCompile Include="src\core\graphics\sprite_sheet.c">
+      <Filter>src\core\graphics</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -259,6 +271,12 @@
     </ClInclude>
     <ClInclude Include="src\entity\item.h">
       <Filter>src\entity</Filter>
+    </ClInclude>
+    <ClInclude Include="src\core\audio\audio.h">
+      <Filter>src\core\audio</Filter>
+    </ClInclude>
+    <ClInclude Include="src\core\graphics\sprite_sheet.h">
+      <Filter>src\core\graphics</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>

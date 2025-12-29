@@ -1,6 +1,7 @@
 #define _CRT_SECURE_NO_WARNINGS
 #include "cinematic.h"
 #include "../core/ui/ui.h"
+#include "../core/audio/audio.h" // Added
 #include "../world/glyph.h"
 #include "../world/map_data.h" // For get_stage_data
 #include "raylib.h"
@@ -175,6 +176,7 @@ static void cinematic_delay(int ms) {
     // Use Timer based wait for better input handling
     double startTime = GetTime();
     while ((GetTime() - startTime) * 1000.0 < ms) {
+        audio_update(); // Keep music playing
         PollInputEvents();
         
         // Capture key if pressed during delay (Robust filtering)

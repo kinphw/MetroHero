@@ -1,4 +1,5 @@
 #include "game_internal.h"
+#include "../audio/audio.h" // Added
 // #include <windows.h> // Removed for Raylib
 
 #include "raylib.h"
@@ -16,6 +17,7 @@ void game_loop(GameState* state) {
     game_render(state);
 
     while (!WindowShouldClose() && state->isRunning) {
+        audio_update(); // Keep music playing
         float dt = GetFrameTime();
 
         // 입력 처리 (Non-blocking)

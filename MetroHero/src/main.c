@@ -2,6 +2,7 @@
 #include "core/game.h"
 #include "core/ui/ui.h" // For ui_init/close
 #include "core/system/launcher.h"
+#include "core/audio/audio.h" // Added
 #include "debug/debug.h"
 
 int main(void) {
@@ -9,6 +10,7 @@ int main(void) {
 
     // 1. Raylib/UI 초기화 (프로그램 전체 수명주기 동안 유지)
     ui_init();
+    audio_init(); // Added
 
     // 2. 메인 메뉴 루프
     while (1) {
@@ -27,6 +29,7 @@ int main(void) {
         }
     }
 
+    audio_close(); // Added
     ui_close();
     return 0;
 }
