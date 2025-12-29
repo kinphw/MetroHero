@@ -3,6 +3,7 @@
 #include <ctype.h>
 #include "game_internal.h"
 #include "../ui/ui.h"
+#include "../audio/audio.h" // Added
 #include "../logic/combat.h"
 #include "../../cinematic/cinematic.h"
 #include "../../world/glyph.h"
@@ -294,6 +295,7 @@ void game_process_input(GameState* state) {
                     char msg[128];
                     snprintf(msg, sizeof(msg), "📦 상자를 열었다! → %s 획득!", chest->itemName);
                     ui_add_log(msg);
+                    audio_play_sfx("door_creak"); // SFX Added
                     
                     // Trigger
                     if (chest->event.setFlag) {
@@ -325,6 +327,7 @@ void game_process_input(GameState* state) {
                 if (canOpen) {
                     door->isOpen = 1;
                     ui_add_log("철컹! 문이 열렸다.");
+                    audio_play_sfx("door_creak"); // SFX Added
                     
                     // Trigger
                     if (door->event.setFlag) {

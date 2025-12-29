@@ -357,6 +357,8 @@ int cinematic_print_typewriter(int x, int y, const char* text, const char* color
         ui_draw_str_at(curX, y, buf, color);
         ui_end_texture_mode();
         
+        audio_play_sfx("text_blip"); // SFX Added
+        
         ui_present();
         
         s += charLen;

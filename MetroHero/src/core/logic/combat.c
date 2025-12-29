@@ -4,6 +4,7 @@
 
 #include "combat.h"
 #include "../ui/ui.h"
+#include "../audio/audio.h" // Added
 #include "../../world/map.h"
 #include "../ui/ui.h"
 #include "../../world/map.h"
@@ -59,6 +60,7 @@ void combat_try_attack(GameState* state) {
         if (dmg < 1) dmg = 1;
 
         target->hp -= dmg;
+        audio_play_sfx("sword_hit"); // SFX Added
 
         char buf[128];
         snprintf(buf, sizeof(buf), "⚔ %s에게 %d 피해! (HP: %d)", target->name, dmg, target->hp);
@@ -70,6 +72,7 @@ void combat_try_attack(GameState* state) {
             // 맵 타일 정리 (적 제거) - 추후 자동 clean up
              snprintf(buf, sizeof(buf), "★ %s 처치!", target->name);
              ui_add_combat_log(buf);
+             audio_play_sfx("explosion"); // SFX Added
              
              // Trigger Event
              if (target->event.setFlag) {
@@ -80,6 +83,7 @@ void combat_try_attack(GameState* state) {
     } else {
         // 허공에 공격
         // ui_add_combat_log("허공을 가랐다.");
+        audio_play_sfx("sword_swing"); // SFX Added
     }
 }
 
@@ -149,6 +153,7 @@ void combat_update_ai(GameState* state, float dt) {
                     if (dmg < 1) dmg = 1;
 
                     p->hp -= dmg;
+                    audio_play_sfx("claw_hit"); // SFX Added
 
                     char buf[128];
                     snprintf(buf, sizeof(buf), "☠ %s의 공격! %d 피해 (HP: %d)", e->name, dmg, p->hp);
