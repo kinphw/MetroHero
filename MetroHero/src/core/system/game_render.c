@@ -53,7 +53,7 @@ void game_render(GameState* state) {
     if (!state->inDialogue) {
         ui_draw_stats(&state->player);
         ui_draw_equipment(&state->player);
-        ui_draw_quest_tracker(state->activeQuestMsg); // Added
+        ui_draw_quest_tracker(state); // Updated
     } else {
         if (state->currentNPC != NULL) {
             ui_draw_dialogue(state->currentNPC);

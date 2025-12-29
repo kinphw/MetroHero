@@ -15,9 +15,14 @@ typedef struct {
     Player player;
     EventRegistry eventRegistry; 
     
+
+    
     // ★ Quest Data
     const StageData* currentStageData;
     char activeQuestMsg[256];
+    char pendingQuestMsg[256]; // New Quest to show after animation
+    int questState; // 0: Active, 1: Complete Anim, 2: Hidden
+    float questTimer; // Animation Timer
     
     int isRunning;      // 게임 루프 실행 여부
     

@@ -5,6 +5,7 @@
 
 // 입력 처리
 void game_process_input(GameState* state);
+void game_update_quest(GameState* state); // Added
 
 // 화면 렌더링
 void game_render(GameState* state);

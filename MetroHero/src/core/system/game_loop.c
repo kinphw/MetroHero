@@ -40,6 +40,9 @@ void game_loop(GameState* state) {
         if (!state->isPlayerDead) {
             combat_update_ai(state, dt);
         }
+        
+        // ★ 퀘스트 애니메이션 업데이트
+        game_update_quest(state);
 
         // 렌더링 (매 프레임 호출)
         game_render(state);

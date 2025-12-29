@@ -114,29 +114,47 @@ static void check_quest_updates(GameState* state) {
             int req = q->reqVal > 0 ? q->reqVal : 1;
             
             if (val >= req) {
-                // Check if this is a NEW quest update (avoid spamming log?)
-                // Actually, if we just want to track the "Current" quest, we simply update the tracker msg.
-                // But we don't want to log "Quest Updated" every frame.
-                // We can compare with current activeQuestMsg?
-                
-                // If it's different, update it. 
-                // Note: This logic assumes Quests are ordered by progression! 
-                // Use the LAST matches quest as the active one? Or FIRST?
-                // Typically sequential quests: Q1 done -> Q2 active.
-                // So we want the LATEST quest that matches conditions? 
-                // Or maybe the conditions should be strict (Flag A=1 AND Flag B=0).
-                // For now, let's just trigger when flag matches.
-                // If we want to prevent overwrite, we need a "Quest Index" or "Priority".
-                // Simple approach: The msg itself IS the tracker state.
-                
-                if (strcmp(state->activeQuestMsg, q->msg) != 0) {
-                    snprintf(state->activeQuestMsg, sizeof(state->activeQuestMsg), "%s", q->msg);
-                    char log[512];
-                    snprintf(log, sizeof(log), "📘 퀘스트 갱신! \n%s", q->msg);
-                    ui_add_log(log);
-                    audio_play_sfx("cinematic_blip"); // Reuse blip sfx for quest
+                // Check if this is a NEW quest update
+                // We compare against pendingQuestMsg too to avoid re-triggering during animation
+                if (strcmp(state->activeQuestMsg, q->msg) != 0 && strcmp(state->pendingQuestMsg, q->msg) != 0) {
+                    
+                    // Start Transition
+                    snprintf(state->pendingQuestMsg, sizeof(state->pendingQuestMsg), "%s", q->msg);
+                    state->questState = 1; // 1: Complete Animation (Sparkle)
+                    state->questTimer = 2.0f; // 2 seconds sparkle
+                    
+                    // Log single line with Yellow Color
+                    char logBuf[512];
+                    snprintf(logBuf, sizeof(logBuf), "%s📘 퀘스트 갱신! %s", COLOR_BRIGHT_YELLOW, q->msg);
+                    ui_add_log(logBuf);
+                    
+                    audio_play_sfx("cinematic_blip"); 
                 }
             }
+        }
+    }
+}
+
+// Update Quest Animation State (Call each frame)
+void game_update_quest(GameState* state) {
+    if (state->questState == 0) return; // Idle/Active
+
+    // Decrease Timer
+    state->questTimer -= GetFrameTime(); // Uses Raylib GetFrameTime
+
+    if (state->questState == 1) { // Sparkle Phase
+        if (state->questTimer <= 0) {
+            state->questState = 2; // Disappear Phase
+            state->questTimer = 0.5f; // 0.5 sec hidden
+        }
+    }
+    else if (state->questState == 2) { // Hidden Phase
+        if (state->questTimer <= 0) {
+            // Apply New Quest
+            snprintf(state->activeQuestMsg, sizeof(state->activeQuestMsg), "%s", state->pendingQuestMsg);
+            state->questState = 0; // Back to Active
+            
+            // Optional: Sound for new quest appear?
         }
     }
 }
