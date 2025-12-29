@@ -42,6 +42,8 @@ typedef struct {
 	
     // 렌더링
     const char* dialogueColor; // 색상 코드 추가
+    
+    EventConfig event; // Added
 
 } Enemy;
 

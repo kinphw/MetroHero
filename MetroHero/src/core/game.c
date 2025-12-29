@@ -19,6 +19,7 @@ void game_run_new_session(void) {
     // 인트로 시네마틱
     cinematic_play_intro();
 
+    event_init_registry(&state.eventRegistry); // Added
     map_init(&state.map, 1);
     player_init(&state.player);
 

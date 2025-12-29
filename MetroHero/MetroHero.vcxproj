@@ -22,6 +22,7 @@
     <ClCompile Include="src\core\audio\audio.c" />
     <ClCompile Include="src\core\graphics\sprite_sheet.c" />
     <ClCompile Include="src\core\logic\combat.c" />
+    <ClCompile Include="src\core\logic\event.c" />
     <ClCompile Include="src\core\system\game_input.c" />
     <ClCompile Include="src\core\system\game_loop.c" />
     <ClCompile Include="src\core\system\game_render.c" />
@@ -59,6 +60,7 @@
     <ClInclude Include="src\core\audio\audio.h" />
     <ClInclude Include="src\core\graphics\sprite_sheet.h" />
     <ClInclude Include="src\core\logic\combat.h" />
+    <ClInclude Include="src\core\logic\event.h" />
     <ClInclude Include="src\core\system\context.h" />
     <ClInclude Include="src\core\system\game_internal.h" />
     <ClInclude Include="src\core\system\launcher.h" />

@@ -10,10 +10,13 @@
 #define MAX_MAP_H 120
 #define MAX_CHESTS 50
 
+#include "../stages/common.h" // For EventConfig
+
 // ★ 문 관리
 typedef struct {
     int x, y;
     int isOpen;
+    EventConfig event; // Added
 } Door;
 
 #define MAX_DOORS 20

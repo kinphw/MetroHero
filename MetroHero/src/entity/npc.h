@@ -9,25 +9,29 @@
 #define MAX_NPCS 20
 #define MAX_NPC_DIALOGUES 10
 
+#include "../stages/common.h" // For EventConfig and NPCConfig
+
 typedef struct {
-	int x , y;
-	char type;              // 'A', 'B', 'C' 등
+	int x, y;
+	char tile;              // 'A', 'B'...
 	const char* name;       // "상인", "경비원" 등
 	const char* glyph;      // 렌더링용 문자
+    const char* imagePath;  // ★ Add Raylib Image Path
+    const char* faceImagePath; // ★ Added
 
 	// 대화 시스템
 	const char** dialogues;
 	int dialogueCount;
 	int currentDialogue;    // 현재 대화 인덱스
-    const char* imagePath;  // ★ Add Raylib Image Path
-    const char* faceImagePath; // ★ Added
-
+    
 	// ★ 대화 모드 추가
 	int useDialogueBox;    // 1 = 전용 대화창 사용, 0 = 로그창만
 
 	// 향후 확장용
 	int canTrade;          // 거래 가능 여부
 	const char* shopType;  // "weapon", "armor", "item" 등
+    
+    EventConfig event; // Added
 } NPC;
 // 초기화
 void npc_init(NPC* npc, const NPCConfig* config, int x, int y);

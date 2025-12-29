@@ -1,4 +1,5 @@
 #include <stdio.h>
+#include <string.h> // Added for memset
 // #include <windows.h> // Removed for Raylib
 #include "map.h"
 #include "../entity/player.h"
@@ -119,6 +120,10 @@ void map_load_chests(Map* m) {
                         cfg[i].itemName,
                         cfg[i].imagePath
                     );
+                    
+                    // Copy Event Config
+                    m->chests[m->chestCount].event = cfg[i].event; // Added
+                    
                     m->chestCount++;
 
                     m->tiles[y][x] = '.'; // 상자 타일을 바닥으로 변경
@@ -487,13 +492,32 @@ NPC* map_get_adjacent_npc(Map* m, int px, int py) {
 void map_load_doors(Map* m) {
     m->doorCount = 0;
     
+    // Stage Data Lookup
+    const StageData* stageData = get_stage_data(m->stageNumber);
+    
     for (int y = 0; y < m->height; y++) {
         for (int x = 0; x < m->width; x++) {
             if (m->tiles[y][x] == '%') {
                  if (m->doorCount < MAX_DOORS) {
-                     m->doors[m->doorCount].x = x;
-                     m->doors[m->doorCount].y = y;
-                     m->doors[m->doorCount].isOpen = 0; // 닫힌 상태로 시작
+                     Door* d = &m->doors[m->doorCount];
+                     d->x = x;
+                     d->y = y;
+                     d->isOpen = 0; // 닫힌 상태로 시작
+                     
+                     // Initialize Event (Empty)
+                     memset(&d->event, 0, sizeof(EventConfig));
+                     
+                     // Apply Specific Config if exists
+                     if (stageData && stageData->doorCount > 0) {
+                         for (int i = 0; i < stageData->doorCount; i++) {
+                             if (stageData->doors[i].x == x && stageData->doors[i].y == y) {
+                                 // Copy Event Config
+                                 d->event = stageData->doors[i].event;
+                                 break;
+                             }
+                         }
+                     }
+
                      m->doorCount++;
 
                      // 문 타일을 바닥으로 변경 (엔티티로 관리)

@@ -144,12 +144,10 @@ void ui_draw_dialogue(const NPC* npc) {
     // Buttons
     char buttonText[64];
     if (npc->currentDialogue < npc->dialogueCount - 1) {
-        if (npc->canTrade) snprintf(buttonText, sizeof(buttonText), " [0]다음  [T]거래  [X]닫기");
-        else snprintf(buttonText, sizeof(buttonText), " [0]다음  [X]닫기");
+        snprintf(buttonText, sizeof(buttonText), " [SPACE] 다음  [ESC] 닫기");
     }
     else {
-        if (npc->canTrade) snprintf(buttonText, sizeof(buttonText), " [0]끝  [T]거래  [X]닫기");
-        else snprintf(buttonText, sizeof(buttonText), " [0]끝  [X]닫기");
+        snprintf(buttonText, sizeof(buttonText), " [SPACE] 끝내기  [ESC] 닫기");
     }
     ui_draw_text_clipped(x + 1, y + h - 2, w - 2, buttonText, NULL);
 }

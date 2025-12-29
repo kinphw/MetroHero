@@ -5,9 +5,15 @@
 #include "../../entity/player.h"
 
 // 게임의 전체 상태를 담는 구조체
+#include "../../world/map.h"
+#include "../../entity/player.h"
+#include "../logic/event.h" // Added
+
+// 게임의 전체 상태를 담는 구조체
 typedef struct {
     Map map;
     Player player;
+    EventRegistry eventRegistry; // Added
     
     int isRunning;      // 게임 루프 실행 여부
     

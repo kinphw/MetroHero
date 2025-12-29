@@ -5,7 +5,7 @@
 void npc_init(NPC* npc, const NPCConfig* config, int x, int y) {
     if (!config) return;
 
-    npc->type = config->tile;
+    npc->tile = config->tile;
     npc->x = x;
     npc->y = y;
     npc->currentDialogue = 0;
@@ -19,6 +19,9 @@ void npc_init(NPC* npc, const NPCConfig* config, int x, int y) {
     npc->canTrade = config->canTrade;
     npc->shopType = config->shopType;
     npc->useDialogueBox = config->useDialogueBox;
+    
+    // Copy Event Config
+    npc->event = config->event;
 }
 
 int npc_is_at(const NPC* npc, int x, int y) {

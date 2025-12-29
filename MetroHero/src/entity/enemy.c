@@ -37,6 +37,9 @@ void enemy_init(Enemy* e, const EnemyConfig* config, int x, int y) {
     e->attackCooldown = 0.0f;
     e->isChasing = 0;
     e->isProvoked = 0; // ★ 초기화
+    
+    // Copy Event Config
+    e->event = config->event;
 }
 
 int enemy_is_at(const Enemy* e, int x, int y) {

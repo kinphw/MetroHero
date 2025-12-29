@@ -8,8 +8,10 @@
 #include "../ui/ui.h"
 #include "../../world/map.h"
 #include "../../world/glyph.h"
+#include "../ui/ui.h"
 #include "../system/context.h" // ★ GameState 정의 필요
 #include "raylib.h"
+#include "event.h" // Added
 
 // ... (rest of code logic is same, commented out Sleep calls are fine to remain commented or be removed)
 #include "../ui/ui.h"
@@ -68,6 +70,12 @@ void combat_try_attack(GameState* state) {
             // 맵 타일 정리 (적 제거) - 추후 자동 clean up
              snprintf(buf, sizeof(buf), "★ %s 처치!", target->name);
              ui_add_combat_log(buf);
+             
+             // Trigger Event
+             if (target->event.setFlag) {
+                 if (target->event.setVal > 0) event_set_flag(&state->eventRegistry, target->event.setFlag, target->event.setVal);
+                 else event_add_flag(&state->eventRegistry, target->event.setFlag, 1);
+             }
         }
     } else {
         // 허공에 공격

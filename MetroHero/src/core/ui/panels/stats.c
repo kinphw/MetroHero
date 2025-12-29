@@ -79,23 +79,6 @@ void ui_draw_stats(const Player* p) {
 
 
 
-    // ★ Direction - 개별 출력 + 공백 채우기
-    const char* arrow = " ";
-    if (p->dirY < 0) arrow = "↑";
-    else if (p->dirY > 0) arrow = "↓";
-    else if (p->dirX < 0) arrow = "←";
-    else if (p->dirX > 0) arrow = "→";
-
-    // 수정 - 한 문자열로 그리고 동적 계산
-    char dirLine[64];
-    snprintf(dirLine, sizeof(dirLine), " 방향:    %s", arrow);
-    ui_draw_str_at(x + 2, y + 7, dirLine, NULL);
-    // 방향 뒤 공백 (동적 계산)
-    int dirEndX = x + 2 + display_width(dirLine);
-    for (int i = dirEndX; i < x + w - 1; i++) {
-        ui_draw_str_at(i, y + 7, " ", NULL);
-    }
-
     ui_draw_combat_effect_overlay_if_active(x, y);
 
     // ★ 테두리 모서리 보호

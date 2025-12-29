@@ -171,6 +171,9 @@
     <ClCompile Include="src\core\ui\panels\system_menu.c">
       <Filter>src\core\ui\panels</Filter>
     </ClCompile>
+    <ClCompile Include="src\core\logic\event.c">
+      <Filter>src\core\logic</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="src\core\game.h">
@@ -283,6 +286,9 @@
     </ClInclude>
     <ClInclude Include="src\core\ui\panels\system_menu.h">
       <Filter>src\core\ui\panels</Filter>
+    </ClInclude>
+    <ClInclude Include="src\core\logic\event.h">
+      <Filter>src\core\logic</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>

@@ -16,12 +16,24 @@ typedef struct {
     const char* desc;     // 설명 (디버깅용)
 } TileDef;
 
+// --- Event Configuration ---
+typedef struct {
+    const char* reqFlag;      // 요구 플래그 (NULL이면 조건 없음)
+    int reqVal;               // 요구 값 (보통 1)
+    const char* setFlag;      // 완료 후 설정/증가할 플래그 (NULL이면 없음)
+    int setVal;               // 설정 값 (0이면 +1 증가)
+    const char* failMsg;      // 조건 불충족 시 메시지
+} EventConfig;
+
 // --- Chest Definition ---
 typedef struct {
     char tile;              // '0', '1', '2' ... (맵상의 숫자)
     const char* itemType;   // "weapon", "armor", "item"
     const char* itemName;   // 아이템 이름
+
     const char* imagePath;  // ★ 추가 (필요하다면)
+    
+    EventConfig event;      // ★ 이벤트 설정 (요구 조건 등)
 } ChestConfig;
 
 // --- Enemy Definition ---
@@ -46,7 +58,10 @@ typedef struct {
     // 대사 관련
     const char** dialogues;
     int dialogueCount;
+
     const char* dialogueColor; // 예: COLOR_RED (ANSI Code)
+    
+    EventConfig event;         // ★ 이벤트 설정 (사망 시 플래그 설정 등)
 } EnemyConfig;
 
 // --- NPC Definition ---
@@ -62,8 +77,17 @@ typedef struct {
     
     int canTrade;
     const char* shopType;
+
     int useDialogueBox;
+    
+    EventConfig event;         // ★ 이벤트 설정 (대화 조건/결과)
 } NPCConfig;
+
+// --- Door Configuration (New) ---
+typedef struct {
+    int x, y;               // 문 위치 (좌표 지정 필요)
+    EventConfig event;      // 잠금 조건 등
+} DoorConfig;
 
 // --- Stage Definition ---
 typedef struct {
@@ -85,6 +109,10 @@ typedef struct {
     // NPC 데이터
     const NPCConfig* npcs;
     int npcCount;
+
+    // 문 데이터 (이벤트 문)
+    const DoorConfig* doors;
+    int doorCount;
 
     // 시네마틱 (스토리)
     const Cinematic* intro;       // 스테이지 시작 시 재생
