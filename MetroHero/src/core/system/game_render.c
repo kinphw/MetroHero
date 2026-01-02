@@ -74,6 +74,11 @@ void game_render(GameState* state) {
     if (state->enemyImageTimer > 0) {
         ui_draw_enemy_image(state->enemyImagePath);
     }
+    
+    // ★ Persistent Input Guide (Footer)
+    const char* guideMsg = "SPACE : 공격 / 0 : 방어 / 메뉴/장비 : ESC";
+    // Centered X: (210 - 45) / 2 approx = 82
+    ui_draw_str_at(82, 53, guideMsg, COLOR_GRAY);
 
     // 배칭 종료
     ui_end_texture_mode();

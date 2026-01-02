@@ -184,6 +184,10 @@ void player_use_item(Player* p, int index) {
             char buf[128];
             snprintf(buf, sizeof(buf), "%s(을)를 착용했습니다.", item->name);
             ui_add_log(buf);
+            
+            // ★ Full Heal on Equip (User Request)
+            player_update_stats(p);
+            p->hp = p->maxHp; 
         }
         player_update_stats(p);
     }
@@ -200,12 +204,20 @@ void player_use_item(Player* p, int index) {
              // Simplification: Check name for now.
              
              if (strcmp(item->name, "HP 포션") == 0) {
+                 if (p->hp >= p->maxHp) {
+                     ui_add_log("이미 체력이 가득 찼습니다.");
+                     return;
+                 }
                  p->hp += 10;
                  if (p->hp > p->maxHp) p->hp = p->maxHp;
                  ui_add_log("체력을 회복했습니다.");
                  used = 1;
              }
              else if (strcmp(item->name, "대형 HP 포션") == 0) {
+                 if (p->hp >= p->maxHp) {
+                     ui_add_log("이미 체력이 가득 찼습니다.");
+                     return;
+                 }
                  p->hp += 30;
                  if (p->hp > p->maxHp) p->hp = p->maxHp;
                  ui_add_log("체력을 크게 회복했습니다.");
@@ -298,6 +310,14 @@ void player_apply_item(Player* p, const char* itemType, const char* itemName) {
         char buf[128];
         snprintf(buf, sizeof(buf), "%s을(를) 획득했다!", itemName);
         ui_add_log(buf);
+        
+        // ★ Auto-Equip Logic (User Request)
+        if (it->type == ITEM_WEAPON || it->type == ITEM_ARMOR) {
+            // 방금 추가된 아이템 인덱스
+            int newIdx = p->inventory.count - 1;
+            ui_add_log("(자동 장착)");
+            player_use_item(p, newIdx);
+        }
     } else {
         ui_add_log("인벤토리가 가득 찼습니다!");
     }

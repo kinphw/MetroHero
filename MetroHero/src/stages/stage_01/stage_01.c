@@ -205,7 +205,7 @@ static const EnemyConfig ENEMIES[] = {
         .tile = 'c', 
         .name = "좀비 역장", 
         .glyph = COLOR_RED "🧟" COLOR_RESET,
-        .imagePath = "assets/enemy/zomerk_tile.png", // Use Boss Image
+        .imagePath = "assets/enemy/texture_sprite/zomerk_tile.png", // Use Boss Image
         .portraitPath = "assets/enemy/portrait/zomerk_port.png",
         .width = 1, .height = 1,
         
@@ -429,7 +429,7 @@ static const QuestConfig QUESTS[] = {
     { "boss_spawned", 1, "목표: 좀비가 된 역장을 쓰러뜨려라!", NULL, 0, "boss_defeated", 1, 1000 },
     
     // 퀘스트 5: 지하 진입 (Exit Stage)
-    { "boss_defeated", 1, "목표: 지하로 가는 길을 찾아라.", NULL, 0, "entered_underground", 1, 0 }
+    { "boss_defeated", 1, "목표: 외부로 통하는 통로를 찾아라.", NULL, 0, "entered_underground", 1, 0 }
 };
 
 // ============================================
