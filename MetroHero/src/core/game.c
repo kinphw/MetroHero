@@ -55,7 +55,16 @@ void game_run_new_session(void) {
     
     // Set Stage Data & Initial Quest
     state.currentStageData = &STAGE_01_DATA;
-    snprintf(state.activeQuestMsg, sizeof(state.activeQuestMsg), "목표: 역무원을 찾아 대화하라.");
+    
+    // Load Initial Quest (First one with NULL reqFlag)
+    if (state.currentStageData->questCount > 0) {
+        const QuestConfig* q = &state.currentStageData->quests[0];
+        if (q->reqFlag == NULL) {
+             snprintf(state.activeQuestMsg, sizeof(state.activeQuestMsg), "%s", q->msg);
+        }
+    } else {
+        state.activeQuestMsg[0] = '\0';
+    }
 
     // 초기 화면 그리기 (렌더링 모듈에서 일부 수행하지만, 전체 클리어는 여기서 하는게 깔끔할 수 있음)
     ui_clear_buffer();

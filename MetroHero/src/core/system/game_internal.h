@@ -4,8 +4,10 @@
 #include "context.h"
 
 // 입력 처리
+// 입력 처리
 void game_process_input(GameState* state);
-void game_update_quest(GameState* state); // Added
+void game_update_quest(GameState* state); // Animation update
+void check_quest_updates(GameState* state); // Logic check (flags)
 
 // 화면 렌더링
 void game_render(GameState* state);

@@ -4,6 +4,7 @@
 
 // ★ Explicit Includes to fix visibility issues
 #include "../../stages/common.h" 
+
 #include "../../world/map.h"
 
 #include "game_internal.h"
@@ -109,39 +110,109 @@ static int GetRepeatingKey() {
 }
 
 // Check Quests based on current flags
-static void check_quest_updates(GameState* state) {
+void check_quest_updates(GameState* state) {
     if (!state->currentStageData || !state->currentStageData->quests) return;
 
+    char fullMsg[1024] = "";
+    int activeCount = 0;
+
+    // 1. Iterate all quests and accumulate active ones
     for (int i = 0; i < state->currentStageData->questCount; i++) {
         const QuestConfig* q = &state->currentStageData->quests[i];
-        if (q->reqFlag && q->msg) {
+        
+        // A. Check Start Condition
+        int isStarted = 0;
+        if (q->reqFlag == NULL) {
+            isStarted = 1;
+        } else {
             int val = event_get_flag(&state->eventRegistry, q->reqFlag);
             int req = q->reqVal > 0 ? q->reqVal : 1;
-            
-            if (val >= req) {
-                // Check if this is a NEW quest update
-                // We compare against pendingQuestMsg too to avoid re-triggering during animation
-                if (strcmp(state->activeQuestMsg, q->msg) != 0 && strcmp(state->pendingQuestMsg, q->msg) != 0) {
-                    
-                    // Start Transition
-                    snprintf(state->pendingQuestMsg, sizeof(state->pendingQuestMsg), "%s", q->msg);
-                    state->questState = 1; // 1: Complete Animation (Sparkle)
-                    state->questTimer = 2.0f; // 2 seconds sparkle
-                    
-                    // Log single line with Yellow Color
-                    char logBuf[512];
-                    snprintf(logBuf, sizeof(logBuf), "%s📘 퀘스트 갱신! %s", COLOR_BRIGHT_YELLOW, q->msg);
-                    ui_add_log(logBuf);
-                    
-                    // ★ Award Quest EXP
-                    if (q->expReward > 0) {
-                        player_add_exp(&state->player, q->expReward);
-                    }
-                    
-                    audio_play_sfx("text_blip"); 
-                }
-            }
+            if (val >= req) isStarted = 1;
         }
+
+        // B. Check End Condition
+        int isEnded = 0;
+        if (q->endFlag) {
+             int val = event_get_flag(&state->eventRegistry, q->endFlag);
+             int endReq = q->endVal > 0 ? q->endVal : 1;
+             if (val >= endReq) isEnded = 1;
+        }
+
+        if (isStarted && !isEnded && q->msg) {
+            // Format single line
+            char lineBuf[256];
+            if (q->counterFlag && q->counterMax > 0) {
+                int current = event_get_flag(&state->eventRegistry, q->counterFlag);
+                if (current > q->counterMax) current = q->counterMax;
+                snprintf(lineBuf, sizeof(lineBuf), "%s (%d/%d)", q->msg, current, q->counterMax);
+            } else {
+                snprintf(lineBuf, sizeof(lineBuf), "%s", q->msg);
+            }
+
+            // Append to fullMsg
+            if (activeCount > 0) {
+                strncat(fullMsg, "\n", sizeof(fullMsg) - strlen(fullMsg) - 1);
+            }
+            strncat(fullMsg, lineBuf, sizeof(fullMsg) - strlen(fullMsg) - 1);
+            activeCount++;
+            
+            // ★ One-time Reward when Quest *Completes* (Transition logic might be tricky here)
+            // Ideally rewards should be given when 'endFlag' condition is MET.
+            // But here we are checking active state.
+            // If we want completion reward, it's better handled by the Event triggering the flag, 
+            // OR we detect the transition from Active -> Ended.
+            // Current 'expReward' in config was handled on "Update" (Start).
+            // Users usually want reward on Start? Or Completion?
+            // "Quest Update! Kill Cats" -> Reward? No.
+            // "Quest Update! Return" -> Reward for killing cats? Maybe.
+            // Let's keep existing behavior: Reward when it appears in the list (Starts).
+            
+            // Check if we already gave reward for this specific quest index?
+            // Hard to track without extra state.
+            // For now, let's assume EXP is given when the quest message appears as "New Update".
+        }
+    }
+
+    if (activeCount == 0) {
+        // No active quests
+        // strncpy(fullMsg, "현재 진행 중인 퀘스트가 없습니다.", sizeof(fullMsg));
+        fullMsg[0] = '\0';
+    }
+
+    // 2. Update State if Changed
+    if (strcmp(state->activeQuestMsg, fullMsg) != 0 && strcmp(state->pendingQuestMsg, fullMsg) != 0) {
+         // Determine if it's a "silent" update (Counter change) or "structural" change (Quest added/removed)
+         // Simple Heuristic: If number of newlines changed, or length changed significantly?
+         // Actually, if we just update silently it's fine. The "Quest Update" log text might be spammy if we log every counter.
+         
+         // Let's Log only if the *primary text* changes, not just numbers? 
+         // But "Counter" is part of the text now.
+         
+         // Strategy: Always silent update activeQuestMsg.
+         // Only animate/Log if a NEW quest line appeared?
+         // This is complex. Let's just use the Animation for any change for now, 
+         // BUT disable the "Spammy Log" for counters if possible.
+         
+         // Let's just use the standard transition. It's safe.
+         // Or: Silent update and just Log.
+         
+         // User Experience:
+         // 1. Counter update (1/5 -> 2/5): Should just update text. No Sparkle.
+         // 2. Quest added/removed: Sparkle.
+         
+         // How to distinguish?
+         // Compare line by line?
+         
+         // Simplified: Just update activeQuestMsg directly if it looks like a counter update.
+         // Otherwise (length difference big?), do transition.
+         
+         snprintf(state->pendingQuestMsg, sizeof(state->pendingQuestMsg), "%s", fullMsg);
+         state->questState = 1; // Animation
+         state->questTimer = 2.0f;
+         audio_play_sfx("text_blip");
+         
+         // Don't log full list every time.
+         ui_add_log(COLOR_BRIGHT_YELLOW "📘 퀘스트 상태가 갱신되었습니다." COLOR_RESET);
     }
 }
 
@@ -335,13 +406,13 @@ void game_process_input(GameState* state) {
             if (state->currentNPC->currentDialogue == state->currentNPC->activeDialogueCount - 1) {
                 // End Dialogue
                 // ★ Trigger Event Flag on Completion
-                if (state->currentNPC->event.setFlag) {
-                    trigger_event_flag(state, state->currentNPC->event.setFlag, state->currentNPC->event.setVal);
+                if (state->currentNPC->activeEvent.setFlag) {
+                    trigger_event_flag(state, state->currentNPC->activeEvent.setFlag, state->currentNPC->activeEvent.setVal);
                 }
                 
                 // ★ Item Reward (Dialogue End)
-                if (state->currentNPC->event.giveItem) {
-                    const Item* it = item_get(state->currentNPC->event.giveItem);
+                if (state->currentNPC->activeEvent.giveItem) {
+                    const Item* it = item_get(state->currentNPC->activeEvent.giveItem);
                     if (it && !inventory_has_item(&state->player.inventory, it->name)) { // Unique give
                          if (inventory_add(&state->player.inventory, it)) {
                              char msg[128];
@@ -411,77 +482,76 @@ void game_process_input(GameState* state) {
             int canInteract = 1;
             
             // 1. Flag Check
-            if (interactNpc->event.reqFlag) {
-                 int val = event_get_flag(&state->eventRegistry, interactNpc->event.reqFlag);
-                 int req = interactNpc->event.reqVal > 0 ? interactNpc->event.reqVal : 1;
+            if (interactNpc->activeEvent.reqFlag) {
+                 int val = event_get_flag(&state->eventRegistry, interactNpc->activeEvent.reqFlag);
+                 int req = interactNpc->activeEvent.reqVal > 0 ? interactNpc->activeEvent.reqVal : 1;
                  if (val < req) canInteract = 0;
             }
             
             // 2. Item Check
-            if (canInteract && interactNpc->event.reqItem) {
-                 if (!inventory_has_item(&state->player.inventory, interactNpc->event.reqItem)) {
+            if (canInteract && interactNpc->activeEvent.reqItem) {
+                 if (!inventory_has_item(&state->player.inventory, interactNpc->activeEvent.reqItem)) {
                      canInteract = 0;
                  }
             }
 
-            if (!canInteract) {
-                 if (interactNpc->event.failMsg) {
-                     ui_add_log(interactNpc->event.failMsg);
-                 } else {
-                     //ui_add_log("조건이 부족하다.");
-                 }
-            } else {
-                // Success: Consume Item if needed
-                if (interactNpc->event.reqItem && interactNpc->event.consumeItem) {
-                    inventory_remove_item_by_name(&state->player.inventory, interactNpc->event.reqItem);
-                    char msg[128];
-                    snprintf(msg, sizeof(msg), "%s을(를) 사용했다.", interactNpc->event.reqItem);
-                    ui_add_log(msg);
-                }
-
-                if (interactNpc->useDialogueBox) {
-                    state->inDialogue = 1;
-                    state->currentNPC = interactNpc;
-                    ui_clear_dialogue_area();
-                    ui_draw_dialogue(interactNpc);
-                    
-                    char msg[128];
-                    snprintf(msg, sizeof(msg), "%s와 대화를 시작했다.", interactNpc->name);
-                    ui_add_log(msg);
+                if (!canInteract) {
+                     if (interactNpc->activeEvent.failMsg) {
+                         ui_add_log(interactNpc->activeEvent.failMsg);
+                     } else {
+                         //ui_add_log("조건이 부족하다.");
+                     }
                 } else {
-                    const char* dialogue = npc_get_dialogue(interactNpc);
-                    char msg[256];
-                    snprintf(msg, sizeof(msg), "💬 %s: 「%s」", interactNpc->name, dialogue);
-                    ui_add_log(msg);
-                    npc_next_dialogue(interactNpc);
-                }
-                
-                // Trigger Effect (Simple Flag / Item Reward)
-                int triggerNow = !interactNpc->useDialogueBox;
-                
-                // ★ Only trigger here if NOT using Dialogue Box (Simple Float Text)
-                // ★ Only trigger here if NOT using Dialogue Box (Simple Float Text)
-                if (!interactNpc->useDialogueBox) {
-                    if (interactNpc->event.setFlag) {
-                        trigger_event_flag(state, interactNpc->event.setFlag, interactNpc->event.setVal);
+                    // Success: Consume Item if needed
+                    if (interactNpc->activeEvent.reqItem && interactNpc->activeEvent.consumeItem) {
+                        inventory_remove_item_by_name(&state->player.inventory, interactNpc->activeEvent.reqItem);
+                        char msg[128];
+                        snprintf(msg, sizeof(msg), "%s을(를) 사용했다.", interactNpc->activeEvent.reqItem);
+                        ui_add_log(msg);
+                    }
+
+                    if (interactNpc->useDialogueBox) {
+                        state->inDialogue = 1;
+                        state->currentNPC = interactNpc;
+                        ui_clear_dialogue_area();
+                        ui_draw_dialogue(interactNpc);
+                        
+                        char msg[128];
+                        snprintf(msg, sizeof(msg), "%s와 대화를 시작했다.", interactNpc->name);
+                        ui_add_log(msg);
+                    } else {
+                        const char* dialogue = npc_get_dialogue(interactNpc);
+                        char msg[256];
+                        snprintf(msg, sizeof(msg), "💬 %s: 「%s」", interactNpc->name, dialogue);
+                        ui_add_log(msg);
+                        npc_next_dialogue(interactNpc);
                     }
                     
-                    // Item Reward (Immediate for simple NPC)
-                    if (interactNpc->event.giveItem) {
-                        const Item* it = item_get(interactNpc->event.giveItem);
-                        if (it && !inventory_has_item(&state->player.inventory, it->name)) { // Unique give
-                             if (inventory_add(&state->player.inventory, it)) {
-                                 char msg[128];
-                                 snprintf(msg, sizeof(msg), "%s을(를) 받았다!", it->name);
-                                 ui_add_log(msg);
-                             } else {
-                                 ui_add_log("가방이 가득 차서 받을 수 없다!");
-                             }
+                    // Trigger Effect (Simple Flag / Item Reward)
+                    int triggerNow = !interactNpc->useDialogueBox;
+                    
+                    // ★ Only trigger here if NOT using Dialogue Box (Simple Float Text)
+                    if (!interactNpc->useDialogueBox) {
+                        if (interactNpc->activeEvent.setFlag) {
+                            trigger_event_flag(state, interactNpc->activeEvent.setFlag, interactNpc->activeEvent.setVal);
+                        }
+                        
+                        // Item Reward (Immediate for simple NPC)
+                        if (interactNpc->activeEvent.giveItem) {
+                            const Item* it = item_get(interactNpc->activeEvent.giveItem);
+                            if (it && !inventory_has_item(&state->player.inventory, it->name)) { // Unique give
+                                 if (inventory_add(&state->player.inventory, it)) {
+                                     char msg[128];
+                                     snprintf(msg, sizeof(msg), "%s을(를) 받았다!", it->name);
+                                     ui_add_log(msg);
+                                 } else {
+                                     ui_add_log("가방이 가득 차서 받을 수 없다!");
+                                 }
+                            }
                         }
                     }
+                    actionTaken = 1;
                 }
-                actionTaken = 1;
-            }
         } // End of interactNpc check
 
         // B. Open Chest

@@ -24,6 +24,10 @@ typedef struct {
 	int dialogueCount;
 	int currentDialogue;    // 현재 대화 인덱스
     
+    // ★ Branches Config Reference
+    const DialogueBranch* branches;
+    int branchCount;
+    
 	// ★ 대화 모드 추가
 	int useDialogueBox;    // 1 = 전용 대화창 사용, 0 = 로그창만
 
@@ -33,9 +37,11 @@ typedef struct {
     
     EventConfig event; // Added
     
-    // ★ Active Dialogue (Updated dynamically)
-    const char** activeDialogues;
-    int activeDialogueCount;
+    // ★ Active Dialogue State
+    const char** activeDialogues; // Pointer to the start of current branch in the main array
+    int activeDialogueCount;      // Number of dialogues in current branch
+    
+    EventConfig activeEvent;      // Event for the current branch
 } NPC;
 #include "../core/logic/event.h"
 

@@ -14,14 +14,14 @@ static const char* MAP_FLOOR1_LINES[] = {
 "#.@..............A...1#",
 "#.......C............2#",
 "###########.###########",
-"          #$#          ", 
+"          #*#          ", 
 "          #.#          ",
 "          #.#          ",
 "          #.#          ",
 "###########.###########",
-"#.....................#",
-"#..a...............a..#",
-"#.......a............>#", // '>' Warp to Floor 2
+"#.....a...#....a......#",
+"#..a......+........a..#",
+"#.......a.#..........>#", // '>' Warp to Floor 2
 "#######################"
 };
 
@@ -140,7 +140,10 @@ static const EnemyConfig ENEMIES[] = {
         
         // ★ Random Move
         .allowRandomMove = 1,
-        .randomMoveInterval = 0.5f
+        .randomMoveInterval = 0.5f,
+        
+        // ★ Event: Kill Count
+        .event = { .setFlag="kill_cat_count", .setVal=0 } // 0 means Add 1
     },
     {
         .tile = 'b', 
@@ -229,18 +232,54 @@ static const EnemyConfig ENEMIES[] = {
 // Stage 1 NPCs
 // ============================================
 
-// A: 역무원
-static const char* NPC_DIALOGUES_A[] = {
+// 1. 역무원 (A) - All Dialogues Merged (Original Text + Return)
+static const char* ALL_DIALOGUES_A[] = {
+    // 0~3: Default (Original Long Text)
     "으으윽... 도와주세요...\n누구신지 모르겠지만 제발 도와주세요...\n저는 성균관대역의 역무원입니다...",
-    "당신이 나타나기 직전에 갑자기 거대한 굉음과 함께 역이 혼란에 빠졌습니다...",    
+    "당신이 나타나기 직전에 갑자기 거대한 굉음과 함께 역이 혼란에 빠졌습니다...",
     "저 아래의 문 밖에 무서운 야수가 위협하고 있어요.. 제발 야수를 물리쳐 주십시오..",
-    "제 뒤에 있는 장비를 챙겨가세요. 행운을 빕니다!" // Added confirmation line
+    "제 뒤에 있는 장비를 챙겨가세요. 행운을 빕니다!",
+    
+    // 4~5: Mission Active (Original Alt Text)
+    "야수를 물리치셨나요?\n야수를 물리쳐야만 이곳에서 나갈 수 있습니다...",
+    "야수를 물리치신 후에 돌아오세요...",
+    
+    // 6~9: Mission Complete (New Return Text)
+    "오오! 고양이들이 잠잠해졌군!",
+    "정말 대단한 솜씨야.",
+    "이제야 한시름 놓겠어. 고맙네!",
+    "이건 약소하지만 보답일세."
 };
 
+static const EventConfig EVENT_A_START = { 
+    .giveItem="철문열쇠1", .setFlag="receive_mission", .setVal=1 
+};
+
+static const EventConfig EVENT_A_COMPLETE = { 
+    .setFlag = "mission_complete", .setVal = 1, 
+    .giveItem = "철문열쇠2" // Reward changed to Key 2
+};
+
+// Dialogue Branches for NPC A
+static const DialogueBranch BRANCHES_A[] = {
+    // Priority 1: Mission Complete (Flag: kill_cat_count >= 5)
+    { "kill_cat_count", 5, 6, 4, &EVENT_A_COMPLETE },
+    
+    // Priority 2: Mission Active (Flag: receive_mission >= 1)
+    { "receive_mission", 1, 4, 2, NULL }, 
+    
+    // Priority 3: Default (No Flag)
+    { NULL, 0, 0, 4, &EVENT_A_START } // Give Key
+};
+
+// 2. 다른 NPC들...
 static const char* NPC_DIALOGUES_B[] = {
     "으아아아악!!!",
     "집에 가고싶어!!!!",
     "사람살려!!! 괴물이야!!!",    
+};
+static const DialogueBranch BRANCHES_B[] = {
+    { NULL, 0, 0, 3, NULL } // Count 3
 };
 
 static const char* NPC_DIALOGUES_C[] = {
@@ -249,10 +288,8 @@ static const char* NPC_DIALOGUES_C[] = {
     "그리고 다시 적이 공격해올때까지 방어태세를 취하세요.",    
     "반복하면 어떤 적이든 이길 수 있습니다.",        
 };
-
-static const char* NPC_DIALOGUES_A_ALT[] = {
-    "야수를 물리치셨나요?\n야수를 물리쳐야만 이곳에서 나갈 수 있습니다...",
-    "야수를 물리치신 후에 돌아오세요..."    
+static const DialogueBranch BRANCHES_C[] = {
+    { NULL, 0, 0, 4, NULL }
 };
 
 static const NPCConfig NPCS[] = {
@@ -262,47 +299,53 @@ static const NPCConfig NPCS[] = {
         .glyph = "👮", // Police/Guard
         .imagePath = "assets/npc/texture/staff1.png",
         .faceImagePath = "assets/npc/portrait/1A_face.png",
-        .dialogues = NPC_DIALOGUES_A,
-        .dialogueCount = sizeof(NPC_DIALOGUES_A)/sizeof(NPC_DIALOGUES_A[0]),
+        
+        .dialogues = ALL_DIALOGUES_A,
+        .dialogueCount = sizeof(ALL_DIALOGUES_A)/sizeof(ALL_DIALOGUES_A[0]),
+        
+        .branches = BRANCHES_A,
+        .branchCount = sizeof(BRANCHES_A)/sizeof(BRANCHES_A[0]),
+        
         .useDialogueBox = 1,
-        // Event: Give Key
-        .event = { .giveItem="철문열쇠1", .setFlag="receive_mission", .setVal=1 }
+        // Default Event (Give Key on first interaction naturally handled by Default Branch if we want? 
+        // OR we trigger it via the Default Branch logic in npc.c?)
+        // Wait, npc.c applies branch->event. 
+        // The default branch has NULL event in my code above.
+        // Original code had: .event = { .giveItem="철문열쇠1", .setFlag="receive_mission", .setVal=1 }
+        // So the DEFAULT branch must have this event!
+        // Otherwise the player never receives the key/mission.
+        .canTrade = 0,
+        .event = { .giveItem="철문열쇠1", .setFlag="receive_mission", .setVal=1 } // Fallback/Init
     },
     {
         .tile = 'B',
         .name = "시민",
         .glyph = COLOR_GREEN "웃" COLOR_RESET,
-        .imagePath = "assets/npc/texture/staff2.png", // Using same sprite for now
+        .imagePath = "assets/npc/texture/staff2.png", 
         .faceImagePath = NULL,
+        
         .dialogues = NPC_DIALOGUES_B,
         .dialogueCount = sizeof(NPC_DIALOGUES_B)/sizeof(NPC_DIALOGUES_B[0]),
-        .useDialogueBox = 0,
+        .branches = BRANCHES_B,
+        .branchCount = sizeof(BRANCHES_B)/sizeof(BRANCHES_B[0]),
+        
+        .useDialogueBox = 0, // Originally 0
         .canTrade = 0
     },
     {
         .tile = 'C',
         .name = "안내원",
         .glyph = COLOR_YELLOW "윽" COLOR_RESET,
-        .imagePath = "assets/npc/texture/staff2.png", // Using same sprite for now
+        .imagePath = "assets/npc/texture/staff2.png",
         .faceImagePath = NULL,
+        
         .dialogues = NPC_DIALOGUES_C,
         .dialogueCount = sizeof(NPC_DIALOGUES_C)/sizeof(NPC_DIALOGUES_C[0]),
-        .useDialogueBox = 0,
+        .branches = BRANCHES_C,
+        .branchCount = sizeof(BRANCHES_C)/sizeof(BRANCHES_C[0]),
+        
+        .useDialogueBox = 0, // Originally 0
         .canTrade = 0
-    }
-};
-
-static const EventConfig EVENT_A_ALT = { NULL, 0, NULL, 0, NULL, 0, NULL, NULL }; // No Reward
-
-static const DialogueOverride DIALOGUE_OVERRIDES[] = {
-    // 1. 역무원 (A) - 미션 수락 후
-    { 
-        .npcTile = 'A', 
-        .reqFlag = "receive_mission", 
-        .reqVal = 1, 
-        .newDialogues = NPC_DIALOGUES_A_ALT, 
-        .newDialogueCount = sizeof(NPC_DIALOGUES_A_ALT)/sizeof(NPC_DIALOGUES_A_ALT[0]),
-        .newEvent = &EVENT_A_ALT // ★ Stop Giving Keys
     }
 };
 
@@ -310,17 +353,28 @@ static const DialogueOverride DIALOGUE_OVERRIDES[] = {
 // Stage 1 Doors (New)
 // ============================================
 static const DoorConfig DOORS[] = {
-    // Symbol $, Req '철문열쇠1', Consume=1
-    { '$', { NULL, 0, "철문열쇠1", 1, NULL, 0, NULL, "열쇠가 필요하다." } }
+    // 1. Unlocked Door (+) - Just a door.
+    { '+', { NULL, 0, NULL, 0, NULL, 0, NULL, "문이 열렸다." } },
+    
+    // 2. First Locked Door (*) - Requires Key 1
+    { '*', { NULL, 0, "철문열쇠1", 1, NULL, 0, NULL, "굳게 잠긴 문이다. (철문열쇠1 필요)" } },
+    
+    // 3. Second Locked Door (^) - Requires Key 2
+    { '^', { NULL, 0, "철문열쇠2", 1, NULL, 0, NULL, "더 깊은 곳으로 가는 문이다. (철문열쇠2 필요)" } }
 };
 
 // ============================================
 // Stage 1 Quests
 // ============================================
 static const QuestConfig QUESTS[] = {
-    // 퀘스트 1: 역무원 대화
-    // 초기 상태는 game.c에서 설정 or "start_quest" 플래그 사용
-    { "receive_mission", 1, "목표: 맹혹한 고양이를 처치하고 길을 뚫어라.", 50 }
+    // 퀘스트 0: 시작 (조건 없음) -> "receive_mission" 1이 되면 종료
+    { NULL, 0, "목표: 역무원을 찾아 대화하라.", NULL, 0, "receive_mission", 1, 0 },
+    
+    // 퀘스트 1: 고양이 처치 (x/5) -> "kill_cat_count" 5가 되면 종료 (즉시 Q2로 넘어감)
+    { "receive_mission", 1, "목표: 맹혹한 고양이를 처치하고 길을 뚫어라.", "kill_cat_count", 5, "kill_cat_count", 5, 50 },
+    
+    // 퀘스트 2: 복귀 -> "mission_complete"가 되면 종료
+    { "kill_cat_count", 5, "목표: 역무원에게 돌아가라.", NULL, 0, "mission_complete", 1, 0 }
 };
 
 // ============================================
@@ -383,8 +437,8 @@ const StageData STAGE_01_DATA = {
     .doorCount = sizeof(DOORS) / sizeof(DOORS[0]),
     .quests = QUESTS,
     .questCount = sizeof(QUESTS) / sizeof(QUESTS[0]),
-    .overrides = DIALOGUE_OVERRIDES,
-    .overrideCount = sizeof(DIALOGUE_OVERRIDES) / sizeof(DIALOGUE_OVERRIDES[0]),
+    .overrides = NULL,
+    .overrideCount = 0,
     .intro = &INTRO_CINEMATIC,
     .outro = &CLEAR_CINEMATIC
 };

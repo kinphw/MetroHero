@@ -29,9 +29,10 @@ class MapEditor:
         self.available_stages = self.parser.get_available_stages()
         self.current_stage = self.available_stages[0] if self.available_stages else "stage_01"
 
-        # Stage-specific enemies and NPCs
+        # Stage-specific enemies, NPCs, and doors
         self.stage_enemies = {}
         self.stage_npcs = {}
+        self.stage_doors = {}
 
         # Map data
         self.map_width = 40
@@ -123,6 +124,20 @@ class MapEditor:
                     photo = ImageTk.PhotoImage(img)
                     self.image_cache[image_path] = photo
                     print(f"  Loaded NPC: {tile_char} ({npc_data['name']}) -> {image_path}")
+                except Exception as e:
+                    print(f"  Error loading {full_path}: {e}")
+
+        # Load stage-specific Doors
+        for tile_char, door_data in self.stage_doors.items():
+            image_path = door_data['imagePath']
+            full_path = os.path.join(self.project_root, image_path)
+            if os.path.exists(full_path) and image_path not in self.image_cache:
+                try:
+                    img = Image.open(full_path)
+                    img = img.resize((self.tile_size, self.tile_size), Image.Resampling.LANCZOS)
+                    photo = ImageTk.PhotoImage(img)
+                    self.image_cache[image_path] = photo
+                    print(f"  Loaded Door: {tile_char} ({door_data['name']}) -> {image_path}")
                 except Exception as e:
                     print(f"  Error loading {full_path}: {e}")
 
@@ -249,9 +264,9 @@ class MapEditor:
         self.draw_map()
 
     def load_stage_data(self, stage_name):
-        """Load enemy and NPC data for a specific stage"""
+        """Load enemy, NPC, and door data for a specific stage"""
         print(f"\nLoading stage: {stage_name}")
-        self.stage_enemies, self.stage_npcs = self.parser.parse_specific_stage(stage_name)
+        self.stage_enemies, self.stage_npcs, self.stage_doors = self.parser.parse_specific_stage(stage_name)
 
         # Reload images for this stage
         self.preload_images()
@@ -375,6 +390,34 @@ class MapEditor:
                 except:
                     pass
 
+        # Door tiles (from current stage)
+        if self.stage_doors:
+            door_frame = tk.LabelFrame(parent, text=f"Doors ({self.current_stage})", bg='white')
+            door_frame.pack(fill=tk.X, padx=5, pady=5)
+
+            for tile_char, door_data in sorted(self.stage_doors.items()):
+                frame = tk.Frame(door_frame, bg='white')
+                frame.pack(anchor=tk.W, pady=1)
+
+                rb = tk.Radiobutton(frame, text=f"{tile_char} - {door_data['name']}",
+                                   variable=self.tile_var, value=tile_char,
+                                   command=self.on_tile_select, bg='white')
+                rb.pack(side=tk.LEFT)
+
+                image_path = door_data['imagePath']
+                if image_path in self.image_cache:
+                    preview_size = 16
+                    try:
+                        full_path = os.path.join(self.project_root, image_path)
+                        img = Image.open(full_path)
+                        img = img.resize((preview_size, preview_size), Image.Resampling.LANCZOS)
+                        photo = ImageTk.PhotoImage(img)
+                        label = tk.Label(frame, image=photo, width=preview_size, height=preview_size)
+                        label.image = photo
+                        label.pack(side=tk.LEFT, padx=5)
+                    except:
+                        pass
+
         # Chest tiles
         chest_frame = tk.LabelFrame(parent, text="Chests (0-9)", bg='white')
         chest_frame.pack(fill=tk.X, padx=5, pady=5)
@@ -413,7 +456,9 @@ class MapEditor:
             '#': '#808080',  # Gray (Wall)
             '.': '#2C2C2C',  # Dark gray (Floor)
             '=': '#FFD700',  # Gold (Rail)
-            '+': '#8B4513',  # Brown (Door)
+            '+': '#8B4513',  # Brown (Door 1)
+            '*': '#A0522D',  # Sienna (Door 2)
+            '^': '#D2691E',  # Chocolate (Door 3)
             '$': '#4B0082',  # Indigo (Event Door)
             '@': '#00FF00',  # Green (Spawn)
         }
@@ -448,11 +493,13 @@ class MapEditor:
                 tile_def = None
                 image_path = None
 
-                # Check if it's a stage-specific enemy or NPC
+                # Check if it's a stage-specific enemy, NPC, or door
                 if symbol in self.stage_enemies:
                     image_path = self.stage_enemies[symbol]['imagePath']
                 elif symbol in self.stage_npcs:
                     image_path = self.stage_npcs[symbol]['imagePath']
+                elif symbol in self.stage_doors:
+                    image_path = self.stage_doors[symbol]['imagePath']
                 else:
                     tile_def = self.parser.get_tile(symbol)
                     if tile_def:

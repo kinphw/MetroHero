@@ -1,7 +1,10 @@
-#ifndef STAGE_COMMON_H
-#define STAGE_COMMON_H
+#ifndef STAGE_COMMON_H_V2
+#define STAGE_COMMON_H_V2
 
 #include "../cinematic/cinematic.h"
+
+#define BRANCH_SYSTEM_V1 // Diagnostics
+
 
 // ============================================
 // 공통 데이터 구조체 정의
@@ -96,6 +99,17 @@ typedef struct {
     EventConfig event;         // ★ 이벤트 설정 (사망 시 플래그 설정 등)
 } EnemyConfig;
 
+// ★ Dialogue Branch System
+typedef struct {
+    const char* reqFlag;      // 조건 플래그
+    int reqVal;               // 조건 값
+    
+    int startIndex;           // 전체 대화 배열에서의 시작 인덱스
+    int count;                // 사용할 대화 개수
+    
+    const EventConfig* event; // 이 브랜치 종료 시 실행할 이벤트 (Optional)
+} DialogueBranch;
+
 // --- NPC Definition ---
 typedef struct {
     char tile;              // 'A', 'B', 'C'...
@@ -104,15 +118,19 @@ typedef struct {
     const char* imagePath;  // ★ 추가
     const char* faceImagePath; // ★ 얼굴 이미지 경로 추가 (128x128)
     
-    const char** dialogues;
-    int dialogueCount;
+    const char** dialogues; // ★ All Dialogues Combined
+    int dialogueCount;      // Total Count
+    
+    // ★ Branches (Logic)
+    const DialogueBranch* branches;
+    int branchCount;
     
     int canTrade;
     const char* shopType;
 
     int useDialogueBox;
     
-    EventConfig event;         // ★ 이벤트 설정 (대화 조건/결과)
+    EventConfig event;         // ★ Default Event (Deprecated/Legacy Fallback)
 } NPCConfig;
 
 // --- Door Configuration (New) ---
@@ -126,6 +144,15 @@ typedef struct {
     const char* reqFlag;    // 발동 조건 플래그
     int reqVal;             // 발동 값 (이상일 때)
     const char* msg;        // 출력할 메시지 (파란색 자동 적용)
+    
+    // ★ Counter Support
+    const char* counterFlag; // 카운팅할 플래그 (없으면 NULL)
+    int counterMax;          // 목표치 (0이면 카운터 없음)
+    
+    // ★ Completion Condition (To hide from list)
+    const char* endFlag;     // 이 플래그가 설정되면 퀘스트 목록에서 사라짐
+    int endVal;              // 이 값 이상이면 종료 (기본 1)
+    
     int expReward;          // ★ Added
 } QuestConfig;
 

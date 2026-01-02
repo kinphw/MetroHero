@@ -113,13 +113,13 @@ class TileParser:
                 self._parse_stage_file(stage_file)
 
     def parse_specific_stage(self, stage_name):
-        """Parse a specific stage file and return enemy/NPC configs"""
+        """Parse a specific stage file and return enemy/NPC/Door configs"""
         stage_dir = os.path.join(self.project_root, "MetroHero", "src", "stages", stage_name)
         stage_file = os.path.join(stage_dir, stage_name + ".c")
 
         if not os.path.exists(stage_file):
             print(f"Stage file not found: {stage_file}")
-            return {}, {}
+            return {}, {}, {}
 
         return self._parse_stage_file_detailed(stage_file)
 
@@ -163,15 +163,41 @@ class TileParser:
             print(f"Error parsing {filepath}: {e}")
 
     def _parse_stage_file_detailed(self, filepath):
-        """Parse a single stage file and return detailed enemy/NPC configs"""
+        """Parse a single stage file and return detailed enemy/NPC/Door configs"""
         enemies = {}  # {tile_char: {name, imagePath, ...}}
         npcs = {}     # {tile_char: {name, imagePath, ...}}
+        doors = {}    # {tile_char: {name, imagePath, ...}}
 
         try:
             with open(filepath, 'r', encoding='utf-8') as f:
-                lines = f.readlines()
+                content = f.read()
+                lines = content.split('\n')
 
-            # Parse line by line, building up tile data
+            # First, parse DoorConfig array
+            # Pattern: { 'X', { ..., "description" } }
+            # More flexible pattern to match any door character
+            door_pattern = r'\{\s*\'([+*^?])\'\s*,\s*\{[^}]*"([^"]+)"\s*\}\s*\}'
+            for match in re.finditer(door_pattern, content):
+                tile_char = match.group(1)
+                # Last string in the pattern is the description
+                desc = match.group(2)
+
+                # Extract a simpler name from description
+                if "철문열쇠1" in desc:
+                    name = "문 (열쇠1)"
+                elif "철문열쇠2" in desc:
+                    name = "문 (열쇠2)"
+                elif "열렸다" in desc:
+                    name = "문 (열림)"
+                else:
+                    name = "문"
+
+                doors[tile_char] = {
+                    'name': name,
+                    'imagePath': 'MetroHero/assets/tiles/door.png'  # Default door image
+                }
+
+            # Parse line by line for enemy/NPC configs
             current_tile = None
             current_name = None
             current_image = None
@@ -227,12 +253,12 @@ class TileParser:
                     current_name = None
                     current_image = None
 
-            print(f"Parsed {os.path.basename(filepath)}: {len(enemies)} enemies, {len(npcs)} NPCs")
+            print(f"Parsed {os.path.basename(filepath)}: {len(enemies)} enemies, {len(npcs)} NPCs, {len(doors)} doors")
 
         except Exception as e:
             print(f"Error parsing {filepath}: {e}")
 
-        return enemies, npcs
+        return enemies, npcs, doors
 
     def get_tile(self, symbol):
         """Get tile definition for a symbol"""

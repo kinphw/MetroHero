@@ -39,6 +39,9 @@ void game_loop(GameState* state) {
         // ★ 적 AI 업데이트 (사망 시, 메뉴/인벤토리 열림 시 멈춤)
         if (!state->isPlayerDead && !state->inSystemMenu && !state->inInventory) {
             combat_update_ai(state, dt);
+            
+            // ★ Check Logic Updates (e.g. Counters from kills)
+            check_quest_updates(state);
         }
         
         // ★ 퀘스트 애니메이션 업데이트

@@ -22,8 +22,8 @@ typedef struct {
     Map storedMaps[MAX_FLOORS]; 
     int initializedFloors[MAX_FLOORS]; 
 
-    char activeQuestMsg[256];
-    char pendingQuestMsg[256]; // New Quest to show after animation
+    char activeQuestMsg[1024];  // ★ Increased for Multi-Quest
+    char pendingQuestMsg[1024]; // New Quest to show after animation
     int questState; // 0: Active, 1: Complete Anim, 2: Hidden
     float questTimer; // Animation Timer
     
