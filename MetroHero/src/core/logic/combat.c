@@ -46,6 +46,7 @@ void combat_try_attack(GameState* state) {
     state->effectX = tx;
     state->effectY = ty;
     state->effectTimer = 0.2f;
+    state->effectPath = "assets/player/slash.png"; // ★ Explicit Path for Player
 
     Enemy* target = map_get_enemy_at(m, tx, ty);
     if (target) {
@@ -182,13 +183,21 @@ void combat_update_ai(GameState* state, float dt) {
                 if (e->attackCooldown <= 0) {
                     e->attackCooldown = e->attackInterval; 
                     show_enemy_image(state, e);
+                    
+                    // ★ Enemy Attack Effect (On Player)
+                    state->effectX = p->x;
+                    state->effectY = p->y;
+                    state->effectTimer = 0.2f;
+                    state->effectPath = "assets/player/enemy_slash.png"; // ★ Enemy Slash
 
                     int dmg = e->attackMin + rand() % (e->attackMax - e->attackMin + 1);
                     int isBlocked = 0;
                     
                     if (p->isDefending) {
                         dmg = 1;
-                        isBlocked = 1;
+                        isBlocked = 1; // Effect passes through shield? Or maybe hit shield sound?
+                        // Ideally we might want a "Simulated Block" effect or just show slash anyway.
+                        // Let's show slash anyway as the attack "landed" but was blocked.
                     }
 
                     if (dmg < 1) dmg = 1;

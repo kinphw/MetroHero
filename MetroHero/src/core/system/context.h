@@ -48,6 +48,7 @@ typedef struct {
     // ★ 이펙트 관련
     int effectX, effectY;
     float effectTimer;
+    const char* effectPath; // ★ Added for variable effect image
 
     // ★ 적 이미지 표시 관련
     const char* enemyImagePath;  // 현재 표시할 적 이미지 경로
