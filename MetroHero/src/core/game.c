@@ -35,7 +35,7 @@ void game_run_new_session(void) {
     player_init(&state.player);
 
     // 스테이지 1 시작
-    cinematic_play_stage_start(1);
+    // cinematic_play_stage_start(1);
     
     // Play Stage 1 BGM
     audio_play_music("assets/bgm/gap_of_winter.mp3");

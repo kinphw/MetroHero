@@ -21,7 +21,10 @@ void game_loop(GameState* state) {
         float dt = GetFrameTime();
 
         // 입력 처리 (Non-blocking)
-        game_process_input(state);
+        // 입력 처리 (Non-blocking)
+        if (!state->isGameClear) {
+            game_process_input(state);
+        }
 
         // ★ 타이머 업데이트
         if (state->effectTimer > 0) state->effectTimer -= dt;
@@ -47,6 +50,27 @@ void game_loop(GameState* state) {
         
         // ★ 퀘스트 애니메이션 업데이트
         game_update_quest(state);
+        
+        // ★ Game Clear Check
+        if (!state->isGameClear) {
+             if (event_get_flag(&state->eventRegistry, "game_clear") > 0) {
+                 state->isGameClear = 1;
+                 ui_add_log(COLOR_BLUE "당신은 악몽을 끝냈다! ESC키를 누르세요" COLOR_RESET);
+                 ui_add_combat_log(COLOR_BLUE "★ GAME CLEAR! ★" COLOR_RESET);
+                 audio_play_sfx("level_up"); // Victory Sound
+             }
+        }
+        else {
+             // ★ Game Clear State: Wait for ESC
+             if (IsKeyPressed(KEY_ESCAPE)) {
+                 // Play Outro Cinematic
+                 if (state->currentStageData && state->currentStageData->outro) {
+                      cinematic_play(state->currentStageData->outro);
+                 }
+                 // Return to Title (or Exit)
+                 state->isRunning = 0; // Exit Game Loop -> Return to Launcher
+             }
+        }
 
         // 렌더링 (매 프레임 호출)
         game_render(state);

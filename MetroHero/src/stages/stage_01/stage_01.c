@@ -231,8 +231,8 @@ static const EnemyConfig ENEMIES[] = {
         .imagePath = "assets/enemy/texture/security_robot.png",
         .portraitPath = "assets/enemy/portrait/1b.png",
         .width = 1, .height = 1,
-        .maxHp = 10,
-        .attackMin = 100, .attackMax = 100, // Insta-kill logic (Guard)
+        .maxHp = 9999, // ★ Rebalanced: Must avoid
+        .attackMin = 900, .attackMax = 1000, // Insta-kill logic (Guard)
         .chaseOnSight = 0, .attackOnSight = 0, // Guard mode
         .detectionRange = 5, 
         .moveInterval = 2.0f, .attackInterval = 2.0f,
@@ -253,15 +253,18 @@ static const EnemyConfig ENEMIES[] = {
         // Legacy 2x2 Map
         .animRight={0,0}, .animLeft={0,1}, .animUp={1,0}, .animDown={1,1},
         
-        .maxHp = 50,
-        .attackMin = 5, .attackMax = 10,
+        .maxHp = 1000, // ★ Rebalanced: Boss fight
+        .attackMin = 25, .attackMax = 35,
         .chaseOnSight = 1, .attackOnSight = 1,
         .detectionRange = 10,
         .moveInterval = 0.8f, .attackInterval = 1.5f,
-        .dialogues = NULL, 
         .dialogueCount = 0,
         .dialogueColor = COLOR_BRIGHT_RED,
-        .expReward = 1000 // Boss Reward
+        .expReward = 1000, // Boss Reward
+        
+        // ★ Boss Logic (Game Clear)
+        .reqFlag = "final_battle_started",
+        .event = { .setFlag="game_clear", .setVal=1 } // ★ Triggers Game End
     }
 };
 
@@ -506,12 +509,14 @@ static const Cinematic INTRO_CINEMATIC = {
 
 // --- Outro ---
 static const CinematicLine CLEAR_LINES[] = {
-    { "", STYLE_NORMAL, 300, NULL },
-    { "★ STAGE CLEAR ★", STYLE_TITLE, 800, NULL },
+    { "", STYLE_NORMAL, 500, "assets/cinematic/ending.png" }, // ★ Added Image
+    { "★ GAME CLEAR ★", STYLE_TITLE, 1000, NULL },
     { "", STYLE_NORMAL, 500, NULL },
-    { "성균관대역을 정화했다!", STYLE_TYPEWRITER, 600, NULL },
-    { "", STYLE_NORMAL, 300, NULL },
-    { "하지만 어둠은 더 깊은 곳에서 기다리고 있다...", STYLE_TYPEWRITER, 0, NULL },
+    { "지하철의 악몽은 끝났다...", STYLE_TYPEWRITER, 1000, NULL },
+    { "수많은 원혼들이 안식을 찾아 떠나갔다.", STYLE_TYPEWRITER, 1000, NULL },
+    { "", STYLE_NORMAL, 500, NULL },
+    { "성균관대역은 다시 평화를 되찾을 것이다.", STYLE_TYPEWRITER, 1500, NULL },
+    { "수고하셨습니다, 영웅이여!", STYLE_SHAKE, 0, NULL },
 };
 
 static const Cinematic CLEAR_CINEMATIC = {
@@ -572,11 +577,37 @@ static const Cinematic BOSS_INTRO_CINEMATIC = {
     30, 0, COLOR_RED, COLOR_WHITE
 };
 
+// --------------------------------------------
+// Final Battle Cinematic
+// --------------------------------------------
+static const CinematicLine FINAL_BATTLE_LINES[] = {
+    { "", STYLE_NORMAL, 500, "assets/cinematic/682.png" }, // ★ Image Start
+    { "최후의 결전!", STYLE_TITLE, 1000, NULL },
+    { "", STYLE_NORMAL, 500, NULL },
+    { "드디어 마주쳤다...", STYLE_TYPEWRITER, 1000, NULL },
+    { "이곳에서 모든 것을 끝내야 한다!", STYLE_SHAKE, 0, NULL }
+};
+
+static const Cinematic FINAL_BATTLE_CINEMATIC = {
+    NULL,
+    FINAL_BATTLE_LINES,
+    sizeof(FINAL_BATTLE_LINES) / sizeof(FINAL_BATTLE_LINES[0]),
+    30, 0, COLOR_RED, COLOR_WHITE
+};
+
 // ============================================
 // Stage 1 Area Triggers
 // ============================================
 static const AreaTrigger AREA_TRIGGERS[] = {
-    { 0, 46, 13, "mission_complete", "boss_spawned", &BOSS_INTRO_CINEMATIC, 1, "좀비가 된 역장을 쓰러뜨려라!" }
+    { 0, 46, 13, "mission_complete", "boss_spawned", &BOSS_INTRO_CINEMATIC, 1, "좀비가 된 역장을 쓰러뜨려라!" },
+
+    // Floor 2 Final Battle Triggers (11, 20-22)
+    { 1, 11, 20, NULL, "final_battle_started", &FINAL_BATTLE_CINEMATIC, 1, "최후의 결전이 시작된다!" },
+    { 1, 11, 21, NULL, "final_battle_started", &FINAL_BATTLE_CINEMATIC, 1, "최후의 결전이 시작된다!" },
+    { 1, 11, 22, NULL, "final_battle_started", &FINAL_BATTLE_CINEMATIC, 1, "최후의 결전이 시작된다!" },
+
+    // Floor 2 Entry Trigger (1, 1) - Update Quest
+    { 1, 1, 1, NULL, "entered_floor_2", NULL, 1, "모든 악몽의 원인을 쓰러뜨려라" }
 };
 
 // ============================================
