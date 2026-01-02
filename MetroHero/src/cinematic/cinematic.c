@@ -317,12 +317,7 @@ int cinematic_print_typewriter(int x, int y, const char* text, const char* color
             if (key == 27) {  // ESC -> Scene Skip
                 return 1;
             }
-            if (key == ' ' || key == 13) { // SPACE/ENTER -> Skip Typing (Finish line)
-                // 남은 텍스트 한번에 출력
-                ui_draw_str_at(curX, y, (const char*)s, color);
-                ui_present();
-                return 0; // Continue scene normally
-            }
+            // Space/Enter removed (Request: Only ESC skips)
         }
 
         // ANSI 이스케이프 시퀀스 처리
@@ -453,16 +448,14 @@ int cinematic_wait_key(int showHint) {
             // 키 입력 시 안내 메시지를 원래 색(회색)으로 복구
             if (showHint) {
                 cinematic_print_centered(CINE_HEIGHT - 3,
-                    "[SPACE] 계속    [ESC] 스킵", COLOR_GRAY);
+                    "[ESC] 스킵", COLOR_GRAY); // Updated hint
                 ui_present(); // Explicit present mostly needed after updates
             }
 
-            if (key == ' ' || key == 13) {  // SPACE 또는 ENTER
-                return 0;  // 계속
-            }
-            else if (key == 27) {  // ESC
+            if (key == 27) {  // ESC
                 return 1;  // 스킵
             }
+            // Space/Enter removed
         }
 
         // 깜빡임 처리
@@ -474,7 +467,7 @@ int cinematic_wait_key(int showHint) {
                 
                 const char* blinkColor = blinkState ? COLOR_BRIGHT_WHITE : COLOR_GRAY;
                 cinematic_print_centered(CINE_HEIGHT - 3,
-                    "[SPACE] 계속    [ESC] 스킵", blinkColor);
+                    "[ESC] 스킵", blinkColor); // Updated hint
             }
         }
 
@@ -527,7 +520,7 @@ void cinematic_play(const Cinematic* cine) {
     // ★ 하단 안내 메시지 표시 (처음부터 항상 표시)
     if (cine->showSkipHint) {
         cinematic_print_centered(CINE_HEIGHT - 3,
-            "[SPACE] 계속    [ESC] 스킵", COLOR_GRAY);
+            "[ESC] 스킵", COLOR_GRAY);
     }
 
     // 각 라인 처리

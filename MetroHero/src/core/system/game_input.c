@@ -389,9 +389,13 @@ void game_process_input(GameState* state) {
                 int triggerNow = !interactNpc->useDialogueBox;
                 
                 // ★ Only trigger here if NOT using Dialogue Box (Simple Float Text)
-                if (!interactNpc->useDialogueBox && interactNpc->event.setFlag) {
-                    trigger_event_flag(state, interactNpc->event.setFlag, interactNpc->event.setVal);
-                }    // Item Reward
+                // ★ Only trigger here if NOT using Dialogue Box (Simple Float Text)
+                if (!interactNpc->useDialogueBox) {
+                    if (interactNpc->event.setFlag) {
+                        trigger_event_flag(state, interactNpc->event.setFlag, interactNpc->event.setVal);
+                    }
+                    
+                    // Item Reward (Immediate for simple NPC)
                     if (interactNpc->event.giveItem) {
                         const Item* it = item_get(interactNpc->event.giveItem);
                         if (it && !inventory_has_item(&state->player.inventory, it->name)) { // Unique give
@@ -407,6 +411,7 @@ void game_process_input(GameState* state) {
                 }
                 actionTaken = 1;
             }
+        } // End of interactNpc check
 
         // B. Open Chest
         if (!actionTaken) {

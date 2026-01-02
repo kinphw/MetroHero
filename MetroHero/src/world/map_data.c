@@ -37,6 +37,8 @@ const TileDef GLOBAL_TILE_PALETTE[] = {
     { 'B', "assets/tile/barricade.png", 0, "Barricade" },
     { '=', "assets/tile/rail_horizontal.png", 1, "Rail (Horizontal)" },
     { '|', "assets/tile/rail_vertical.png", 1, "Rail (Vertical)" },
+    { 'S', "assets/tile/stairs_down.png", 1, "Stairs Down" },
+    { 'U', "assets/tile/stairs_up.png", 1, "Stairs Up" },
 
     // Special
     { '@', "assets/floor.png", 1, "Spawn Point" }, // Default floor
