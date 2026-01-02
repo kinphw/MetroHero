@@ -616,40 +616,49 @@ void game_process_input(GameState* state) {
         if (!actionTaken) {
              Door* d = map_get_door_at(&state->map, tx, ty);
              if (d != NULL && !d->isOpen) {
+                 // ★ Look up DoorEvent override (Coordinate Based)
+                 const DoorEvent* de = NULL;
+                 if (state->currentStageData && state->currentStageData->doorEvents) {
+                     for (int i=0; i<state->currentStageData->doorEventCount; i++) {
+                         const DoorEvent* ev = &state->currentStageData->doorEvents[i];
+                         if (ev->floorIndex == state->currentFloor && ev->x == tx && ev->y == ty) {
+                             de = ev;
+                             break;
+                         }
+                     }
+                 }
+
                  int canOpen = 1;
+                 const char* reqKey = de ? de->reqKey : NULL;
+                 const char* reqFlag = de ? de->reqFlag : NULL;
+                 
                  // 1. Check Flag
-                 if (d->event.reqFlag) {
-                     int val = event_get_flag(&state->eventRegistry, d->event.reqFlag);
-                     int req = d->event.reqVal > 0 ? d->event.reqVal : 1;
-                     if (val < req) canOpen = 0;
+                 if (reqFlag) {
+                     if (event_get_flag(&state->eventRegistry, reqFlag) < 1) canOpen = 0;
                  }
                  // 2. Check Item
-                 if (canOpen && d->event.reqItem) {
-                     if (!inventory_has_item(&state->player.inventory, d->event.reqItem)) {
-                         canOpen = 0;
-                     }
+                 if (canOpen && reqKey) {
+                     if (!inventory_has_item(&state->player.inventory, reqKey)) canOpen = 0;
                  }
                  
                  if (canOpen) {
                      d->isOpen = 1;
                      // Consumption
-                     if (d->event.reqItem && d->event.consumeItem) {
-                         inventory_remove_item_by_name(&state->player.inventory, d->event.reqItem);
+                     if (de && de->consumeKey && reqKey) {
+                         inventory_remove_item_by_name(&state->player.inventory, reqKey);
                          char msg[128];
-                         snprintf(msg, sizeof(msg), "%s을(를) 사용했다.", d->event.reqItem);
+                         snprintf(msg, sizeof(msg), "%s을(를) 사용했다.", reqKey);
                          ui_add_log(msg);
                      }
                      
-                     if (d->event.setFlag) {
-                         trigger_event_flag(state, d->event.setFlag, d->event.setVal);
-                     }
-
+                     // Helper: Flag set support in DoorEvent? Not added yet.
+                     // Assuming simple doors for now.
+                     
                      audio_play_sfx("door_open");
-                     ui_add_log("문이 열렸다.");
+                     ui_add_log(de && de->successMsg ? de->successMsg : "문이 열렸다.");
                  } else {
-                     if (d->event.failMsg) ui_add_log(d->event.failMsg);
-                     else ui_add_log("잠겨있다.");
                      audio_play_sfx("door_locked");
+                     ui_add_log(de && de->failMsg ? de->failMsg : "가로막혀 있다.");
                  }
                  actionTaken = 1;
              }

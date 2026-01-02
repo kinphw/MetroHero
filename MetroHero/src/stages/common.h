@@ -192,6 +192,20 @@ typedef struct {
     const char* msg;
 } MapEvent;
 
+// ★ Coordinate-Based Door Event
+typedef struct {
+    int floorIndex;
+    int x; 
+    int y;
+    
+    const char* reqKey;   // Item Name required
+    int consumeKey;       // 1: Consume, 0: Keep
+    const char* reqFlag;  // Flag required
+    
+    const char* failMsg;
+    const char* successMsg; // If NULL, use default "Opened"
+} DoorEvent;
+
 // --- Stage Definition ---
 typedef struct {
     int stageId;
@@ -212,9 +226,13 @@ typedef struct {
     const NPCConfig* npcs;
     int npcCount;
     
-    // 문 데이터 (Stage Global)
+    // 문 데이터 (Stage Global) -- DEPRECATED (Will rely on Map Logic + DoorEvents)
     const DoorConfig* doors;
     int doorCount;
+    
+    // ★ Door Events (Coordinate Based)
+    const DoorEvent* doorEvents;
+    int doorEventCount;
     
     // ★ Map Events (Signposts)
     const MapEvent* events;

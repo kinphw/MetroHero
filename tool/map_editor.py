@@ -102,7 +102,7 @@ class MapEditor:
         canvas_container = tk.Frame(canvas_frame)
         canvas_container.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
 
-        self.canvas = tk.Canvas(canvas_container, bg='black')
+        self.canvas = tk.Canvas(canvas_container, bg='#0a0a0a')  # Very dark gray for grid visibility
 
         h_scroll = tk.Scrollbar(canvas_container, orient=tk.HORIZONTAL, command=self.canvas.xview)
         v_scroll = tk.Scrollbar(canvas_container, orient=tk.VERTICAL, command=self.canvas.yview)
@@ -325,7 +325,7 @@ class MapEditor:
     def get_tile_color(self, symbol):
         """Get color for a tile symbol"""
         colors = {
-            ' ': '#000000',  # Black (Empty)
+            ' ': '#1a1a1a',  # Very dark gray (Empty) - slightly visible against black
             '#': '#808080',  # Gray (Wall)
             '.': '#2C2C2C',  # Dark gray (Floor)
             '=': '#FFD700',  # Gold (Rail)
@@ -394,8 +394,10 @@ class MapEditor:
         # Fallback: draw colored rectangle with symbol
         if not drawn_image:
             color = self.get_tile_color(symbol)
+            # Use lighter outline for empty space to make grid visible
+            outline_color = '#666666' if symbol == ' ' else '#444444'
             self.canvas.create_rectangle(x1, y1, x2, y2,
-                                        fill=color, outline='#444444')
+                                        fill=color, outline=outline_color)
             # Draw text if symbol is not space
             if symbol != ' ':
                 self.canvas.create_text(x1 + self.tile_size // 2,
