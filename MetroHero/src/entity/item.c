@@ -25,6 +25,7 @@ void item_system_init(void) {
     register_item("초보자 검", ITEM_WEAPON, 5, 0, "녹슬었지만 쓸만합니다.");
     register_item("강철 검", ITEM_WEAPON, 15, 0, "날카롭고 묵직한 검입니다.");
     register_item("마력의 검", ITEM_WEAPON, 30, 0, "푸른 빛이 감도는 검입니다.");
+    register_item("화염검", ITEM_WEAPON, 25, 0, "불타오르는 전설의 검입니다."); // ★ Added
 
     // Armors (HP Bonus instead of Defense)
     register_item("가죽 갑옷", ITEM_ARMOR, 0, 10, "가볍고 질긴 가죽 갑옷입니다.");

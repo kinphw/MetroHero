@@ -16,11 +16,11 @@ static const char* MAP_FLOOR1_LINES[] = {
     "##$$##$$###.##$$##$$###                           ",
     "          #+#                                     ",
     "          #.#                              &&&&&&&",
-    "          #.#                              &....c&",
+    "          #.#                              &?...c&",
     "          #.#                              &.....&",
     "###########.###########                    &.....&",
     "#..a..a........a.....!##########           &.....&",
-    "#==================a..+........#           &.....&",
+    "#==================a..+........#           &D....&",
     "#.......a.............########.#           &&..&&&",
     "#######################      #.#            #!.#  ",
     "                             #a#            #..#  ",
@@ -40,25 +40,6 @@ static const char* MAP_FLOOR1_LINES[] = {
     "                         #.....................#  ",
     "                         #######################  ",
     "                                                  ",
-    "                                                  ",
-    "                                                  ",
-    "                                                  ",
-    "                                                  ",
-    "                                                  ",
-    "                                                  ",
-    "                                                  ",
-    "                                                  ",
-    "                                                  ",
-    "                                                  ",
-    "                                                  ",
-    "                                                  ",
-    "                                                  ",
-    "                                                  ",
-    "                                                  ",
-    "                                                  ",
-    "                                                  ",
-    "                                                  ",
-    "                                                  ",
 };
 
 // Warp Config for Floor 1
@@ -70,19 +51,36 @@ static const WarpConfig WARPS_FLOOR1[] = {
 // Stage 1 Map Data (Floor 2: Underground)
 // ============================================
 static const char* MAP_FLOOR2_LINES[] = {
-"#######################",
-"#<....................#", // '<' Arrival from Floor 1
-"#.....................#",
-"#.........b...........#", // Skeleton
-"#.....................#",
-"#.....................#",
-"#.....................#",
-"#.....................#",
-"#.........z...........#", // Zombie Added
-"#.........b...........#",
-"#.....................#",
-"#.....................#",
-"#######################"
+    "####                                              ",
+    "#<.#                                              ",
+    "#..#                                              ",
+    "#..#                                              ",
+    "#..#                                              ",
+    "#..#                                              ",
+    "#3.#                                              ",
+    "#..#                                              ",
+    "#..#                                              ",
+    "#..#                                              ",
+    "#..#                                              ",
+    "#..#                                              ",
+    "#..#                                              ",
+    "#E.#                                              ",
+    "#..#                                              ",
+    "#..#                                              ",
+    "#..#                                              ",
+    "#..#                                              ",
+    "#..#                                              ",
+    "#..########################################       ",
+    "#...........______________________________#       ",
+    "#..d........______________________________#       ",
+    "#...........______________________________#       ",
+    "############___________________________e__#       ",
+    "           #______________________________#       ",
+    "           #______________________________#       ",
+    "           #______________________________#       ",
+    "           #______________________________#       ",
+    "           #______________________________#       ",
+    "           ################################       ",
 };
 
 // Warp Config for Floor 2
@@ -118,7 +116,7 @@ static const ChestConfig CHESTS[] = {
     {'0', "weapon", "초보자 검", NULL, { .reqFlag="receive_mission", .reqVal=1, .failMsg="역무원에게 말을 먼저 걸어야 할 것 같다." } },
     {'1', "armor",  "가죽 갑옷", NULL, { .reqFlag="receive_mission", .reqVal=1, .failMsg="역무원에게 말을 먼저 걸어야 할 것 같다." } },
     {'2', "item",   "HP 포션",   NULL, { .reqFlag="receive_mission", .reqVal=1, .failMsg="역무원에게 말을 먼저 걸어야 할 것 같다." } },
-    {'3', "item",   "민첩의 물약"},
+    {'3', "weapon", "화염검"}, // ★ Updated
     {'4', "item",   "힘의 물약"},
 };
 
@@ -301,6 +299,24 @@ static const EventConfig EVENT_A_COMPLETE = {
     .giveItem = "철문열쇠2" // Reward changed to Key 2
 };
 
+// 4. 의문의 소녀 (D)
+static const char* ALL_DIALOGUES_D[] = {
+    "저 구석에 있는 바위쪽에서 자꾸 바람소리가 들립니다.."
+};
+
+static const DialogueBranch BRANCHES_D[] = {
+    { NULL, 0, 0, 1, NULL }
+};
+
+// 5. 지하 시민 (E)
+static const char* ALL_DIALOGUES_E[] = {
+    "고대의 경비로봇 아카카는 먼저 공격하지 않으면, 당신을 공격하지 않습니다...",
+    "그러나 당신이 먼저 공격하면, 아카카는 당신을 공격할 것입니다..."
+};
+static const DialogueBranch BRANCHES_E[] = {
+    { NULL, 0, 0, 2, NULL }
+};
+
 // Dialogue Branches for NPC A
 static const DialogueBranch BRANCHES_A[] = {
     // Priority 1: Post-Mission (Already completed)
@@ -364,6 +380,37 @@ static const NPCConfig NPCS[] = {
         .event = { .giveItem="철문열쇠1", .setFlag="receive_mission", .setVal=1 } // Fallback/Init
     },
     {
+        .tile = 'D',
+        .name = "시민",
+        .glyph = COLOR_MAGENTA "녀" COLOR_RESET,
+        .imagePath = "assets/npc/texture/staff2.png", // Use existing asset for now
+        .faceImagePath = NULL,
+        
+        .dialogues = ALL_DIALOGUES_D,
+        .dialogueCount = sizeof(ALL_DIALOGUES_D)/sizeof(ALL_DIALOGUES_D[0]),
+        
+        .branches = BRANCHES_D,
+        .branchCount = sizeof(BRANCHES_D)/sizeof(BRANCHES_D[0]),
+        
+        .useDialogueBox = 1,
+        .canTrade = 0
+    },
+    {
+        .tile = 'E',
+        .name = "겁에 질린 시민",
+        .glyph = COLOR_GREEN "웃" COLOR_RESET,
+        .imagePath = "assets/npc/texture/staff2.png", 
+        .faceImagePath = NULL,
+        
+        .dialogues = ALL_DIALOGUES_E,
+        .dialogueCount = sizeof(ALL_DIALOGUES_E)/sizeof(ALL_DIALOGUES_E[0]),
+        .branches = BRANCHES_E,
+        .branchCount = sizeof(BRANCHES_E)/sizeof(BRANCHES_E[0]),
+        
+        .useDialogueBox = 1,
+        .canTrade = 0
+    },
+    {
         .tile = 'B',
         .name = "시민",
         .glyph = COLOR_GREEN "웃" COLOR_RESET,
@@ -406,7 +453,10 @@ static const DoorConfig DOORS[] = {
     { '*', { NULL, 0, "철문열쇠1", 1, NULL, 0, NULL, "굳게 잠긴 문이다. (철문열쇠1 필요)" } },
     
     // 3. Second Locked Door (^) - Requires Key 2
-    { '^', { NULL, 0, "철문열쇠2", 1, NULL, 0, NULL, "더 깊은 곳으로 가는 문이다. (철문열쇠2 필요)" } }
+    { '^', { NULL, 0, "철문열쇠2", 1, NULL, 0, NULL, "더 깊은 곳으로 가는 문이다. (철문열쇠2 필요)" } },
+
+    // 4. Secret Rock Door (?)
+    { '?', { NULL, 0, NULL, 0, NULL, 0, NULL, NULL } }
 };
 
 // ============================================
@@ -496,7 +546,10 @@ static const DoorEvent DOOR_EVENTS[] = {
     { 0, 11, 5, "철문열쇠1", 1, NULL, "굳게 잠겨있다. (철문열쇠1 필요)", "철커덩! 문이 열렸다." },
     
     // 2. Locked Door 2 (Exit)
-    { 0, 22, 11, "철문열쇠2", 1, NULL, "더 깊은 곳으로 가는 문이다. (철문열쇠2 필요)", "문이 열렸다. 이제 더 깊은 곳으로..." }
+    { 0, 22, 11, "철문열쇠2", 1, NULL, "더 깊은 곳으로 가는 문이다. (철문열쇠2 필요)", "문이 열렸다. 이제 더 깊은 곳으로..." },
+
+    // 3. Secret Rock (44, 7)
+    { 0, 44, 7, NULL, 0, NULL, NULL, "바위 틈에 숨어있던 계단을 찾았다!" }
 };
 
 // --------------------------------------------

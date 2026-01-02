@@ -688,6 +688,11 @@ void game_process_input(GameState* state) {
                      
                      audio_play_sfx("door_open");
                      ui_add_log(de && de->successMsg ? de->successMsg : "문이 열렸다.");
+
+                     // ★ Special: If secret door (?), reveal stairs (>) on map
+                     if (d->symbol == '?') {
+                         state->map.tiles[ty][tx] = '>'; 
+                     }
                  } else {
                      audio_play_sfx("door_locked");
                      ui_add_log(de && de->failMsg ? de->failMsg : "가로막혀 있다.");

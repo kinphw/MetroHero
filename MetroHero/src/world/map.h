@@ -16,6 +16,7 @@
 typedef struct {
     int x, y;
     int isOpen;
+    char symbol; // Added for visual logic (e.g. '?')
     EventConfig event; // Added
 } Door;
 

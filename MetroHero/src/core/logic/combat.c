@@ -163,6 +163,13 @@ void combat_update_ai(GameState* state, float dt) {
         int closestY = (p->y < e->y) ? e->y : (p->y >= e->y + e->height) ? e->y + e->height - 1 : p->y;
         dist = abs(p->x - closestX) + abs(p->y - closestY);
 
+        // ★ First Attack Delay Logic (User Request)
+        // If out of attack range, keep cooldown full.
+        // This forces the enemy to wait 'attackInterval' seconds AFTER entering range (dist <= 1).
+        if (dist > 1) {
+            e->attackCooldown = 0.2f; // User Request: 0.2s delay
+        }
+
         // ★ 인식 범위 체크 및 로그 (Alert Logic)
         int hasLOS = map_check_los(m, e->x, e->y, p->x, p->y); // Approximate LOS from top-left
         

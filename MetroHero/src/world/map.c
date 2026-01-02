@@ -364,8 +364,8 @@ void map_draw_viewport(const Map* m, const Player* p,
                      if (t != ' ') img = "assets/floor_stone.png"; 
                  }
 
-                 if (t == '!') {
-                     // ★ Special Case: Draw Floor under Signpost
+                 if (t == '!' || t == '/') {
+                     // ★ Special Case: Draw Floor under Signpost and Rock
                      ui_draw_image(screenPxX, screenPxY, MAP_TILE_SIZE, MAP_TILE_SIZE, "assets/tile/floor.png");
                  }
 
@@ -470,9 +470,22 @@ void map_draw_viewport(const Map* m, const Player* p,
             }
 
             // 5. Door (Overlay)
+            // 5. Door (Overlay)
             Door* door = map_get_door_at((Map*)m, mx, my);
-            if (door != NULL && !door->isOpen) {
-                ui_draw_image(screenPxX, screenPxY, MAP_TILE_SIZE, MAP_TILE_SIZE, "assets/entity/door.png");
+            if (door != NULL) {
+                if (door->symbol == '?') {
+                    // ★ Secret Rock Door
+                    if (!door->isOpen) {
+                        ui_draw_image(screenPxX, screenPxY, MAP_TILE_SIZE, MAP_TILE_SIZE, "assets/tile/rock_obstacle.png");
+                    } else {
+                        // Revealed Stairs
+                        ui_draw_image(screenPxX, screenPxY, MAP_TILE_SIZE, MAP_TILE_SIZE, "assets/tile/stairs_up.png");
+                    }
+                }
+                else if (!door->isOpen) {
+                    // Standard Door
+                    ui_draw_image(screenPxX, screenPxY, MAP_TILE_SIZE, MAP_TILE_SIZE, "assets/entity/door.png");
+                }
             }
 
             // 6. Player (Overlay)
@@ -614,6 +627,7 @@ void map_load_doors(Map* m) {
                      d->x = x;
                      d->y = y;
                      d->isOpen = 0; // 닫힌 상태로 시작
+                     d->symbol = t; // ★ Store original symbol for custom rendering
                      d->event = evt;
 
                      m->doorCount++;
