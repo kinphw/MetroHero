@@ -298,17 +298,22 @@ Chest* map_get_adjacent_chest(Map* m, int px, int py) {
 // -------------------------------
 // 맵 초기화
 // -------------------------------
-void map_init(Map* m, int stageNumber) {
-    m->stageNumber = stageNumber;  // ★ 선택사항
-    load_map(m, stageNumber);
+void map_init(Map* m, int stageNumber, int floorIndex) {
+    m->stageNumber = stageNumber;
+    load_map(m, stageNumber, floorIndex);
 
-    map_find_spawn(m);  // ★ 이 줄 추가!
-    //map_load_enemies(m);  // ★ 이 줄 추가!
-
+    map_find_spawn(m);
+    
+    // Load Global Stage Entities (Shared across floors)
+    // Note: In future, we might want floor-specific entities.
+    // Ideally, map_load_enemies should check current tile map to place entities.
+    // Entities not on current map won't be spawned, so calling this is safe 
+    // IF map_load_enemies checks 'm->tiles'.
+    
     map_load_enemies(m);
     map_load_chests(m);
-    map_load_npcs(m);  // ★ 추가
-    map_load_doors(m); // ★ 추가
+    map_load_npcs(m);
+    map_load_doors(m);
 }
 
 

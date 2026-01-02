@@ -1,6 +1,11 @@
 #define _CRT_SECURE_NO_WARNINGS
 #include <stdio.h>
 #include <ctype.h>
+
+// ★ Explicit Includes to fix visibility issues
+#include "../../stages/common.h" 
+#include "../../world/map.h"
+
 #include "game_internal.h"
 #include "../ui/ui.h"
 #include "../audio/audio.h" // Added
@@ -164,6 +169,71 @@ void game_update_quest(GameState* state) {
     }
 }
 
+// ------------------------------------
+// Floor Implementation
+// ------------------------------------
+// ------------------------------------
+// Floor Implementation
+// ------------------------------------
+static void change_floor(GameState* state, int nextFloor, char targetSymbol) {    
+    // 1. Save Current Map
+    int current = state->currentFloor;
+    state->storedMaps[current] = state->map;
+    
+    // 2. Load Next Map
+    if (state->initializedFloors[nextFloor]) {
+        // Load from memory
+        state->map = state->storedMaps[nextFloor];
+    } else {
+        // First load
+        map_init(&state->map, state->map.stageNumber, nextFloor);
+        state->initializedFloors[nextFloor] = 1;
+    }
+    state->currentFloor = nextFloor;
+    
+    // 3. Find Spawn Point (Target Symbol)
+    int found = 0;
+    for (int y = 0; y < state->map.height; y++) {
+        for (int x = 0; x < state->map.width; x++) {
+             if (state->map.tiles[y][x] == targetSymbol) {
+                 state->player.x = x;
+                 state->player.y = y;
+                 found = 1;
+                 break;
+             }
+        }
+        if (found) break;
+    }
+    
+    if (!found) {
+        // Fallback: Use Map default spawn
+        state->player.x = state->map.spawnX;
+        state->player.y = state->map.spawnY;
+    }
+    
+    // Clear effects
+    ui_clear_buffer();
+    ui_add_log("다른 구역으로 이동했다...");
+    audio_play_sfx("door_creak"); // Reuse or new SFX
+}
+
+static void check_warp(GameState* state) {
+    if (!state->map.warps || state->map.warpCount <= 0) return;
+    
+    // Check if player is standing on a trigger
+    int px = state->player.x;
+    int py = state->player.y;
+    char currentTile = state->map.tiles[py][px];
+    
+    for (int i = 0; i < state->map.warpCount; i++) {
+        const WarpConfig* w = &state->map.warps[i];
+        if (w->triggerSymbol == currentTile) {
+            change_floor(state, w->targetFloorIdx, w->targetSymbol);
+            return;
+        }
+    }
+}
+
 // Wrapper to set flag and check quests
 static void trigger_event_flag(GameState* state, const char* flag, int val) {
     if (val > 0) event_set_flag(&state->eventRegistry, flag, val);
@@ -322,6 +392,7 @@ void game_process_input(GameState* state) {
     // 이동
     if (cmd == 'w' || cmd == 's' || cmd == 'a' || cmd == 'd') {
         player_move(&state->player, &state->map, cmd);
+        check_warp(state); // ★ Check for teleport
     }
 
     // Context Action (Space)

@@ -43,9 +43,14 @@ typedef struct {
 	// ★ 문 관리
 	Door doors[ MAX_DOORS ];
 	int doorCount;
+    
+    // ★ Warp Logic
+    const WarpConfig* warps;
+    int warpCount;
+    int floorIndex; // Added for reference
 } Map;
 
-void map_init(Map* m , int stageNumber);
+void map_init(Map* m , int stageNumber, int floorIndex);
 int map_is_walkable(const Map* m, int x, int y);
 int map_check_los(Map* m, int x1, int y1, int x2, int y2); // ★ 시야 체크
 // const char* tile_to_glyph(char t); // Removed

@@ -37,8 +37,8 @@ const TileDef GLOBAL_TILE_PALETTE[] = {
     { 'B', "assets/tile/barricade.png", 0, "Barricade" },
     { '=', "assets/tile/rail_horizontal.png", 1, "Rail (Horizontal)" },
     { '|', "assets/tile/rail_vertical.png", 1, "Rail (Vertical)" },
-    { 'S', "assets/tile/stairs_down.png", 1, "Stairs Down" },
-    { 'U', "assets/tile/stairs_up.png", 1, "Stairs Up" },
+    { '<', "assets/tile/stairs_down.png", 1, "Stairs Down" },
+    { '>', "assets/tile/stairs_up.png", 1, "Stairs Up" },
 
     // Special
     { '@', "assets/floor.png", 1, "Spawn Point" }, // Default floor
@@ -85,15 +85,22 @@ const StageData* get_stage_data(int stageNumber) {
     }
 }
 
-void load_map(Map* m, int stageNumber) {
+void load_map(Map* m, int stageNumber, int floorIndex) {
     const StageData* data = get_stage_data(stageNumber);
-    if (data) {
-        load_map_from_lines(m, data->mapLines, data->mapHeight);
+    if (data && floorIndex >= 0 && floorIndex < data->floor_count) {
+        const SubMapConfig* floor = &data->floors[floorIndex];
+        
+        load_map_from_lines(m, floor->mapLines, floor->mapHeight);
+        
+        // Load Warp Data
+        m->warps = floor->warps;
+        m->warpCount = floor->warpCount;
+        m->floorIndex = floorIndex;
     } else {
         // Fallback or empty map
-        // For safety, maybe clear map?
         m->height = 0;
         m->width = 0;
+        m->warpCount = 0;
     }
 }
 

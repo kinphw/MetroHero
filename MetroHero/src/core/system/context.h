@@ -3,11 +3,9 @@
 
 #include "../../world/map.h"
 #include "../../entity/player.h"
+#include "../logic/event.h"
 
-// 게임의 전체 상태를 담는 구조체
-#include "../../world/map.h"
-#include "../../entity/player.h"
-#include "../logic/event.h" // Added
+#define MAX_FLOORS 10
 
 // 게임의 전체 상태를 담는 구조체
 typedef struct {
@@ -15,10 +13,15 @@ typedef struct {
     Player player;
     EventRegistry eventRegistry; 
     
-
     
     // ★ Quest Data
     const StageData* currentStageData;
+    int currentFloor; // ★ Added (0-based index)
+    
+    // ★ Persistent Maps (Moved to end to prevent offset mismatch issues during partial recompile)
+    Map storedMaps[MAX_FLOORS]; 
+    int initializedFloors[MAX_FLOORS]; 
+
     char activeQuestMsg[256];
     char pendingQuestMsg[256]; // New Quest to show after animation
     int questState; // 0: Active, 1: Complete Anim, 2: Hidden

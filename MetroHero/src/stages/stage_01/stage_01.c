@@ -5,21 +5,73 @@
 // ============================================
 // Stage 1 Map Data
 // ============================================
-static const char* MAP_LINES[] = {
+// ============================================
+// Stage 1 Map Data (Floor 1: Station)
+// ============================================
+static const char* MAP_FLOOR1_LINES[] = {
 "#######################",
 "#...B................0#",
 "#.@..............A...1#",
 "#.......C............2#",
 "###########.###########",
-"          #$#          ", // Replaced % with $ for Event Door
+"          #$#          ", 
 "          #.#          ",
 "          #.#          ",
 "          #.#          ",
 "###########.###########",
 "#.....................#",
 "#..a...............a..#",
-"#.......a.............#",
+"#.......a............>#", // '>' Warp to Floor 2
 "#######################"
+};
+
+// Warp Config for Floor 1
+static const WarpConfig WARPS_FLOOR1[] = {
+    { '>', 1, '<' } // '>' tile goes to Floor 1 (index 1), at '<' tile
+};
+
+// ============================================
+// Stage 1 Map Data (Floor 2: Underground)
+// ============================================
+static const char* MAP_FLOOR2_LINES[] = {
+"#######################",
+"#<....................#", // '<' Arrival from Floor 1
+"#.....................#",
+"#.........b...........#", // Skeleton
+"#.....................#",
+"#.....................#",
+"#.....................#",
+"#.....................#",
+"#.........b...........#",
+"#.....................#",
+"#.....................#",
+"#.....................#",
+"#######################"
+};
+
+// Warp Config for Floor 2
+static const WarpConfig WARPS_FLOOR2[] = {
+    { '<', 0, '>' } // '<' tile goes to Floor 0 (index 0), at '>' tile
+};
+
+// ============================================
+// Floor Configuration Package
+// ============================================
+static const SubMapConfig FLOORS[] = {
+    // Floor 0
+    { 
+        MAP_FLOOR1_LINES, 
+        sizeof(MAP_FLOOR1_LINES)/sizeof(MAP_FLOOR1_LINES[0]),
+        WARPS_FLOOR1,
+        sizeof(WARPS_FLOOR1)/sizeof(WARPS_FLOOR1[0])
+    },
+    // Floor 1
+    { 
+        MAP_FLOOR2_LINES, 
+        sizeof(MAP_FLOOR2_LINES)/sizeof(MAP_FLOOR2_LINES[0]),
+        WARPS_FLOOR2,
+        sizeof(WARPS_FLOOR2)/sizeof(WARPS_FLOOR2[0])
+    }
 };
 
 // ============================================
@@ -286,8 +338,9 @@ static const Cinematic CLEAR_CINEMATIC = {
 // ============================================
 const StageData STAGE_01_DATA = {
     .stageId = 1,
-    .mapLines = MAP_LINES,
-    .mapHeight = sizeof(MAP_LINES) / sizeof(MAP_LINES[0]),
+    .floors = FLOORS,
+    .floor_count = sizeof(FLOORS) / sizeof(FLOORS[0]),
+    // Shared Data
     .chests = CHESTS,
     .chestCount = sizeof(CHESTS) / sizeof(CHESTS[0]),
     .enemies = ENEMIES,

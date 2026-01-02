@@ -125,40 +125,55 @@ typedef struct {
     int expReward;          // ★ Added
 } QuestConfig;
 
-// ★ Dialogue Override Config (Decoupled from NPCConfig)
+// ★ Dialogue Override Config
 typedef struct {
-    char npcTile;           // 대상 NPC 타일 문자 (예: 'A')
-    const char* reqFlag;    // 발동 조건 플래그
-    int reqVal;             // 발동 값
+    char npcTile;
+    const char* reqFlag;
+    int reqVal;
     
-    const char** newDialogues; // 교체할 대화 목록
+    const char** newDialogues;
     int newDialogueCount;
-    
-    // Optional: New Event (Update interactions/rewards)
     const EventConfig* newEvent; 
 } DialogueOverride;
+
+// ★ Warp Configuration (Teleport)
+typedef struct {
+    char triggerSymbol;      // 현재 맵에서 밟는 타일 (예: '1')
+    int targetFloorIdx;      // 이동할 층 인덱스 (0-based)
+    char targetSymbol;       // 이동 후 도착할 타일 (예: 'A')
+} WarpConfig;
+
+// ★ Sub-Map Configuration (Floor)
+typedef struct {
+    const char** mapLines;
+    int mapHeight;
+    
+    // Warps for this floor
+    const WarpConfig* warps;
+    int warpCount;
+} SubMapConfig;
 
 // --- Stage Definition ---
 typedef struct {
     int stageId;
     
-    // 맵 데이터
-    const char** mapLines;
-    int mapHeight;
+    // ★ Multi-Floor Support
+    const SubMapConfig* floors;
+    int floor_count;
 
-    // 상자 데이터
+    // 상자 데이터 (Stage Global)
     const ChestConfig* chests;
     int chestCount;
 
-    // 적 데이터
+    // 적 데이터 (Stage Global)
     const EnemyConfig* enemies;
     int enemyCount;
 
-    // NPC 데이터
+    // NPC 데이터 (Stage Global)
     const NPCConfig* npcs;
     int npcCount;
 
-    // 문 데이터 (이벤트 문)
+    // 문 데이터 (Stage Global)
     const DoorConfig* doors;
     int doorCount;
 

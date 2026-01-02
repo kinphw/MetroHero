@@ -23,8 +23,15 @@ void game_run_new_session(void) {
     // 인트로 시네마틱
     cinematic_play_intro();
 
-    event_init_registry(&state.eventRegistry); // Added
-    map_init(&state.map, 1);
+    event_init_registry(&state.eventRegistry);
+    
+    // Multi-Floor Init
+    state.currentFloor = 0;
+    memset(state.initializedFloors, 0, sizeof(state.initializedFloors));
+    
+    // Load Floor 0
+    map_init(&state.map, 1, 0);
+    state.initializedFloors[0] = 1;
     player_init(&state.player);
 
     // 스테이지 1 시작
