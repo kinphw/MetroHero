@@ -19,13 +19,12 @@
 #define VIEWPORT_W 120 
 #define VIEWPORT_H 30
 
-// ★ Map Tile Rendering Constants (32x32 Mixed Resolution)
-#define MAP_TILE_SIZE 32
-// (VIEWPORT_W * GRID_W) / MAP_TILE_SIZE = (120*8)/32 = 960/32 = 30
-#define VIEWPORT_MAP_W 30
-// ((VIEWPORT_H * GRID_H) / MAP_TILE_SIZE) * GRID_H? No, Total Pixel Height / 32
-// Total Pixel Height = 30 * 16 = 480. 480 / 32 = 15.
-#define VIEWPORT_MAP_H 15
+// ★ Map Tile Rendering Constants (64x64 Mixed Resolution)
+#define MAP_TILE_SIZE 64
+// (VIEWPORT_W * GRID_W) / MAP_TILE_SIZE = (120*8)/64 = 960/64 = 15
+#define VIEWPORT_MAP_W 15
+// Total Pixel Height = 30 * 16 = 480. 480 / 64 = 7.5 -> 8 (Partial draw)
+#define VIEWPORT_MAP_H 8
 
 // Right Side Panels (Status / Equipment / Dialogue)
 #define PANEL_X (VIEWPORT_X + VIEWPORT_W)
