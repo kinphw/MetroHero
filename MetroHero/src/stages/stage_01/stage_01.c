@@ -42,8 +42,8 @@ static const char* MAP_FLOOR2_LINES[] = {
 "#.....................#",
 "#.....................#",
 "#.....................#",
+"#.........z...........#", // Zombie Added
 "#.........b...........#",
-"#.....................#",
 "#.....................#",
 "#.....................#",
 "#######################"
@@ -109,6 +109,13 @@ static const char* DIALOGUES_SKELETON[] = {
     "생명체의.. 냄새가.. 난다.."
 };
 
+// Type 'z': 좀비 역무원
+static const char* DIALOGUES_ZOMBIE[] = {
+    "표... 표를... 보여줘...",
+    "이번 역은... 지옥... 지옥행입니다...",
+    "크아아아..."
+};
+
 static const EnemyConfig ENEMIES[] = {
     {
         .tile = 'a', 
@@ -151,6 +158,27 @@ static const EnemyConfig ENEMIES[] = {
         .dialogueCount = sizeof(DIALOGUES_SKELETON) / sizeof(DIALOGUES_SKELETON[0]),
         .dialogueColor = COLOR_WHITE,
         .expReward = 80
+    },
+    {
+        .tile = 'c', 
+        .name = "좀비 역무원", 
+        .glyph = COLOR_GREEN "🧟" COLOR_RESET,
+        .imagePath = "assets/enemy/texture_sprite/zomerk_tile.png", // User will set
+        .portraitPath = "assets/enemy/portrait/zomerk_port.png", // User will set
+        .width = 1, .height = 1,
+        
+        .spriteRows = 1, .spriteCols = 4,
+        .animDown = {0, 0}, .animUp = {0, 1}, .animLeft = {0, 2}, .animRight = {0, 3},
+        
+        .maxHp = 25, // Stronger than Skeleton (15)
+        .attackMin = 5, .attackMax = 8, // Stronger than Skeleton (3-5)
+        .chaseOnSight = 1, .attackOnSight = 1, 
+        .detectionRange = 7, 
+        .moveInterval = 1.1f, .attackInterval = 1.1f,
+        .dialogues = DIALOGUES_ZOMBIE,
+        .dialogueCount = sizeof(DIALOGUES_ZOMBIE) / sizeof(DIALOGUES_ZOMBIE[0]),
+        .dialogueColor = COLOR_GREEN,
+        .expReward = 120
     },
     {
         .tile = 'y', 
