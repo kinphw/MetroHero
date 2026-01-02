@@ -47,7 +47,8 @@ GameMode game_menu(void) {
             selectedOption = (selectedOption - 1 + optionCount) % optionCount;
         }
         
-        if (IsKeyPressed(KEY_ENTER)) {
+        //if (IsKeyPressed(KEY_ENTER)) {
+        if (IsKeyPressed(KEY_SPACE)) {
             if (selectedOption == 0) return GAME_NEW;
             if (selectedOption == 1) return GAME_LOAD; // 아직 구현 안됨
             if (selectedOption == 2) return GAME_EXIT;
@@ -105,7 +106,7 @@ GameMode game_menu(void) {
 
         // 안내 문구 추가
         int guideY = menuStartY + (optionCount * 3) + 4;
-        const char* guide = "- ENTER 키를 눌러 선택하세요 -";
+        const char* guide = "- SPACE 키를 눌러 선택하세요 -";
         int guideLen = display_width(guide);
         ui_draw_str_at(centerX - (guideLen / 2), guideY, guide, "\033[90m"); // Dark Gray
 

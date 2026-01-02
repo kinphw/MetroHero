@@ -105,7 +105,7 @@ void player_add_exp(Player* p, int amount) {
         ui_add_log(msg);
         
         // Play Sound
-        audio_play_sfx("level_up"); // TODO: Add SFX
+        audio_play_sfx("level_up");
     }
     
     if (p->level >= MAX_LEVEL) {

@@ -29,8 +29,8 @@ static int MapKeyToCmd(int key) {
         case KEY_A: case KEY_LEFT:  return 'a';
         case KEY_D: case KEY_RIGHT: return 'd';
         
-        // Context Action (Space / Enter / Z)
-        case KEY_SPACE: case KEY_ENTER: case KEY_KP_ENTER: case KEY_Z: return ' '; 
+        // Context Action (Space / Z)
+        case KEY_SPACE: case KEY_Z: return ' '; 
         
         // Menu / Cancel (ESC / X)
         case KEY_ESCAPE: case KEY_X: return 'x';
@@ -133,7 +133,7 @@ static void check_quest_updates(GameState* state) {
                         player_add_exp(&state->player, q->expReward);
                     }
                     
-                    audio_play_sfx("cinematic_blip"); 
+                    audio_play_sfx("text_blip"); 
                 }
             }
         }
