@@ -489,6 +489,33 @@ static const DoorEvent DOOR_EVENTS[] = {
     { 0, 22, 11, "철문열쇠2", 1, NULL, "더 깊은 곳으로 가는 문이다. (철문열쇠2 필요)", "문이 열렸다. 이제 더 깊은 곳으로..." }
 };
 
+// --------------------------------------------
+// Boss Intro Cinematic
+// --------------------------------------------
+static const CinematicLine BOSS_INTRO_LINES[] = {
+    { "", STYLE_NORMAL, 500, "assets/cinematic/1_boss.png" }, // ★ Image Start (Show immediately)
+    { "역장실에 도착했다.", STYLE_TYPEWRITER, 1000, NULL },
+    { "하지만 역장의 상태가 이상하다...", STYLE_TYPEWRITER, 1000, NULL },
+    { "", STYLE_NORMAL, 500, NULL },
+    { "크아아아아...!!!", STYLE_SHAKE, 200, NULL }, // Removed sound string to prevent texture error
+    { "역장은 이미 좀비가 되어버렸다!", STYLE_FLASH, 500, NULL },
+    { "쓰러뜨려서 안식을 줘야 한다!", STYLE_TYPEWRITER, 0, NULL }
+};
+
+static const Cinematic BOSS_INTRO_CINEMATIC = {
+    NULL,
+    BOSS_INTRO_LINES,
+    sizeof(BOSS_INTRO_LINES) / sizeof(BOSS_INTRO_LINES[0]),
+    30, 0, COLOR_RED, COLOR_WHITE
+};
+
+// ============================================
+// Stage 1 Area Triggers
+// ============================================
+static const AreaTrigger AREA_TRIGGERS[] = {
+    { 0, 46, 13, "mission_complete", "boss_spawned", &BOSS_INTRO_CINEMATIC, 1, "좀비가 된 역장을 쓰러뜨려라!" }
+};
+
 // ============================================
 // Stage Package
 // ============================================
@@ -513,6 +540,10 @@ const StageData STAGE_01_DATA = {
     // ★ Map Events
     .events = MAP_EVENTS,
     .eventCount = sizeof(MAP_EVENTS) / sizeof(MAP_EVENTS[0]),
+    
+    // ★ Area Triggers
+    .triggers = AREA_TRIGGERS,
+    .triggerCount = sizeof(AREA_TRIGGERS) / sizeof(AREA_TRIGGERS[0]),
     
     .quests = QUESTS,
     .questCount = sizeof(QUESTS) / sizeof(QUESTS[0]),

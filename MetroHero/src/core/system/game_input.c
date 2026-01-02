@@ -471,6 +471,38 @@ void game_process_input(GameState* state) {
     if (cmd == 'w' || cmd == 's' || cmd == 'a' || cmd == 'd') {
         player_move(&state->player, &state->map, cmd);
         check_warp(state); // ★ Check for teleport
+        
+        // ★ Area Trigger Check (Automatic Event on Arrival)
+        if (state->currentStageData && state->currentStageData->triggers) {
+            for (int i=0; i < state->currentStageData->triggerCount; i++) {
+                const AreaTrigger* t = &state->currentStageData->triggers[i];
+                if (t->floorIndex == state->currentFloor && t->x == state->player.x && t->y == state->player.y) {
+                    
+                    // 1. OneShot Check (If setFlag is already active, skip)
+                    if (t->oneShot && t->setFlag && event_get_flag(&state->eventRegistry, t->setFlag) > 0) continue;
+                    
+                    // 2. Req Check (Condition)
+                    if (t->reqFlag && event_get_flag(&state->eventRegistry, t->reqFlag) < 1) continue;
+                    
+                    // EXECUTE
+                    if (t->setFlag) {
+                        trigger_event_flag(state, t->setFlag, 1);
+                    }
+                    
+                    if (t->updateQuestMsg) {
+                        snprintf(state->activeQuestMsg, sizeof(state->activeQuestMsg), "%s", t->updateQuestMsg); 
+                        state->questState = 2; // Trigger Quest Update Anim
+                        state->questTimer = 0.0f;
+                    }
+                    
+                    if (t->cinematic) {
+                         cinematic_play(t->cinematic);
+                    }
+                    
+                    break; // Only one trigger per step
+                } 
+            }
+        }
     }
 
     // Context Action (Space)

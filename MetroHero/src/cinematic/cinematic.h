@@ -22,7 +22,9 @@ typedef enum {
     STYLE_SUBTITLE,         // 부제목
     STYLE_SCROLL_UP,        // 아래→위 스크롤 (스타워즈)
     STYLE_TYPEWRITER,       // 타이핑 효과
-    STYLE_FADE_IN           // 페이드 인
+    STYLE_FADE_IN,          // 페이드 인
+    STYLE_SHAKE,            // ★ 화면 흔들림 효과 (텍스트와 함께)
+    STYLE_FLASH             // ★ 화면 섬광 효과
 } TextStyle;
 
 // 시네마틱 라인 구조체

@@ -206,9 +206,29 @@ typedef struct {
     const char* successMsg; // If NULL, use default "Opened"
 } DoorEvent;
 
+// ★ Area Trigger (Cinematic/Event on Step)
+typedef struct {
+    int floorIndex;
+    int x;
+    int y;
+    
+    const char* reqFlag;    // Active Condition (e.g. "mission_complete")
+    const char* setFlag;    // Set this flag on trigger (e.g. "boss_spawned")
+    const Cinematic* cinematic; // Optional Cinematic to play
+    int oneShot;            // 1: Run once (uses setFlag to check completion)
+    
+    // Optional: Update Quest Message
+    const char* updateQuestMsg;
+} AreaTrigger;
+
+// --- Stage Definition ---
 // --- Stage Definition ---
 typedef struct {
     int stageId;
+    
+    // ★ Area Triggers (Zone Events) - MOVED TO TOP for Visibility Check
+    const AreaTrigger* triggers;
+    int triggerCount;
     
     // ★ Multi-Floor Support
     const SubMapConfig* floors;
@@ -226,7 +246,7 @@ typedef struct {
     const NPCConfig* npcs;
     int npcCount;
     
-    // 문 데이터 (Stage Global) -- DEPRECATED (Will rely on Map Logic + DoorEvents)
+    // 문 데이터 (Stage Global) -- DEPRECATED
     const DoorConfig* doors;
     int doorCount;
     
@@ -237,6 +257,7 @@ typedef struct {
     // ★ Map Events (Signposts)
     const MapEvent* events;
     int eventCount;
+    
     // 퀘스트 데이터
     const QuestConfig* quests;
     int questCount;
