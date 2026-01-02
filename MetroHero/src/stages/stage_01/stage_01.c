@@ -59,7 +59,10 @@ static const EnemyConfig ENEMIES[] = {
         .imagePath = "assets/enemy/texture_sprite/cat_tile.png",
         .portraitPath = "assets/enemy/portrait/1a.png",
         .width = 1, .height = 1,
-        .spriteRows = 1, .spriteCols = 4, // 1x4 Directional Sprite Sheet
+        .spriteRows = 1, .spriteCols = 4, 
+        // 1x4 Directional Map: {Row, Col}
+        // User Spec: 1:Down, 2:Up, 3:Left, 4:Right
+        .animDown = {0, 0}, .animUp = {0, 1}, .animLeft = {0, 2}, .animRight = {0, 3},
         .maxHp = 5,
         .attackMin = 1, .attackMax = 3,
         .chaseOnSight = 1, .attackOnSight = 1, 
@@ -71,7 +74,7 @@ static const EnemyConfig ENEMIES[] = {
         .expReward = 50 // 2 kills = Level Up
     },
     {
-        .tile = 'b', 
+        .tile = 'y', 
         .name = "최악의로보트 아카카", 
         .glyph = COLOR_RED "🤖" COLOR_RESET,
         .imagePath = "assets/enemy/texture/security_robot.png",
@@ -96,6 +99,8 @@ static const EnemyConfig ENEMIES[] = {
         .portraitPath = "assets/enemy/portrait/1c.png", 
         .width = 2, .height = 2,
         .spriteRows = 2, .spriteCols = 2, // 2x2 Sprite Sheet
+        // Legacy 2x2 Map
+        .animRight={0,0}, .animLeft={0,1}, .animUp={1,0}, .animDown={1,1},
         
         .maxHp = 50,
         .attackMin = 5, .attackMax = 10,

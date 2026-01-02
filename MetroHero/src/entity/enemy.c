@@ -44,6 +44,12 @@ void enemy_init(Enemy* e, const EnemyConfig* config, int x, int y) {
     e->height = config->height > 0 ? config->height : 1;
     e->direction = 3; // Default Down
     
+    // Copy Animation Map
+    e->animRight.row = config->animRight.row; e->animRight.col = config->animRight.col;
+    e->animLeft.row  = config->animLeft.row;  e->animLeft.col  = config->animLeft.col;
+    e->animUp.row    = config->animUp.row;    e->animUp.col    = config->animUp.col;
+    e->animDown.row  = config->animDown.row;  e->animDown.col  = config->animDown.col;
+    
     // Load Sprite Sheet if cols/rows specified
     if ((config->spriteRows > 1 || config->spriteCols > 1) && e->imagePath) {
         sprite_load(&e->spriteSheet, e->imagePath, config->spriteRows, config->spriteCols);

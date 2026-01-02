@@ -45,6 +45,9 @@ typedef struct {
     EventConfig event;      // ★ 이벤트 설정 (요구 조건 등)
 } ChestConfig;
 
+// ★ Flexible Animation Mapping
+typedef struct { int row; int col; } SpriteCoord;
+
 // --- Enemy Definition ---
 typedef struct {
     char tile;              // 'a', 'b'... (맵상의 문자)
@@ -59,6 +62,13 @@ typedef struct {
     // Animation/SpriteSheet Config
     int spriteRows; // if > 1, treat imagePath as sheet
     int spriteCols; // if > 1, treat imagePath as sheet
+    
+    // ★ Flexible Animation Mapping (직관적인 좌표 지정)
+    // 예: .animDown = {0, 0}, .animUp = {0, 1} ...
+    SpriteCoord animRight; // 0: Right
+    SpriteCoord animLeft;  // 1: Left
+    SpriteCoord animUp;    // 2: Up
+    SpriteCoord animDown;  // 3: Down
     
     int maxHp;
     int attackMin;

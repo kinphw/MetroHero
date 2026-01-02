@@ -22,6 +22,9 @@ typedef struct {
     SpriteSheet spriteSheet; // Runtime Sprite Sheet
     int direction; // 0: Right, 1: Left, 2: Up, 3: Down
     
+    // ★ Animation Coords (Copied from Config)
+    struct { int row; int col; } animRight, animLeft, animUp, animDown;
+    
 	int maxHp;
 	int hp;
 	//int attack;

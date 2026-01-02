@@ -410,24 +410,17 @@ void map_draw_viewport(const Map* m, const Player* p,
                         // Top-Right: Left (1) -> 0,1
                         // Bottom-Left: Up (2) -> 1,0
                         // Bottom-Right: Down (3) -> 1,1
+                        // Direction Mapping (Dynamic)
+                        // 0: Right, 1: Left, 2: Up, 3: Down
                         int row = 0, col = 0;
                         
-                        if (enemy->spriteSheet.rows == 2 && enemy->spriteSheet.cols == 2) {
-                             // 2x2 Logic (Legacy for SCP-682)
-                            if (enemy->direction == 0) { row = 0; col = 0; }      // Right
-                            else if (enemy->direction == 1) { row = 0; col = 1; } // Left
-                            else if (enemy->direction == 2) { row = 1; col = 0; } // Up
-                            else if (enemy->direction == 3) { row = 1; col = 1; } // Down
-                        } 
-                        else if (enemy->spriteSheet.rows == 1 && enemy->spriteSheet.cols == 4) {
-                            // 1x4 Logic (Generic Directional)
-                            // User Spec: 1:Down, 2:Up, 3:Left, 4:Right (0-indexed)
-                            row = 0;
-                            if (enemy->direction == 3) col = 0;      // Down
-                            else if (enemy->direction == 2) col = 1; // Up
-                            else if (enemy->direction == 1) col = 2; // Left
-                            else if (enemy->direction == 0) col = 3; // Right
-                        }
+                        // Use configured mapping if sprite sheet is loaded
+                        if (enemy->direction == 0) { row = enemy->animRight.row; col = enemy->animRight.col; }
+                        else if (enemy->direction == 1) { row = enemy->animLeft.row; col = enemy->animLeft.col; }
+                        else if (enemy->direction == 2) { row = enemy->animUp.row; col = enemy->animUp.col; }
+                        else if (enemy->direction == 3) { row = enemy->animDown.row; col = enemy->animDown.col; }
+                        
+                        // Fallback logic not really needed since 0,0 is default if not set.
                         
                         // Draw scaled sprite
                         sprite_draw(&enemy->spriteSheet, row, col, 
