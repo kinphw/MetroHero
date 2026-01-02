@@ -31,7 +31,7 @@ const TileDef GLOBAL_TILE_PALETTE[] = {
     
     // Objects
     { '+', "assets/wall.png", 0, "Closed Door" }, // Placeholder
-    { '/', "assets/tile/rock_obstacle.png", 0, "Rock obstacle" },  // Placeholder
+    { '/', "assets/tile/rock_obstacle.png", 0, "Rock obstacle" },  // 추가
     { 'T', "assets/tile/tree_dark.png", 0, "Dark Tree" },
     { 't', "assets/tile/tree_light.png", 0, "Light Tree" },
     { 'B', "assets/tile/barricade.png", 0, "Barricade" },
