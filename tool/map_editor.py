@@ -12,7 +12,10 @@ class MapEditor:
     def __init__(self, root):
         self.root = root
         self.root.title("MetroHero Map Editor")
-        self.root.geometry("1200x800")
+
+        # Fullscreen
+        self.root.state('zoomed')  # Windows fullscreen
+        # self.root.attributes('-fullscreen', True)  # Alternative for other platforms
 
         # Project root (parent of tool directory)
         self.project_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -129,36 +132,30 @@ class MapEditor:
         """Setup the main UI layout"""
         # Main container
         main_frame = tk.Frame(self.root)
-        main_frame.pack(fill=tk.BOTH, expand=True, padx=10, pady=10)
+        main_frame.pack(fill=tk.BOTH, expand=True, padx=5, pady=5)
 
-        # Top: Stage Selector
-        stage_frame = tk.Frame(main_frame)
-        stage_frame.pack(fill=tk.X, pady=(0, 5))
+        # Top: Stage Selector bar
+        top_bar = tk.Frame(main_frame, bg='#f0f0f0', height=40)
+        top_bar.pack(fill=tk.X, pady=(0, 5))
+        top_bar.pack_propagate(False)
 
-        tk.Label(stage_frame, text="Stage:", font=('Arial', 10, 'bold')).pack(side=tk.LEFT, padx=(0, 5))
+        tk.Label(top_bar, text="Stage:", font=('Arial', 10, 'bold'), bg='#f0f0f0').pack(side=tk.LEFT, padx=(10, 5))
 
         self.stage_var = tk.StringVar(value=self.current_stage)
-        stage_dropdown = ttk.Combobox(stage_frame, textvariable=self.stage_var,
+        stage_dropdown = ttk.Combobox(top_bar, textvariable=self.stage_var,
                                       values=self.available_stages, state='readonly', width=15)
-        stage_dropdown.pack(side=tk.LEFT)
+        stage_dropdown.pack(side=tk.LEFT, padx=(0, 20))
         stage_dropdown.bind('<<ComboboxSelected>>', self.on_stage_change)
 
-        # Top: Tile Palette with collapse button
-        palette_header_frame = tk.Frame(main_frame)
-        palette_header_frame.pack(fill=tk.X, pady=(0, 5))
+        # Main content: Left (Map + Controls) + Right (Palette)
+        content_frame = tk.Frame(main_frame)
+        content_frame.pack(fill=tk.BOTH, expand=True)
 
-        self.palette_collapsed = False
-        self.palette_toggle_btn = tk.Button(palette_header_frame, text="▼ Hide Palette",
-                                           command=self.toggle_palette, font=('Arial', 9))
-        self.palette_toggle_btn.pack(side=tk.LEFT)
+        # Left side: Map Canvas + Controls (2/3 width)
+        left_frame = tk.Frame(content_frame)
+        left_frame.pack(side=tk.LEFT, fill=tk.BOTH, expand=True, padx=(0, 5))
 
-        self.palette_frame = tk.LabelFrame(main_frame, text="Tile Palette", padx=10, pady=10)
-        self.palette_frame.pack(fill=tk.X, pady=(0, 10))
-        self.load_stage_data(self.current_stage)
-        self.setup_palette(self.palette_frame)
-
-        # Middle: Map Canvas + Controls
-        canvas_frame = tk.Frame(main_frame)
+        canvas_frame = tk.Frame(left_frame)
         canvas_frame.pack(fill=tk.BOTH, expand=True)
 
         # Canvas with scrollbars
@@ -181,34 +178,62 @@ class MapEditor:
         v_scroll.pack(side=tk.RIGHT, fill=tk.Y)
         self.canvas.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
 
-        # Control panel
-        control_frame = tk.LabelFrame(canvas_frame, text="Controls", padx=10, pady=10)
-        control_frame.pack(side=tk.RIGHT, fill=tk.Y, padx=(10, 0))
+        # Bottom: Control panel (below canvas)
+        control_frame = tk.LabelFrame(left_frame, text="Map Controls", padx=10, pady=5)
+        control_frame.pack(fill=tk.X, pady=(5, 0))
 
-        tk.Label(control_frame, text="Map Size:").pack(anchor=tk.W)
-        size_frame = tk.Frame(control_frame)
-        size_frame.pack(fill=tk.X, pady=5)
+        # Horizontal layout for controls - pack right side first to ensure visibility
+        right_controls = tk.Frame(control_frame)
+        right_controls.pack(side=tk.RIGHT, padx=5)
 
-        tk.Label(size_frame, text="W:").pack(side=tk.LEFT)
-        self.width_var = tk.StringVar(value=str(self.map_width))
-        tk.Entry(size_frame, textvariable=self.width_var, width=5).pack(side=tk.LEFT, padx=2)
+        tk.Button(right_controls, text="Import MAP_LINES[]",
+                 command=self.import_map, bg='#2196F3', fg='white',
+                 font=('Arial', 9, 'bold')).pack(side=tk.RIGHT, padx=2)
 
-        tk.Label(size_frame, text="H:").pack(side=tk.LEFT, padx=(10, 0))
-        self.height_var = tk.StringVar(value=str(self.map_height))
-        tk.Entry(size_frame, textvariable=self.height_var, width=5).pack(side=tk.LEFT, padx=2)
-
-        tk.Button(control_frame, text="Resize Map", command=self.resize_map).pack(fill=tk.X, pady=5)
-        tk.Button(control_frame, text="Clear Map", command=self.clear_map).pack(fill=tk.X, pady=5)
-        tk.Button(control_frame, text="Fill with Floor", command=self.fill_floor).pack(fill=tk.X, pady=5)
-
-        tk.Label(control_frame, text="").pack(pady=10)  # Spacer
-
-        tk.Button(control_frame, text="Export MAP_LINES[]",
+        tk.Button(right_controls, text="Export MAP_LINES[]",
                  command=self.export_map, bg='#4CAF50', fg='white',
-                 font=('Arial', 10, 'bold')).pack(fill=tk.X, pady=5)
+                 font=('Arial', 9, 'bold')).pack(side=tk.RIGHT, padx=2)
 
-        tk.Button(control_frame, text="Import MAP_LINES[]",
-                 command=self.import_map).pack(fill=tk.X, pady=5)
+        left_controls = tk.Frame(control_frame)
+        left_controls.pack(side=tk.LEFT, padx=5)
+
+        tk.Label(left_controls, text="Size:").pack(side=tk.LEFT, padx=(0, 5))
+        tk.Label(left_controls, text="W:").pack(side=tk.LEFT)
+        self.width_var = tk.StringVar(value=str(self.map_width))
+        tk.Entry(left_controls, textvariable=self.width_var, width=5).pack(side=tk.LEFT, padx=2)
+
+        tk.Label(left_controls, text="H:").pack(side=tk.LEFT, padx=(5, 0))
+        self.height_var = tk.StringVar(value=str(self.map_height))
+        tk.Entry(left_controls, textvariable=self.height_var, width=5).pack(side=tk.LEFT, padx=2)
+
+        tk.Button(left_controls, text="Resize", command=self.resize_map).pack(side=tk.LEFT, padx=5)
+        tk.Button(left_controls, text="Clear", command=self.clear_map).pack(side=tk.LEFT, padx=2)
+        tk.Button(left_controls, text="Fill Floor", command=self.fill_floor).pack(side=tk.LEFT, padx=2)
+
+        # Right side: Tile Palette (1/3 width)
+        right_frame = tk.Frame(content_frame, width=400)
+        right_frame.pack(side=tk.RIGHT, fill=tk.BOTH, padx=(5, 0))
+        right_frame.pack_propagate(False)
+
+        # Scrollable palette
+        palette_canvas = tk.Canvas(right_frame, bg='white')
+        palette_scroll = tk.Scrollbar(right_frame, orient=tk.VERTICAL, command=palette_canvas.yview)
+        palette_canvas.configure(yscrollcommand=palette_scroll.set)
+
+        palette_scroll.pack(side=tk.RIGHT, fill=tk.Y)
+        palette_canvas.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
+
+        # Frame inside canvas for palette content
+        self.palette_frame = tk.Frame(palette_canvas, bg='white')
+        palette_canvas.create_window((0, 0), window=self.palette_frame, anchor='nw')
+
+        def on_palette_configure(event):
+            palette_canvas.configure(scrollregion=palette_canvas.bbox('all'))
+
+        self.palette_frame.bind('<Configure>', on_palette_configure)
+
+        self.load_stage_data(self.current_stage)
+        self.setup_palette(self.palette_frame)
 
         # Canvas bindings
         self.canvas.bind('<Button-1>', self.on_canvas_click)
@@ -231,18 +256,6 @@ class MapEditor:
         # Reload images for this stage
         self.preload_images()
 
-    def toggle_palette(self):
-        """Toggle palette visibility"""
-        if self.palette_collapsed:
-            # Show palette
-            self.palette_frame.pack(fill=tk.X, pady=(0, 10), before=self.canvas.master.master)
-            self.palette_toggle_btn.config(text="▼ Hide Palette")
-            self.palette_collapsed = False
-        else:
-            # Hide palette
-            self.palette_frame.pack_forget()
-            self.palette_toggle_btn.config(text="▶ Show Palette")
-            self.palette_collapsed = True
 
     def on_stage_change(self, event):
         """Handle stage selection change"""
@@ -258,30 +271,32 @@ class MapEditor:
 
     def setup_palette(self, parent):
         """Setup tile palette with radio buttons and image previews"""
+        parent.config(bg='white')
+
         # Common tiles
-        common_frame = tk.LabelFrame(parent, text="Common Tiles")
-        common_frame.pack(side=tk.LEFT, padx=5)
+        common_frame = tk.LabelFrame(parent, text="Common Tiles", bg='white')
+        common_frame.pack(fill=tk.X, padx=5, pady=5)
 
         self.tile_var = tk.StringVar(value='#')
 
         # Add space tile manually first
         space_tile = self.parser.get_tile(' ')
         if space_tile:
-            frame = tk.Frame(common_frame)
-            frame.pack(anchor=tk.W, pady=2)
+            frame = tk.Frame(common_frame, bg='white')
+            frame.pack(anchor=tk.W, pady=1)
             rb = tk.Radiobutton(frame, text=f"[SPACE] - {space_tile.desc}",
                                variable=self.tile_var, value=' ',
-                               command=self.on_tile_select)
+                               command=self.on_tile_select, bg='white')
             rb.pack(side=tk.LEFT)
 
         common_tiles = self.parser.get_all_common_tiles()
         for tile in common_tiles:
-            frame = tk.Frame(common_frame)
-            frame.pack(anchor=tk.W, pady=2)
+            frame = tk.Frame(common_frame, bg='white')
+            frame.pack(anchor=tk.W, pady=1)
 
             rb = tk.Radiobutton(frame, text=f"{tile.symbol} - {tile.desc}",
                                variable=self.tile_var, value=tile.symbol,
-                               command=self.on_tile_select)
+                               command=self.on_tile_select, bg='white')
             rb.pack(side=tk.LEFT)
 
             # Show small preview if image exists
@@ -300,16 +315,16 @@ class MapEditor:
                     pass
 
         # Enemy tiles (from current stage)
-        enemy_frame = tk.LabelFrame(parent, text=f"Enemies ({self.current_stage})")
-        enemy_frame.pack(side=tk.LEFT, padx=5, fill=tk.Y)
+        enemy_frame = tk.LabelFrame(parent, text=f"Enemies ({self.current_stage})", bg='white')
+        enemy_frame.pack(fill=tk.X, padx=5, pady=5)
 
         for tile_char, enemy_data in sorted(self.stage_enemies.items()):
-            frame = tk.Frame(enemy_frame)
-            frame.pack(anchor=tk.W, pady=2)
+            frame = tk.Frame(enemy_frame, bg='white')
+            frame.pack(anchor=tk.W, pady=1)
 
             rb = tk.Radiobutton(frame, text=f"{tile_char} - {enemy_data['name']}",
                                variable=self.tile_var, value=tile_char,
-                               command=self.on_tile_select)
+                               command=self.on_tile_select, bg='white')
             rb.pack(side=tk.LEFT)
 
             image_path = enemy_data['imagePath']
@@ -334,16 +349,16 @@ class MapEditor:
                     pass
 
         # NPC tiles (from current stage)
-        npc_frame = tk.LabelFrame(parent, text=f"NPCs ({self.current_stage})")
-        npc_frame.pack(side=tk.LEFT, padx=5, fill=tk.Y)
+        npc_frame = tk.LabelFrame(parent, text=f"NPCs ({self.current_stage})", bg='white')
+        npc_frame.pack(fill=tk.X, padx=5, pady=5)
 
         for tile_char, npc_data in sorted(self.stage_npcs.items()):
-            frame = tk.Frame(npc_frame)
-            frame.pack(anchor=tk.W, pady=2)
+            frame = tk.Frame(npc_frame, bg='white')
+            frame.pack(anchor=tk.W, pady=1)
 
             rb = tk.Radiobutton(frame, text=f"{tile_char} - {npc_data['name']}",
                                variable=self.tile_var, value=tile_char,
-                               command=self.on_tile_select)
+                               command=self.on_tile_select, bg='white')
             rb.pack(side=tk.LEFT)
 
             image_path = npc_data['imagePath']
@@ -361,17 +376,17 @@ class MapEditor:
                     pass
 
         # Chest tiles
-        chest_frame = tk.LabelFrame(parent, text="Chests (0-9)")
-        chest_frame.pack(side=tk.LEFT, padx=5, fill=tk.Y)
+        chest_frame = tk.LabelFrame(parent, text="Chests (0-9)", bg='white')
+        chest_frame.pack(fill=tk.X, padx=5, pady=5)
 
-        chest_tiles = self.parser.get_chest_tiles()[:5]  # Show first 5
+        chest_tiles = self.parser.get_chest_tiles()
         for tile in chest_tiles:
-            frame = tk.Frame(chest_frame)
-            frame.pack(anchor=tk.W, pady=2)
+            frame = tk.Frame(chest_frame, bg='white')
+            frame.pack(anchor=tk.W, pady=1)
 
             rb = tk.Radiobutton(frame, text=f"{tile.symbol} - {tile.desc}",
                                variable=self.tile_var, value=tile.symbol,
-                               command=self.on_tile_select)
+                               command=self.on_tile_select, bg='white')
             rb.pack(side=tk.LEFT)
 
             if tile.image_path and tile.image_path in self.image_cache:

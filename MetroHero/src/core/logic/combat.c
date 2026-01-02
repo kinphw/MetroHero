@@ -184,14 +184,24 @@ void combat_update_ai(GameState* state, float dt) {
                     show_enemy_image(state, e);
 
                     int dmg = e->attackMin + rand() % (e->attackMax - e->attackMin + 1);
+                    int isBlocked = 0;
+                    
+                    if (p->isDefending) {
+                        dmg = 1;
+                        isBlocked = 1;
+                    }
+
                     if (dmg < 1) dmg = 1;
-                    if (p->isDefending) dmg = 1;
 
                     p->hp -= dmg;
                     audio_play_sfx("claw_hit"); 
 
                     char buf[128];
-                    snprintf(buf, sizeof(buf), "%s☠ %s의 공격! %d 피해 (HP: %d)%s", COLOR_RED, e->name, dmg, p->hp, COLOR_RESET);
+                    if (isBlocked) {
+                         snprintf(buf, sizeof(buf), "%s🛡 %s의 공격을 방어했다! (1 피해)%s", COLOR_BRIGHT_CYAN, e->name, COLOR_RESET);
+                    } else {
+                         snprintf(buf, sizeof(buf), "%s☠ %s의 공격! %d 피해 (HP: %d)%s", COLOR_RED, e->name, dmg, p->hp, COLOR_RESET);
+                    }
                     ui_add_combat_log(buf);
 
                     if (p->hp <= 0) {
