@@ -124,8 +124,8 @@ typedef struct {
     const char** newDialogues; // 교체할 대화 목록
     int newDialogueCount;
     
-    // Optional: New Event? (If talk reward also changes?)
-    // For now, only Dialogue changes. Reward is usually one-off via event.
+    // Optional: New Event (Update interactions/rewards)
+    const EventConfig* newEvent; 
 } DialogueOverride;
 
 // --- Stage Definition ---

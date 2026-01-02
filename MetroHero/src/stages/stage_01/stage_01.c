@@ -56,9 +56,10 @@ static const EnemyConfig ENEMIES[] = {
         .tile = 'a', 
         .name = "맹혹한고양이", 
         .glyph = "🐈",
-        .imagePath = "assets/enemy/texture/cat.png",
+        .imagePath = "assets/enemy/texture_sprite/cat_tile.png",
         .portraitPath = "assets/enemy/portrait/1a.png",
         .width = 1, .height = 1,
+        .spriteRows = 1, .spriteCols = 4, // 1x4 Directional Sprite Sheet
         .maxHp = 5,
         .attackMin = 1, .attackMax = 3,
         .chaseOnSight = 1, .attackOnSight = 1, 
@@ -175,9 +176,8 @@ static const NPCConfig NPCS[] = {
     }
 };
 
-// ============================================
-// Stage 1 Dialogue Overrides (Dynamic Swap)
-// ============================================
+static const EventConfig EVENT_A_ALT = { NULL, 0, NULL, 0, NULL, 0, NULL, NULL }; // No Reward
+
 static const DialogueOverride DIALOGUE_OVERRIDES[] = {
     // 1. 역무원 (A) - 미션 수락 후
     { 
@@ -185,7 +185,8 @@ static const DialogueOverride DIALOGUE_OVERRIDES[] = {
         .reqFlag = "receive_mission", 
         .reqVal = 1, 
         .newDialogues = NPC_DIALOGUES_A_ALT, 
-        .newDialogueCount = sizeof(NPC_DIALOGUES_A_ALT)/sizeof(NPC_DIALOGUES_A_ALT[0])
+        .newDialogueCount = sizeof(NPC_DIALOGUES_A_ALT)/sizeof(NPC_DIALOGUES_A_ALT[0]),
+        .newEvent = &EVENT_A_ALT // ★ Stop Giving Keys
     }
 };
 

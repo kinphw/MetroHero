@@ -55,6 +55,11 @@ void npc_update_dialogue_state(NPC* npc, const EventRegistry* events, const Stag
                      // Condition Met: Apply Override
                      npc->activeDialogues = ov->newDialogues;
                      npc->activeDialogueCount = ov->newDialogueCount;
+                     
+                     // ★ Event Override
+                     if (ov->newEvent != NULL) {
+                         npc->event = *ov->newEvent;
+                     }
                 }
             }
         }
