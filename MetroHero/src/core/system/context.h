@@ -56,6 +56,9 @@ typedef struct {
 
     // ★ 사망 처리 관련
     int isPlayerDead;            // 플레이어 사망 상태 (엔터 대기 중)
+    
+    // ★ Debug Mode
+    int showDebug;               // F3 to toggle coordinates
 
 } GameState;
 

@@ -11,7 +11,7 @@
 static const char* MAP_FLOOR1_LINES[] = {
 "#######################",
 "#...B................0#",
-"#.@..............A...1#",
+"#.@!.............A...1#",
 "#.......C............2#",
 "###########.###########",
 "          #*#          ", 
@@ -19,7 +19,7 @@ static const char* MAP_FLOOR1_LINES[] = {
 "          #.#          ",
 "          #.#          ",
 "###########.###########",
-"#.....a...#....a......#",
+"#.....a...!....a......#",
 "#..a......+........a..#",
 "#.......a.#..........>#", // '>' Warp to Floor 2
 "#######################"
@@ -93,7 +93,6 @@ static const ChestConfig CHESTS[] = {
 // Type 'a': 맹혹한고양이
 static const char* DIALOGUES_A[] = {
     "나는 잔인한 냥코다옹",
-    "냥코냥코 대전쟁"
 };
 
 // Type 'b': 경비로봇
@@ -245,10 +244,12 @@ static const char* ALL_DIALOGUES_A[] = {
     "야수를 물리치신 후에 돌아오세요...",
     
     // 6~9: Mission Complete (New Return Text)
-    "오오! 고양이들이 잠잠해졌군!",
-    "정말 대단한 솜씨야.",
-    "이제야 한시름 놓겠어. 고맙네!",
-    "이건 약소하지만 보답일세."
+    "맹혹한 고양이들을 모두 쓰러뜨리셨군요... 느낄 수 있습니다.",
+    "이제 주위가 안전해진 것 같습니다.",
+    "이 열쇠는 역장실로 가는 철문열쇠입니다. 이 열쇠를 드리겠습니다.",
+    "역장님께서는 아마 왜 이런 사태가 벌어졌는지 알고 계실 것 같군요....",
+
+    "(이제 당신에게 할 말은 없는 모양이다)",
 };
 
 static const EventConfig EVENT_A_START = { 
@@ -262,15 +263,20 @@ static const EventConfig EVENT_A_COMPLETE = {
 
 // Dialogue Branches for NPC A
 static const DialogueBranch BRANCHES_A[] = {
-    // Priority 1: Mission Complete (Flag: kill_cat_count >= 5)
+    // Priority 1: Post-Mission (Already completed)
+    { "mission_complete", 1, 10, 1, NULL },
+
+    // Priority 2: Mission Complete Reward (Flag: kill_cat_count >= 5)
     { "kill_cat_count", 5, 6, 4, &EVENT_A_COMPLETE },
     
-    // Priority 2: Mission Active (Flag: receive_mission >= 1)
+    // Priority 3: Mission Active (Flag: receive_mission >= 1)
     { "receive_mission", 1, 4, 2, NULL }, 
     
-    // Priority 3: Default (No Flag)
+    // Priority 4: Default (No Flag)
     { NULL, 0, 0, 4, &EVENT_A_START } // Give Key
 };
+
+
 
 // 2. 다른 NPC들...
 static const char* NPC_DIALOGUES_B[] = {
@@ -374,7 +380,10 @@ static const QuestConfig QUESTS[] = {
     { "receive_mission", 1, "목표: 맹혹한 고양이를 처치하고 길을 뚫어라.", "kill_cat_count", 5, "kill_cat_count", 5, 50 },
     
     // 퀘스트 2: 복귀 -> "mission_complete"가 되면 종료
-    { "kill_cat_count", 5, "목표: 역무원에게 돌아가라.", NULL, 0, "mission_complete", 1, 0 }
+    { "kill_cat_count", 5, "목표: 역무원에게 돌아가라.", NULL, 0, "mission_complete", 1, 0 },
+    
+    // 퀘스트 3: 역장실 찾기 (New)
+    { "mission_complete", 1, "목표: 역장실을 찾아라.", NULL, 0, "found_office", 1, 0 }
 };
 
 // ============================================
@@ -420,6 +429,18 @@ static const Cinematic CLEAR_CINEMATIC = {
 };
 
 // ============================================
+// Stage 1 Map Events (Signposts)
+// ============================================
+static const MapEvent MAP_EVENTS[] = {
+    // Floor 0 (Station)
+    { 0, 3, 2, "성균관대역 - 안전지대" },
+    { 0, 10, 10, "주의: 야생 고양이 출몰 구역" },
+    
+    // Floor 1 (Underground)
+    { 1, 1, 1, "지하시설 - 관계자 외 출입금지" }
+};
+
+// ============================================
 // Stage Package
 // ============================================
 const StageData STAGE_01_DATA = {
@@ -435,10 +456,18 @@ const StageData STAGE_01_DATA = {
     .npcCount = sizeof(NPCS) / sizeof(NPCS[0]),
     .doors = DOORS,
     .doorCount = sizeof(DOORS) / sizeof(DOORS[0]),
+    
+    // ★ Map Events
+    .events = MAP_EVENTS,
+    .eventCount = sizeof(MAP_EVENTS) / sizeof(MAP_EVENTS[0]),
+    
     .quests = QUESTS,
     .questCount = sizeof(QUESTS) / sizeof(QUESTS[0]),
-    .overrides = NULL,
-    .overrideCount = 0,
+    
     .intro = &INTRO_CINEMATIC,
-    .outro = &CLEAR_CINEMATIC
+    .outro = &CLEAR_CINEMATIC,
+    
+    // Deprecated
+    .overrides = NULL,
+    .overrideCount = 0
 };

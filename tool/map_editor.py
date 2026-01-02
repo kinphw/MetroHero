@@ -25,15 +25,6 @@ class MapEditor:
         self.parser.parse_map_data_c()  # Load GLOBAL_TILE_PALETTE from map_data.c
         self.parser.parse_glyph_h()
 
-        # Get available stages
-        self.available_stages = self.parser.get_available_stages()
-        self.current_stage = self.available_stages[0] if self.available_stages else "stage_01"
-
-        # Stage-specific enemies, NPCs, and doors
-        self.stage_enemies = {}
-        self.stage_npcs = {}
-        self.stage_doors = {}
-
         # Map data
         self.map_width = 40
         self.map_height = 25
@@ -55,13 +46,11 @@ class MapEditor:
         self.last_drawn = None
 
     def preload_images(self):
-        """Preload all tile images into cache"""
+        """Preload all tile images from map_data.c only"""
         print("Preloading tile images...")
 
-        # Load common tiles
+        # Load all tiles from map_data.c
         for symbol, tile_def in self.parser.special_tiles.items():
-            if symbol.isalnum() and (symbol.islower() or symbol.isupper()):
-                continue  # Skip enemies/NPCs, load from stage data
             if tile_def.image_path:
                 full_path = os.path.join(self.project_root, tile_def.image_path)
                 if os.path.exists(full_path):
@@ -90,57 +79,6 @@ class MapEditor:
                 else:
                     print(f"  Not found: {full_path}")
 
-        # Load stage-specific enemies
-        for tile_char, enemy_data in self.stage_enemies.items():
-            image_path = enemy_data['imagePath']
-            full_path = os.path.join(self.project_root, image_path)
-            if os.path.exists(full_path) and image_path not in self.image_cache:
-                try:
-                    img = Image.open(full_path)
-
-                    # Handle sprite sheets
-                    if 'texture_sprite' in image_path or 'sprite' in image_path.lower():
-                        sprite_w = img.width // 2
-                        sprite_h = img.height // 2
-                        img = img.crop((0, 0, sprite_w, sprite_h))
-                        print(f"  Loaded sprite: {tile_char} ({enemy_data['name']}) -> {image_path}")
-                    else:
-                        print(f"  Loaded enemy: {tile_char} ({enemy_data['name']}) -> {image_path}")
-
-                    img = img.resize((self.tile_size, self.tile_size), Image.Resampling.LANCZOS)
-                    photo = ImageTk.PhotoImage(img)
-                    self.image_cache[image_path] = photo
-                except Exception as e:
-                    print(f"  Error loading {full_path}: {e}")
-
-        # Load stage-specific NPCs
-        for tile_char, npc_data in self.stage_npcs.items():
-            image_path = npc_data['imagePath']
-            full_path = os.path.join(self.project_root, image_path)
-            if os.path.exists(full_path) and image_path not in self.image_cache:
-                try:
-                    img = Image.open(full_path)
-                    img = img.resize((self.tile_size, self.tile_size), Image.Resampling.LANCZOS)
-                    photo = ImageTk.PhotoImage(img)
-                    self.image_cache[image_path] = photo
-                    print(f"  Loaded NPC: {tile_char} ({npc_data['name']}) -> {image_path}")
-                except Exception as e:
-                    print(f"  Error loading {full_path}: {e}")
-
-        # Load stage-specific Doors
-        for tile_char, door_data in self.stage_doors.items():
-            image_path = door_data['imagePath']
-            full_path = os.path.join(self.project_root, image_path)
-            if os.path.exists(full_path) and image_path not in self.image_cache:
-                try:
-                    img = Image.open(full_path)
-                    img = img.resize((self.tile_size, self.tile_size), Image.Resampling.LANCZOS)
-                    photo = ImageTk.PhotoImage(img)
-                    self.image_cache[image_path] = photo
-                    print(f"  Loaded Door: {tile_char} ({door_data['name']}) -> {image_path}")
-                except Exception as e:
-                    print(f"  Error loading {full_path}: {e}")
-
         print(f"Preloaded {len(self.image_cache)} images")
 
     def setup_ui(self):
@@ -148,19 +86,6 @@ class MapEditor:
         # Main container
         main_frame = tk.Frame(self.root)
         main_frame.pack(fill=tk.BOTH, expand=True, padx=5, pady=5)
-
-        # Top: Stage Selector bar
-        top_bar = tk.Frame(main_frame, bg='#f0f0f0', height=40)
-        top_bar.pack(fill=tk.X, pady=(0, 5))
-        top_bar.pack_propagate(False)
-
-        tk.Label(top_bar, text="Stage:", font=('Arial', 10, 'bold'), bg='#f0f0f0').pack(side=tk.LEFT, padx=(10, 5))
-
-        self.stage_var = tk.StringVar(value=self.current_stage)
-        stage_dropdown = ttk.Combobox(top_bar, textvariable=self.stage_var,
-                                      values=self.available_stages, state='readonly', width=15)
-        stage_dropdown.pack(side=tk.LEFT, padx=(0, 20))
-        stage_dropdown.bind('<<ComboboxSelected>>', self.on_stage_change)
 
         # Main content: Left (Map + Controls) + Right (Palette)
         content_frame = tk.Frame(main_frame)
@@ -225,6 +150,11 @@ class MapEditor:
         tk.Button(left_controls, text="Clear", command=self.clear_map).pack(side=tk.LEFT, padx=2)
         tk.Button(left_controls, text="Fill Floor", command=self.fill_floor).pack(side=tk.LEFT, padx=2)
 
+        # Mouse position display
+        tk.Label(left_controls, text=" | Pos:", fg='#666').pack(side=tk.LEFT, padx=(10, 2))
+        self.pos_label = tk.Label(left_controls, text="(-, -)", fg='#000', font=('Courier', 9))
+        self.pos_label.pack(side=tk.LEFT)
+
         # Right side: Tile Palette (1/3 width)
         right_frame = tk.Frame(content_frame, width=400)
         right_frame.pack(side=tk.RIGHT, fill=tk.BOTH, padx=(5, 0))
@@ -247,10 +177,9 @@ class MapEditor:
 
         self.palette_frame.bind('<Configure>', on_palette_configure)
 
-        self.load_stage_data(self.current_stage)
         self.setup_palette(self.palette_frame)
 
-        # Canvas bindings
+        # Canvas bindings - Mouse
         self.canvas.bind('<Button-1>', self.on_canvas_click)
         self.canvas.bind('<B1-Motion>', self.on_canvas_drag)
         self.canvas.bind('<ButtonRelease-1>', self.on_canvas_release)
@@ -260,39 +189,47 @@ class MapEditor:
         self.canvas.bind('<B3-Motion>', self.on_canvas_right_drag)
         self.canvas.bind('<ButtonRelease-3>', self.on_canvas_release)
 
+        # Mouse motion for coordinate display
+        self.canvas.bind('<Motion>', self.on_canvas_motion)
+
         # Draw initial grid
         self.draw_map()
-
-    def load_stage_data(self, stage_name):
-        """Load enemy, NPC, and door data for a specific stage"""
-        print(f"\nLoading stage: {stage_name}")
-        self.stage_enemies, self.stage_npcs, self.stage_doors = self.parser.parse_specific_stage(stage_name)
-
-        # Reload images for this stage
-        self.preload_images()
-
-
-    def on_stage_change(self, event):
-        """Handle stage selection change"""
-        new_stage = self.stage_var.get()
-        if new_stage != self.current_stage:
-            self.current_stage = new_stage
-            self.load_stage_data(new_stage)
-
-            # Clear and rebuild palette
-            for widget in self.palette_frame.winfo_children():
-                widget.destroy()
-            self.setup_palette(self.palette_frame)
 
     def setup_palette(self, parent):
         """Setup tile palette with radio buttons and image previews"""
         parent.config(bg='white')
 
+        # Custom character input
+        custom_frame = tk.LabelFrame(parent, text="Custom Character", bg='white')
+        custom_frame.pack(fill=tk.X, padx=5, pady=5)
+
+        custom_inner = tk.Frame(custom_frame, bg='white')
+        custom_inner.pack(padx=5, pady=5)
+
+        tk.Label(custom_inner, text="Type:", bg='white').pack(side=tk.LEFT, padx=(0, 5))
+
+        self.custom_char_var = tk.StringVar(value='a')
+        custom_entry = tk.Entry(custom_inner, textvariable=self.custom_char_var, width=3,
+                               font=('Courier', 12, 'bold'))
+        custom_entry.pack(side=tk.LEFT, padx=(0, 5))
+
+        # Bind entry changes to update selection
+        custom_entry.bind('<KeyRelease>', self.on_custom_char_change)
+
+        self.tile_var = tk.StringVar(value='#')
+        self.custom_radio = tk.Radiobutton(custom_inner, text="Use this character",
+                                          variable=self.tile_var, value='__CUSTOM__',
+                                          command=self.on_custom_select, bg='white')
+        self.custom_radio.pack(side=tk.LEFT)
+
+        info_label = tk.Label(custom_frame,
+                             text="Enter any character (a-z, A-Z, 0-9, +*^, etc.)\nthen click to paint",
+                             bg='white', fg='#666', font=('Arial', 7))
+        info_label.pack(padx=5, pady=(0, 5))
+
         # Common tiles
         common_frame = tk.LabelFrame(parent, text="Common Tiles", bg='white')
         common_frame.pack(fill=tk.X, padx=5, pady=5)
-
-        self.tile_var = tk.StringVar(value='#')
 
         # Add space tile manually first
         space_tile = self.parser.get_tile(' ')
@@ -329,95 +266,6 @@ class MapEditor:
                 except:
                     pass
 
-        # Enemy tiles (from current stage)
-        enemy_frame = tk.LabelFrame(parent, text=f"Enemies ({self.current_stage})", bg='white')
-        enemy_frame.pack(fill=tk.X, padx=5, pady=5)
-
-        for tile_char, enemy_data in sorted(self.stage_enemies.items()):
-            frame = tk.Frame(enemy_frame, bg='white')
-            frame.pack(anchor=tk.W, pady=1)
-
-            rb = tk.Radiobutton(frame, text=f"{tile_char} - {enemy_data['name']}",
-                               variable=self.tile_var, value=tile_char,
-                               command=self.on_tile_select, bg='white')
-            rb.pack(side=tk.LEFT)
-
-            image_path = enemy_data['imagePath']
-            if image_path in self.image_cache:
-                preview_size = 16
-                try:
-                    full_path = os.path.join(self.project_root, image_path)
-                    img = Image.open(full_path)
-
-                    # Handle sprite sheets
-                    if 'texture_sprite' in image_path or 'sprite' in image_path.lower():
-                        sprite_w = img.width // 2
-                        sprite_h = img.height // 2
-                        img = img.crop((0, 0, sprite_w, sprite_h))
-
-                    img = img.resize((preview_size, preview_size), Image.Resampling.LANCZOS)
-                    photo = ImageTk.PhotoImage(img)
-                    label = tk.Label(frame, image=photo, width=preview_size, height=preview_size)
-                    label.image = photo
-                    label.pack(side=tk.LEFT, padx=5)
-                except:
-                    pass
-
-        # NPC tiles (from current stage)
-        npc_frame = tk.LabelFrame(parent, text=f"NPCs ({self.current_stage})", bg='white')
-        npc_frame.pack(fill=tk.X, padx=5, pady=5)
-
-        for tile_char, npc_data in sorted(self.stage_npcs.items()):
-            frame = tk.Frame(npc_frame, bg='white')
-            frame.pack(anchor=tk.W, pady=1)
-
-            rb = tk.Radiobutton(frame, text=f"{tile_char} - {npc_data['name']}",
-                               variable=self.tile_var, value=tile_char,
-                               command=self.on_tile_select, bg='white')
-            rb.pack(side=tk.LEFT)
-
-            image_path = npc_data['imagePath']
-            if image_path in self.image_cache:
-                preview_size = 16
-                try:
-                    full_path = os.path.join(self.project_root, image_path)
-                    img = Image.open(full_path)
-                    img = img.resize((preview_size, preview_size), Image.Resampling.LANCZOS)
-                    photo = ImageTk.PhotoImage(img)
-                    label = tk.Label(frame, image=photo, width=preview_size, height=preview_size)
-                    label.image = photo
-                    label.pack(side=tk.LEFT, padx=5)
-                except:
-                    pass
-
-        # Door tiles (from current stage)
-        if self.stage_doors:
-            door_frame = tk.LabelFrame(parent, text=f"Doors ({self.current_stage})", bg='white')
-            door_frame.pack(fill=tk.X, padx=5, pady=5)
-
-            for tile_char, door_data in sorted(self.stage_doors.items()):
-                frame = tk.Frame(door_frame, bg='white')
-                frame.pack(anchor=tk.W, pady=1)
-
-                rb = tk.Radiobutton(frame, text=f"{tile_char} - {door_data['name']}",
-                                   variable=self.tile_var, value=tile_char,
-                                   command=self.on_tile_select, bg='white')
-                rb.pack(side=tk.LEFT)
-
-                image_path = door_data['imagePath']
-                if image_path in self.image_cache:
-                    preview_size = 16
-                    try:
-                        full_path = os.path.join(self.project_root, image_path)
-                        img = Image.open(full_path)
-                        img = img.resize((preview_size, preview_size), Image.Resampling.LANCZOS)
-                        photo = ImageTk.PhotoImage(img)
-                        label = tk.Label(frame, image=photo, width=preview_size, height=preview_size)
-                        label.image = photo
-                        label.pack(side=tk.LEFT, padx=5)
-                    except:
-                        pass
-
         # Chest tiles
         chest_frame = tk.LabelFrame(parent, text="Chests (0-9)", bg='white')
         chest_frame.pack(fill=tk.X, padx=5, pady=5)
@@ -447,7 +295,32 @@ class MapEditor:
 
     def on_tile_select(self):
         """Handle tile selection"""
-        self.selected_tile = self.tile_var.get()
+        tile = self.tile_var.get()
+        if tile == '__CUSTOM__':
+            # Use custom character
+            char = self.custom_char_var.get()
+            if char:
+                self.selected_tile = char[0]  # Use first character only
+            else:
+                self.selected_tile = 'a'
+        else:
+            self.selected_tile = tile
+
+    def on_custom_select(self):
+        """Handle custom character radio button selection"""
+        char = self.custom_char_var.get()
+        if char:
+            self.selected_tile = char[0]
+        else:
+            self.selected_tile = 'a'
+
+    def on_custom_char_change(self, event):
+        """Handle custom character entry change"""
+        # Auto-select custom radio when typing
+        self.tile_var.set('__CUSTOM__')
+        char = self.custom_char_var.get()
+        if char:
+            self.selected_tile = char[0]
 
     def get_tile_color(self, symbol):
         """Get color for a tile symbol"""
@@ -483,53 +356,52 @@ class MapEditor:
 
         for y in range(len(self.map_data)):
             for x in range(len(self.map_data[y])):
-                symbol = self.map_data[y][x]
-                x1 = x * self.tile_size
-                y1 = y * self.tile_size
-                x2 = x1 + self.tile_size
-                y2 = y1 + self.tile_size
+                self.draw_tile(x, y)
 
-                # Get tile definition or stage-specific data
-                tile_def = None
-                image_path = None
+    def draw_tile(self, grid_x, grid_y):
+        """Draw a single tile at grid position"""
+        symbol = self.map_data[grid_y][grid_x]
+        x1 = grid_x * self.tile_size
+        y1 = grid_y * self.tile_size
+        x2 = x1 + self.tile_size
+        y2 = y1 + self.tile_size
 
-                # Check if it's a stage-specific enemy, NPC, or door
-                if symbol in self.stage_enemies:
-                    image_path = self.stage_enemies[symbol]['imagePath']
-                elif symbol in self.stage_npcs:
-                    image_path = self.stage_npcs[symbol]['imagePath']
-                elif symbol in self.stage_doors:
-                    image_path = self.stage_doors[symbol]['imagePath']
-                else:
-                    tile_def = self.parser.get_tile(symbol)
-                    if tile_def:
-                        image_path = tile_def.image_path
+        # Delete existing items at this position
+        items = self.canvas.find_overlapping(x1, y1, x2, y2)
+        for item in items:
+            self.canvas.delete(item)
 
-                # Try to draw image first
-                drawn_image = False
-                if image_path and image_path in self.image_cache:
-                    try:
-                        photo = self.image_cache[image_path]
-                        self.canvas.create_image(x1 + self.tile_size // 2,
-                                                y1 + self.tile_size // 2,
-                                                image=photo)
-                        drawn_image = True
+        # Get tile definition from map_data.c
+        tile_def = self.parser.get_tile(symbol)
+        image_path = tile_def.image_path if tile_def else None
 
-                        # Draw border
-                        self.canvas.create_rectangle(x1, y1, x2, y2,
-                                                    fill='', outline='#333333', width=1)
-                    except Exception as e:
-                        print(f"Error drawing image for {symbol}: {e}")
+        # Try to draw image first
+        drawn_image = False
+        if image_path and image_path in self.image_cache:
+            try:
+                photo = self.image_cache[image_path]
+                self.canvas.create_image(x1 + self.tile_size // 2,
+                                        y1 + self.tile_size // 2,
+                                        image=photo)
+                drawn_image = True
 
-                # Fallback: draw colored rectangle with symbol
-                if not drawn_image:
-                    color = self.get_tile_color(symbol)
-                    self.canvas.create_rectangle(x1, y1, x2, y2,
-                                                fill=color, outline='#444444')
-                    self.canvas.create_text(x1 + self.tile_size // 2,
-                                           y1 + self.tile_size // 2,
-                                           text=symbol, fill='white',
-                                           font=('Courier', 10, 'bold'))
+                # Draw border
+                self.canvas.create_rectangle(x1, y1, x2, y2,
+                                            fill='', outline='#333333', width=1)
+            except Exception as e:
+                print(f"Error drawing image for {symbol}: {e}")
+
+        # Fallback: draw colored rectangle with symbol
+        if not drawn_image:
+            color = self.get_tile_color(symbol)
+            self.canvas.create_rectangle(x1, y1, x2, y2,
+                                        fill=color, outline='#444444')
+            # Draw text if symbol is not space
+            if symbol != ' ':
+                self.canvas.create_text(x1 + self.tile_size // 2,
+                                       y1 + self.tile_size // 2,
+                                       text=symbol, fill='white',
+                                       font=('Courier', 10, 'bold'))
 
     def canvas_to_grid(self, canvas_x, canvas_y):
         """Convert canvas coordinates to grid coordinates"""
@@ -550,7 +422,7 @@ class MapEditor:
             self.map_data[grid_y][grid_x] = self.selected_tile
             self.is_drawing = True
             self.last_drawn = (grid_x, grid_y)
-            self.draw_map()
+            self.draw_tile(grid_x, grid_y)  # Only redraw single tile
 
     def on_canvas_drag(self, event):
         """Handle canvas drag"""
@@ -564,12 +436,23 @@ class MapEditor:
         if grid_x is not None and (grid_x, grid_y) != self.last_drawn:
             self.map_data[grid_y][grid_x] = self.selected_tile
             self.last_drawn = (grid_x, grid_y)
-            self.draw_map()
+            self.draw_tile(grid_x, grid_y)  # Only redraw single tile
 
     def on_canvas_release(self, event):
         """Handle mouse release"""
         self.is_drawing = False
         self.last_drawn = None
+
+    def on_canvas_motion(self, event):
+        """Handle mouse motion to display coordinates"""
+        canvas_x = self.canvas.canvasx(event.x)
+        canvas_y = self.canvas.canvasy(event.y)
+
+        grid_x, grid_y = self.canvas_to_grid(canvas_x, canvas_y)
+        if grid_x is not None:
+            self.pos_label.config(text=f"({grid_x}, {grid_y})")
+        else:
+            self.pos_label.config(text="(-, -)")
 
     def on_canvas_right_click(self, event):
         """Handle right-click to erase (fill with space)"""
@@ -581,7 +464,7 @@ class MapEditor:
             self.map_data[grid_y][grid_x] = ' '
             self.is_drawing = True
             self.last_drawn = (grid_x, grid_y)
-            self.draw_map()
+            self.draw_tile(grid_x, grid_y)  # Only redraw single tile
 
     def on_canvas_right_drag(self, event):
         """Handle right-click drag to erase"""
@@ -595,7 +478,7 @@ class MapEditor:
         if grid_x is not None and (grid_x, grid_y) != self.last_drawn:
             self.map_data[grid_y][grid_x] = ' '
             self.last_drawn = (grid_x, grid_y)
-            self.draw_map()
+            self.draw_tile(grid_x, grid_y)  # Only redraw single tile
 
     def resize_map(self):
         """Resize the map"""

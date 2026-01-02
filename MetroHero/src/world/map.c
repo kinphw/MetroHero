@@ -364,6 +364,11 @@ void map_draw_viewport(const Map* m, const Player* p,
                      if (t != ' ') img = "assets/floor_stone.png"; 
                  }
 
+                 if (t == '!') {
+                     // ★ Special Case: Draw Floor under Signpost
+                     ui_draw_image(screenPxX, screenPxY, MAP_TILE_SIZE, MAP_TILE_SIZE, "assets/tile/floor.png");
+                 }
+
                  if (img) {
                      ui_draw_image(screenPxX, screenPxY, MAP_TILE_SIZE, MAP_TILE_SIZE, img);
                  }

@@ -46,6 +46,8 @@ void item_system_init(void) {
 
     // Stage 1 Key Items
     register_item("철문열쇠1", ITEM_ETC, 0, 0, "지하철 역무원이 준 열쇠다.");
+    register_item("철문열쇠2", ITEM_ETC, 0, 0, "더 깊은 곳으로 갈 수 있는 열쇠다.");
+    register_item("보물상자열쇠", ITEM_ETC, 0, 0, "보물상자를 열 수 있는 작은 열쇠다.");
 }
 
 const Item* item_get(const char* name) {

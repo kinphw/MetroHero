@@ -184,6 +184,14 @@ typedef struct {
     int warpCount;
 } SubMapConfig;
 
+// ★ Coordinate-Based Map Event (For Signposts etc.)
+typedef struct {
+    int floorIndex; // 0-based
+    int x;
+    int y;
+    const char* msg;
+} MapEvent;
+
 // --- Stage Definition ---
 typedef struct {
     int stageId;
@@ -199,15 +207,18 @@ typedef struct {
     // 적 데이터 (Stage Global)
     const EnemyConfig* enemies;
     int enemyCount;
-
+    
     // NPC 데이터 (Stage Global)
     const NPCConfig* npcs;
     int npcCount;
-
+    
     // 문 데이터 (Stage Global)
     const DoorConfig* doors;
     int doorCount;
-
+    
+    // ★ Map Events (Signposts)
+    const MapEvent* events;
+    int eventCount;
     // 퀘스트 데이터
     const QuestConfig* quests;
     int questCount;

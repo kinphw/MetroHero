@@ -208,11 +208,11 @@ void check_quest_updates(GameState* state) {
          
          snprintf(state->pendingQuestMsg, sizeof(state->pendingQuestMsg), "%s", fullMsg);
          state->questState = 1; // Animation
-         state->questTimer = 2.0f;
+         state->questTimer = 0.2f; // ★ Reduced to 0.2s (One Blink?)
          audio_play_sfx("text_blip");
          
          // Don't log full list every time.
-         ui_add_log(COLOR_BRIGHT_YELLOW "📘 퀘스트 상태가 갱신되었습니다." COLOR_RESET);
+         // ui_add_log(COLOR_BRIGHT_YELLOW "📘 퀘스트 상태가 갱신되었습니다." COLOR_RESET);
     }
 }
 
@@ -226,7 +226,7 @@ void game_update_quest(GameState* state) {
     if (state->questState == 1) { // Sparkle Phase
         if (state->questTimer <= 0) {
             state->questState = 2; // Disappear Phase
-            state->questTimer = 0.5f; // 0.5 sec hidden
+            state->questTimer = 0.0f; // ★ Immediate Update (No hidden phase)
         }
     }
     else if (state->questState == 2) { // Hidden Phase
@@ -339,6 +339,13 @@ void game_process_input(GameState* state) {
     // Play SFX on activation
     if (!wasDefending && state->player.isDefending) {
         audio_play_sfx("shield_equip");
+    }
+
+    // ★ Debug Toggle (F3)
+    if (IsKeyPressed(KEY_F3)) {
+        state->showDebug = !state->showDebug;
+        audio_play_sfx("text_blip");
+        ui_add_log(state->showDebug ? "🔧 디버그 모드 ON" : "🔧 디버그 모드 OFF");
     }
 
     int key = GetRepeatingKey();
@@ -605,50 +612,81 @@ void game_process_input(GameState* state) {
             }
         }
 
-        // C. Open Door
+        // C. Open Door (Interact)
         if (!actionTaken) {
-            Door* door = map_get_door_at(&state->map, tx, ty);
-            if (door != NULL && !door->isOpen) {
-                
-                int canOpen = 1;
-                // 1. Flag Check
-                if (door->event.reqFlag) {
-                    int val = event_get_flag(&state->eventRegistry, door->event.reqFlag);
-                    int req = door->event.reqVal > 0 ? door->event.reqVal : 1;
-                    if (val < req) canOpen = 0;
-                }
-                // 2. Item Check
-                if (canOpen && door->event.reqItem) {
-                    if (!inventory_has_item(&state->player.inventory, door->event.reqItem)) {
-                        canOpen = 0;
-                    }
-                }
-                
-                if (!canOpen) {
-                     if (door->event.failMsg) ui_add_log(door->event.failMsg);
-                     else ui_add_log("문이 잠겨있다.");
-                } else {
-                    // Success
-                    if (door->event.reqItem && door->event.consumeItem) {
-                        inventory_remove_item_by_name(&state->player.inventory, door->event.reqItem);
-                        char msg[128];
-                        snprintf(msg, sizeof(msg), "%s을(를) 사용했다.", door->event.reqItem);
-                        ui_add_log(msg);
-                    }
+             Door* d = map_get_door_at(&state->map, tx, ty);
+             if (d != NULL && !d->isOpen) {
+                 int canOpen = 1;
+                 // 1. Check Flag
+                 if (d->event.reqFlag) {
+                     int val = event_get_flag(&state->eventRegistry, d->event.reqFlag);
+                     int req = d->event.reqVal > 0 ? d->event.reqVal : 1;
+                     if (val < req) canOpen = 0;
+                 }
+                 // 2. Check Item
+                 if (canOpen && d->event.reqItem) {
+                     if (!inventory_has_item(&state->player.inventory, d->event.reqItem)) {
+                         canOpen = 0;
+                     }
+                 }
+                 
+                 if (canOpen) {
+                     d->isOpen = 1;
+                     // Consumption
+                     if (d->event.reqItem && d->event.consumeItem) {
+                         inventory_remove_item_by_name(&state->player.inventory, d->event.reqItem);
+                         char msg[128];
+                         snprintf(msg, sizeof(msg), "%s을(를) 사용했다.", d->event.reqItem);
+                         ui_add_log(msg);
+                     }
+                     
+                     if (d->event.setFlag) {
+                         trigger_event_flag(state, d->event.setFlag, d->event.setVal);
+                     }
 
-                    door->isOpen = 1;
-                    ui_add_log("철컹! 문이 열렸다.");
-                    audio_play_sfx("door_creak"); 
-                    
-                    if (door->event.setFlag) {
-                        trigger_event_flag(state, door->event.setFlag, door->event.setVal);
+                     audio_play_sfx("door_open");
+                     ui_add_log("문이 열렸다.");
+                 } else {
+                     if (d->event.failMsg) ui_add_log(d->event.failMsg);
+                     else ui_add_log("잠겨있다.");
+                     audio_play_sfx("door_locked");
+                 }
+                 actionTaken = 1;
+             }
+        }
+        
+        // D. Signpost (Coordinate-Based Event)
+        if (!actionTaken) {
+            char tile = state->map.tiles[ty][tx];
+            if (tile == '!') {
+                // Find Event
+                const StageData* sData = state->currentStageData;
+                const MapEvent* targetEvent = NULL;
+                
+                if (sData && sData->events) {
+                    for (int i = 0; i < sData->eventCount; i++) {
+                        const MapEvent* ev = &sData->events[i];
+                        if (ev->floorIndex == state->currentFloor && ev->x == tx && ev->y == ty) {
+                            targetEvent = ev;
+                            break;
+                        }
                     }
                 }
+                
+                if (targetEvent) {
+                    char msg[256];
+                    snprintf(msg, sizeof(msg), "📜 %s", targetEvent->msg);
+                    ui_add_log(msg);
+                } else {
+                    ui_add_log("오래된 표지판이다. 글자가 지워져서 읽을 수 없다.");
+                }
+                
+                audio_play_sfx("text_blip");
                 actionTaken = 1;
             }
         }
 
-        // D. Attack (Default if no interaction)
+        // E. Attack (Default if no interaction)
         if (!actionTaken) {
              combat_try_attack(state);
         }

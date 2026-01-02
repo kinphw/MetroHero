@@ -4,11 +4,12 @@ Python-based WYSIWYG tile map editor for creating MetroHero game maps.
 
 ## Features
 
-- **Visual Tile Palette**: Select tiles using radio buttons
-- **WYSIWYG Canvas**: Draw maps by clicking and dragging
+- **Visual Tile Palette**: Select common tiles using radio buttons
+- **Keyboard Input**: Type any character directly onto the map (a-z, A-Z, 0-9, symbols)
+- **WYSIWYG Canvas**: Draw maps by clicking, dragging, or typing
+- **Real PNG Preview**: See actual game assets rendered on tiles
 - **Export**: Generate `MAP_LINES[]` C code for direct paste into stage files
 - **Import**: Load existing `MAP_LINES[]` code for editing
-- **Color-Coded Tiles**: Easy visual distinction between tile types
 
 ## Installation
 
@@ -29,23 +30,41 @@ python map_editor.py
 
 ### Controls
 
-1. **Tile Palette (Top)**: Click radio buttons to select the tile you want to draw
-   - Common Tiles: `#` (wall), `.` (floor), `=` (rail), `+` (door), `$` (event door), `@` (spawn)
-   - Enemies: `a-z` (lowercase letters)
-   - NPCs: `A-Z` (uppercase letters)
-   - Chests: `0-9` (numbers)
+#### Tile Palette (Right Panel)
+- **Custom Character**: Type any character (a-z, A-Z, 0-9, symbols) and click "Use this character"
+  - Auto-selects when you type
+  - Perfect for enemies (`a`, `b`, `c`), NPCs (`A`, `B`, `C`), doors (`+`, `*`, `^`)
+- **Common Tiles**: Click radio buttons to select tiles for mouse painting
+  - Floors: `.` `,` `-` `_` `~` (different floor types)
+  - Walls: `#` `%` `&` `$` (different wall types)
+  - Objects: `/` `T` `t` `B` `!` `O` (doors, trees, barricades, etc.)
+  - Special: `=` `|` (rails), `<` `>` (stairs), `@` (spawn)
+- **Chests**: `0-9` number tiles
 
-2. **Map Canvas (Center)**:
-   - Click to place selected tile
-   - Click and drag to paint multiple tiles
-   - Scroll to navigate large maps
+#### Map Canvas (Left Panel)
 
-3. **Control Panel (Right)**:
-   - **Resize Map**: Change map dimensions
-   - **Clear Map**: Fill entire map with floor tiles
-   - **Fill with Floor**: Reset to all floor tiles
-   - **Export MAP_LINES[]**: Generate C code for copy-paste
-   - **Import MAP_LINES[]**: Load existing map data
+**Mouse Controls:**
+- **Left Click**: Place selected tile/character
+- **Left Click + Drag**: Paint multiple tiles
+- **Right Click**: Erase (fill with space)
+- **Right Click + Drag**: Erase multiple tiles
+
+**Map Controls:**
+- **Size**: Set width and height, then click **Resize**
+- **Clear**: Fill entire map with spaces
+- **Fill Floor**: Fill entire map with floor tiles (`.`)
+- **Export MAP_LINES[]**: Generate C code for copy-paste
+- **Import MAP_LINES[]**: Load existing map data
+
+### Workflow Example
+
+1. Set map size (e.g., 40x25)
+2. Click "Fill Floor" to create a floor base
+3. Select wall (`#`) from palette and click+drag to create boundaries
+4. Type character in "Custom Character" field (e.g., `a`, `A`, `+`)
+5. The radio button auto-selects, then click on map to place
+6. Switch between custom characters and tile palette as needed
+7. Click "Export MAP_LINES[]" and copy code to your stage file
 
 ### Exporting Maps
 
@@ -61,6 +80,9 @@ static const char* MAP_LINES[] = {
     "#.@..............A...1#",
     "#.......C............2#",
     "###########.###########",
+    "          #+#          ",
+    "          #a#          ",
+    "#######################"
 };
 ```
 
@@ -70,35 +92,81 @@ static const char* MAP_LINES[] = {
 2. Paste existing `MAP_LINES[]` code
 3. Click **Import** to load the map for editing
 
-## Tile Color Guide
+## Tile Reference
 
-- **Gray (#808080)**: Wall (`#`)
-- **Dark Gray (#2C2C2C)**: Floor (`.`)
-- **Gold (#FFD700)**: Rail (`=`)
-- **Brown (#8B4513)**: Door (`+`)
-- **Indigo (#4B0082)**: Event Door (`$`)
-- **Green (#00FF00)**: Spawn Point (`@`)
-- **Red (#FF4444)**: Enemies (lowercase letters)
-- **Blue (#4444FF)**: NPCs (uppercase letters)
-- **Yellow (#FFFF44)**: Chests (numbers)
+### From map_data.c (GLOBAL_TILE_PALETTE)
+The editor reads tile definitions from `/MetroHero/src/world/map_data.c` and displays their actual PNG images.
+
+**Floors:**
+- `.` - Tiled Floor
+- `,` - Grass Floor
+- `-` - Gravel Floor
+- `_` - Dirt Floor
+- `~` - Water
+
+**Walls:**
+- `#` - Gray Wall
+- `%` - Brick Wall
+- `&` - Iron Wall
+- `$` - Glass Wall
+
+**Objects:**
+- `+` `*` `^` - Doors (various types)
+- `/` - Open Door
+- `T` `t` - Trees (dark/light)
+- `B` - Barricade
+- `O` - Rock
+- `!` - Signpost
+
+**Rails & Stairs:**
+- `=` - Rail (Horizontal)
+- `|` - Rail (Vertical)
+- `<` - Stairs Down
+- `>` - Stairs Up
+
+**Special:**
+- `@` - Spawn Point
+- `0-9` - Chests
+
+### Stage-Specific (Manual Entry via Keyboard)
+These are defined in individual stage files and should be typed directly:
+
+**Enemies (stage_XX.c):**
+- `a`, `b`, `c`, etc. - Enemy placements
+
+**NPCs (stage_XX.c):**
+- `A`, `B`, `C`, etc. - NPC placements
 
 ## Tips
 
-- Start with **Fill with Floor** to create a base
-- Use wall (`#`) to create boundaries
-- Place spawn point (`@`) where the player starts
-- Add enemies, NPCs, and chests as needed
-- Test your map by exporting and running the game
+- **Custom Character Input**: Type in the field, it auto-selects, then click to place
+  - Type `a` once, click multiple times to place multiple enemies
+  - Change to `b`, click to place different enemy
+- **Use Palette for Tiles**: Click once, drag to paint walls and floors
+- **Right-Click to Erase**: Quick way to clear mistakes
+- **Check stage_XX.c**: Reference stage files to see what a, b, A, B represent
+
+## Architecture
+
+- **tile_parser.py**: Parses `map_data.c` for tile definitions
+- **map_editor.py**: Main GUI application (Tkinter)
+- **No Stage Parsing**: Enemy/NPC data is NOT read from stage files (type manually)
+- **Image Loading**: Real PNG assets from `/MetroHero/assets/` directory
+
+## Performance
+
+- Optimized to only load tiles from `map_data.c` (no complex stage parsing)
+- Fast startup and low memory usage
+- Supports maps up to 100x100 tiles
 
 ## Troubleshooting
 
-- If tiles don't appear correctly, ensure the `MetroHero/src/` directory structure is intact
-- For very large maps (>100x100), performance may degrade
-- Always test exported maps in the game to verify layout
+- **Custom character not placing**: Make sure the radio button is selected (auto-selects when typing)
+- **Missing images**: Ensure PNG files exist in `/MetroHero/assets/`
+- **Import/Export buttons hidden**: Resize window or scroll controls panel
 
 ## Future Enhancements
 
-- Image preview for tiles (load actual PNG assets)
 - Undo/Redo functionality
 - Fill tool (flood fill)
 - Layer support (background/foreground)

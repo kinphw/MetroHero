@@ -60,7 +60,15 @@ void game_render(GameState* state) {
         }
     }
     ui_draw_log();
+    // 4. Combat Log
     ui_draw_combat_log();
+    
+    // ★ Debug Info (F3)
+    if (state->showDebug) {
+        char debugBuf[64];
+        snprintf(debugBuf, sizeof(debugBuf), "Floor: %d | X: %d, Y: %d", state->currentFloor, state->player.x, state->player.y);
+        DrawText(debugBuf, 10, 10, 20, ORANGE);
+    }
 
     // ★ 적 이미지 표시 (타이머가 남아있을 때만)
     if (state->enemyImageTimer > 0) {
