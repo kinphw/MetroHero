@@ -410,7 +410,7 @@ void map_draw_viewport(const Map* m, const Player* p,
 
             // 3. Enemy (Overlay)
             Enemy* enemy = map_get_enemy_at((Map*)m, mx, my);
-            if (enemy != NULL) {
+            if (enemy != NULL && enemy->isActive) {
                 // Only draw if we are at the top-left corner of the enemy
                 if (mx == enemy->x && my == enemy->y) {
                     // Check Sprite Sheet

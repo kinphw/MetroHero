@@ -59,6 +59,10 @@ typedef struct {
     // 렌더링
     const char* dialogueColor; // 색상 코드 추가
     
+    // ★ Conditional Spawn
+    const char* reqFlag; 
+    int isActive;
+    
     EventConfig event; // Added
 
 } Enemy;

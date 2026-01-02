@@ -64,10 +64,19 @@ void enemy_init(Enemy* e, const EnemyConfig* config, int x, int y) {
     
     // Copy Event Config
     e->event = config->event;
+    
+    // ★ Conditional Spawn Init
+    e->reqFlag = config->reqFlag;
+    if (e->reqFlag != NULL) {
+        e->isActive = 0; // Require flag to activate
+    } else {
+        e->isActive = 1; // Default active
+    }
 }
 
 int enemy_is_at(const Enemy* e, int x, int y) {
     if (!e->isAlive) return 0;
+    if (!e->isActive) return 0; // ★ Check Active State
     // Bounding Box Check
     return (x >= e->x && x < e->x + e->width &&
             y >= e->y && y < e->y + e->height);

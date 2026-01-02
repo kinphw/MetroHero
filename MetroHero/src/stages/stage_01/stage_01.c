@@ -203,27 +203,31 @@ static const EnemyConfig ENEMIES[] = {
     },
     {
         .tile = 'c', 
-        .name = "좀비 역무원", 
-        .glyph = COLOR_GREEN "🧟" COLOR_RESET,
-        .imagePath = "assets/enemy/texture_sprite/zomerk_tile.png", // User will set
-        .portraitPath = "assets/enemy/portrait/zomerk_port.png", // User will set
+        .name = "좀비 역장", 
+        .glyph = COLOR_RED "🧟" COLOR_RESET,
+        .imagePath = "assets/enemy/zomerk_tile.png", // Use Boss Image
+        .portraitPath = "assets/enemy/portrait/zomerk_port.png",
         .width = 1, .height = 1,
         
         .spriteRows = 1, .spriteCols = 4,
         .animDown = {0, 0}, .animUp = {0, 1}, .animLeft = {0, 2}, .animRight = {0, 3},
         
-        .maxHp = 25, // Stronger than Skeleton (15)
-        .attackMin = 5, .attackMax = 8, // Stronger than Skeleton (3-5)
+        .maxHp = 100, // Boss Logic
+        .attackMin = 10, .attackMax = 15,
         .chaseOnSight = 1, .attackOnSight = 1, 
-        .detectionRange = 7, 
-        .moveInterval = 1.1f, .attackInterval = 1.1f,
+        .detectionRange = 10, 
+        .moveInterval = 0.8f, .attackInterval = 0.8f,
         .dialogues = DIALOGUES_ZOMBIE,
         .dialogueCount = sizeof(DIALOGUES_ZOMBIE) / sizeof(DIALOGUES_ZOMBIE[0]),
-        .dialogueColor = COLOR_GREEN,
-        .expReward = 120
+        .dialogueColor = COLOR_RED,
+        .expReward = 1000,
+        
+        // ★ Boss Logic
+        .reqFlag = "boss_spawned",
+        .event = { .setFlag="boss_defeated", .setVal=1 } // Key given by NPC
     },
     {
-        .tile = 'y', 
+        .tile = 'd', 
         .name = "최악의로보트 아카카", 
         .glyph = COLOR_RED "🤖" COLOR_RESET,
         .imagePath = "assets/enemy/texture/security_robot.png",
@@ -241,7 +245,7 @@ static const EnemyConfig ENEMIES[] = {
     },
     {
         // ★ Boss C (Multi-Tile)
-        .tile = 'c',
+        .tile = 'e',
         .name = "SCP-682",
         .glyph = "👹",
         .imagePath = "assets/enemy/texture_sprite/1c.png", // Use Sprite Sheet
@@ -418,8 +422,14 @@ static const QuestConfig QUESTS[] = {
     // 퀘스트 2: 복귀 -> "mission_complete"가 되면 종료
     { "kill_cat_count", 5, "목표: 역무원에게 돌아가라.", NULL, 0, "mission_complete", 1, 0 },
     
-    // 퀘스트 3: 역장실 찾기 (New)
-    { "mission_complete", 1, "목표: 역장실을 찾아라.", NULL, 0, "found_office", 1, 0 }
+    // 퀘스트 3: 역장실 찾기
+    { "mission_complete", 1, "목표: 역장실을 찾아라.", NULL, 0, "boss_spawned", 1, 0 },
+    
+    // 퀘스트 4: 좀비 역장 처치 (Key Item Reward included in Boss)
+    { "boss_spawned", 1, "목표: 좀비가 된 역장을 쓰러뜨려라!", NULL, 0, "boss_defeated", 1, 1000 },
+    
+    // 퀘스트 5: 지하 진입 (Exit Stage)
+    { "boss_defeated", 1, "목표: 지하로 가는 길을 찾아라.", NULL, 0, "entered_underground", 1, 0 }
 };
 
 // ============================================

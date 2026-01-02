@@ -122,7 +122,20 @@ void combat_update_ai(GameState* state, float dt) {
 
     for (int i = 0; i < m->enemyCount; i++) {
         Enemy* e = &m->enemies[i];
+
         if (!e->isAlive) continue;
+
+        // ★ Conditional Activation Check
+        if (e->reqFlag != NULL) {
+            // Check flag every frame (or could optimize)
+            if (event_get_flag(&state->eventRegistry, e->reqFlag)) {
+                e->isActive = 1;
+            } else {
+                e->isActive = 0;
+            }
+        }
+        
+        if (!e->isActive) continue; // Skip invisible enemies
 
         // 쿨타임 감소 (개별)
         if (e->moveCooldown > 0)    e->moveCooldown -= dt;

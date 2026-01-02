@@ -96,6 +96,9 @@ typedef struct {
 
     const char* dialogueColor; // 예: COLOR_RED (ANSI Code)
     
+    // ★ Spawn Condition
+    const char* reqFlag;       // 이 플래그가 있어야 등장 (없으면 처음에 숨김)
+    
     EventConfig event;         // ★ 이벤트 설정 (사망 시 플래그 설정 등)
 } EnemyConfig;
 
