@@ -34,62 +34,82 @@ void combat_try_attack(GameState* state) {
     Player* p = &state->player;
     Map* m = &state->map;
 
-    if (p->attackCooldown > 0) return; // 쿨타임 중
+    // 쿨타임 중
+    if (p->attackCooldown > 0) return; 
 
     p->attackCooldown = 0.5f; // 0.5초 쿨타임
 
-    // 바라보는 방향 계산
-    int tx = p->x + p->dirX;
-    int ty = p->y + p->dirY;
+    // ★ 화염검 체크
+    int range = 1;
+    const char* effectImg = "assets/player/slash.png";
+    if (p->equippedWeapon && strcmp(p->equippedWeapon->name, "화염검") == 0) {
+        range = 2; // 2칸 공격
+        effectImg = "assets/player/fire.png";
+    }
 
-    // ★ 이펙트 표시 (0.2초)
-    state->effectX = tx;
-    state->effectY = ty;
+    // 1. 이펙트 설정 (Primary)
+    state->effectX = p->x + p->dirX;
+    state->effectY = p->y + p->dirY;
     state->effectTimer = 0.2f;
-    state->effectPath = "assets/player/slash.png"; // ★ Explicit Path for Player
+    state->effectPath = effectImg;
 
-    Enemy* target = map_get_enemy_at(m, tx, ty);
-    if (target) {
-        // ★ 플레이어가 적 공격 -> 적 이미지 표시
-        show_enemy_image(state, target);
+    // 2. 이펙트 설정 (Secondary - Flame Sword only)
+    if (range >= 2) {
+        state->effect2X = p->x + p->dirX * 2;
+        state->effect2Y = p->y + p->dirY * 2;
+        state->effect2Timer = 0.2f;
+        state->effect2Path = effectImg;
+    }
 
-        target->isProvoked = 1; // ★ 공격받으면 적대적 상태 전환
-        
-        // 데미지 계산
-        int dmg = p->attackMin + rand() % (p->attackMax - p->attackMin + 1);
-        // dmg -= target->defense; // Defense removed
-        if (dmg < 1) dmg = 1;
+    int hitCount = 0;
 
-        target->hp -= dmg;
-        audio_play_sfx("sword_hit"); // SFX Added
+    // 3. 공격 루프 (Range만큼)
+    for (int i = 1; i <= range; i++) {
+        int tx = p->x + p->dirX * i;
+        int ty = p->y + p->dirY * i;
 
-        char buf[128];
-        snprintf(buf, sizeof(buf), "%s⚔ %s에게 %d 피해! (HP: %d)%s", COLOR_YELLOW, target->name, dmg, target->hp, COLOR_RESET);
-        ui_add_combat_log(buf); // 우측 전투 로그에 출력
+        Enemy* target = map_get_enemy_at(m, tx, ty);
+        if (target) {
+            hitCount++;
+            // ★ 플레이어가 적 공격 -> 적 이미지 표시
+            show_enemy_image(state, target);
 
-        if (target->hp <= 0) {
-            target->isAlive = 0;
-            // ★ 적 처치 -> 이미지 유지 (이미 표시됨)
-            // 맵 타일 정리 (적 제거) - 추후 자동 clean up
-             snprintf(buf, sizeof(buf), "%s★ %s 처치!%s", COLOR_BRIGHT_GREEN, target->name, COLOR_RESET);
-             ui_add_combat_log(buf);
-             audio_play_sfx("explosion"); // SFX Added
-             
-             // ★ Award EXP
-             if (target->expReward > 0) {
-                 player_add_exp(p, target->expReward); 
-             }
-             
-             // Trigger Event
-             if (target->event.setFlag) {
-                 if (target->event.setVal > 0) event_set_flag(&state->eventRegistry, target->event.setFlag, target->event.setVal);
-                 else event_add_flag(&state->eventRegistry, target->event.setFlag, 1);
-             }
+            target->isProvoked = 1; // ★ 공격받으면 적대적 상태 전환
+            
+            // 데미지 계산
+            int dmg = p->attackMin + rand() % (p->attackMax - p->attackMin + 1);
+            if (dmg < 1) dmg = 1;
+
+            target->hp -= dmg;
+            audio_play_sfx("sword_hit"); // SFX Added
+
+            char buf[128];
+            snprintf(buf, sizeof(buf), "%s⚔ %s에게 %d 피해! (HP: %d)%s", COLOR_YELLOW, target->name, dmg, target->hp, COLOR_RESET);
+            ui_add_combat_log(buf); // 우측 전투 로그에 출력
+
+            if (target->hp <= 0) {
+                target->isAlive = 0;
+                snprintf(buf, sizeof(buf), "%s★ %s 처치!%s", COLOR_BRIGHT_GREEN, target->name, COLOR_RESET);
+                ui_add_combat_log(buf);
+                audio_play_sfx("explosion"); // SFX Added
+                
+                // ★ Award EXP
+                if (target->expReward > 0) {
+                    player_add_exp(p, target->expReward); 
+                }
+                
+                // Trigger Event
+                if (target->event.setFlag) {
+                    if (target->event.setVal > 0) event_set_flag(&state->eventRegistry, target->event.setFlag, target->event.setVal);
+                    else event_add_flag(&state->eventRegistry, target->event.setFlag, 1);
+                }
+            }
         }
-    } else {
-        // 허공에 공격
-        // ui_add_combat_log("허공을 가랐다.");
-        audio_play_sfx("sword_swing"); // SFX Added
+    }
+
+    if (hitCount == 0) {
+        // 허공에 공격 (아무도 안 맞았을 때만)
+        audio_play_sfx("sword_swing"); 
     }
 }
 

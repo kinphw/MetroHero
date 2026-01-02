@@ -50,6 +50,11 @@ typedef struct {
     float effectTimer;
     const char* effectPath; // ★ Added for variable effect image
 
+    // ★ Secondary Effect (Flame Sword etc)
+    int effect2X, effect2Y;
+    float effect2Timer;
+    const char* effect2Path;
+
     // ★ 적 이미지 표시 관련
     const char* enemyImagePath;  // 현재 표시할 적 이미지 경로
     double enemyImageTimer;      // 이미지 표시 시간 (5초)

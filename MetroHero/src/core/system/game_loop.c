@@ -25,6 +25,7 @@ void game_loop(GameState* state) {
 
         // ★ 타이머 업데이트
         if (state->effectTimer > 0) state->effectTimer -= dt;
+        if (state->effect2Timer > 0) state->effect2Timer -= dt; // ★ Added
         if (state->player.attackCooldown > 0) state->player.attackCooldown -= dt;
 
         // ★ 적 이미지 타이머 체크 (5초 후 숨김)

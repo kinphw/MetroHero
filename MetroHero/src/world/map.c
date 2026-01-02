@@ -320,7 +320,9 @@ void map_init(Map* m, int stageNumber, int floorIndex) {
 // ★ map_draw_viewport 수정 - 32x32 타일 렌더링 (Mixed Resolution support)
 void map_draw_viewport(const Map* m, const Player* p,
     int startX, int startY,
-    int viewW, int viewH, int effectX, int effectY, float effectTimer, const char* effectPath)
+    int viewW, int viewH, 
+    int effectX, int effectY, float effectTimer, const char* effectPath,
+    int effect2X, int effect2Y, float effect2Timer, const char* effect2Path)
 {
     int viewX = p->x - viewW / 2;
     int viewY = p->y - viewH / 2;
@@ -523,9 +525,18 @@ void map_draw_viewport(const Map* m, const Player* p,
             }
 
             // 7. Effect (Overlay)
+            // Primary Effect
             if (effectTimer > 0 && mx == effectX && my == effectY) {
                  if (effectPath) {
                      ui_draw_image(screenPxX, screenPxY, MAP_TILE_SIZE, MAP_TILE_SIZE, effectPath);
+                 } else {
+                     ui_draw_image(screenPxX, screenPxY, MAP_TILE_SIZE, MAP_TILE_SIZE, "assets/player/slash.png"); // Fallback
+                 }
+            }
+            // Secondary Effect (Flame Sword etc)
+            if (effect2Timer > 0 && mx == effect2X && my == effect2Y) {
+                 if (effect2Path) {
+                     ui_draw_image(screenPxX, screenPxY, MAP_TILE_SIZE, MAP_TILE_SIZE, effect2Path);
                  } else {
                      ui_draw_image(screenPxX, screenPxY, MAP_TILE_SIZE, MAP_TILE_SIZE, "assets/player/slash.png"); // Fallback
                  }

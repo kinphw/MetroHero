@@ -75,6 +75,8 @@ void map_load_doors(Map* m);
 Door* map_get_door_at(Map* m, int x, int y);
 
 
-void map_draw_viewport(const Map* m, const Player* p, int startX, int startY, int viewW, int viewH, int effectX, int effectY, float effectTimer, const char* effectPath);
+void map_draw_viewport(const Map* m, const Player* p, int startX, int startY, int viewW, int viewH, 
+                       int effectX, int effectY, float effectTimer, const char* effectPath,
+                       int effect2X, int effect2Y, float effect2Timer, const char* effect2Path);
 
 #endif

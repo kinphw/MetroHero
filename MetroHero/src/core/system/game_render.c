@@ -19,7 +19,9 @@ void game_render(GameState* state) {
     // Since ui_clear_buffer does Begin/End, we should NOT use it if we want to batch.
     
     // 2. 뷰포트 그리기 (항상 그림)
-    ui_render_map_viewport(&state->map, &state->player, state->effectX, state->effectY, state->effectTimer, state->effectPath);
+    ui_render_map_viewport(&state->map, &state->player, 
+                           state->effectX, state->effectY, state->effectTimer, state->effectPath,
+                           state->effect2X, state->effect2Y, state->effect2Timer, state->effect2Path);
 
     // ★ 인벤토리 오버레이
     if (state->inInventory) {
