@@ -18,7 +18,7 @@ static const char* MAP_LINES[] = {
 "###########.###########",
 "#.....................#",
 "#..a...............a..#",
-"#.......a............U#",
+"#.......a.............#",
 "#######################"
 };
 
@@ -51,6 +51,12 @@ static const char* DIALOGUES_B[] = {
     "돌아가라 날 건들면 후회할것이다"
 };
 
+// Type 'b': 스켈레톤병사
+static const char* DIALOGUES_SKELETON[] = {
+    "달그락... 달그락...",
+    "생명체의.. 냄새가.. 난다.."
+};
+
 static const EnemyConfig ENEMIES[] = {
     {
         .tile = 'a', 
@@ -72,6 +78,27 @@ static const EnemyConfig ENEMIES[] = {
         .dialogueCount = sizeof(DIALOGUES_A) / sizeof(DIALOGUES_A[0]),
         .dialogueColor = COLOR_BRIGHT_CYAN,
         .expReward = 50 // 2 kills = Level Up
+    },
+    {
+        .tile = 'b', 
+        .name = "스켈레톤병사", 
+        .glyph = COLOR_WHITE "💀" COLOR_RESET,
+        .imagePath = "assets/enemy/texture_sprite/skel_tile.png", // To be set by user
+        .portraitPath = "assets/enemy/portrait/skel_port.png", // To be set by user
+        .width = 1, .height = 1,
+        
+        .spriteRows = 1, .spriteCols = 4,
+        .animDown = {0, 0}, .animUp = {0, 1}, .animLeft = {0, 2}, .animRight = {0, 3},
+        
+        .maxHp = 15,
+        .attackMin = 3, .attackMax = 5,
+        .chaseOnSight = 1, .attackOnSight = 1, 
+        .detectionRange = 6, 
+        .moveInterval = 1.2f, .attackInterval = 1.2f,
+        .dialogues = DIALOGUES_SKELETON,
+        .dialogueCount = sizeof(DIALOGUES_SKELETON) / sizeof(DIALOGUES_SKELETON[0]),
+        .dialogueColor = COLOR_WHITE,
+        .expReward = 80
     },
     {
         .tile = 'y', 
