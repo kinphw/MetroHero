@@ -273,5 +273,43 @@ void combat_update_ai(GameState* state, float dt) {
                 }
             }
         }
+        else if (e->allowRandomMove && !e->isProvoked && !e->isChasing) {
+             // ★ Random Idle Movement (Only when in Viewport)
+             e->randomMoveTimer -= dt;
+             
+             if (e->randomMoveTimer <= 0) {
+                 e->randomMoveTimer = e->randomMoveInterval;
+                 
+                 // 1. Check Viewport Visibility (Rectangular)
+                 // Layout.h: VIEW_W 20, VIEW_H 15.
+                 // We add a bit of padding to ensure enemies at the edge trigger.
+                 // Range: Player X +/- 11, Player Y +/- 8
+                 int diffX = abs(e->x - p->x);
+                 int diffY = abs(e->y - p->y);
+                 
+                 if (diffX <= 11 && diffY <= 8) {
+                     // ★ Try multiple directions to avoid "sticking" to walls
+                     int attempts = 4; 
+                     int moved = 0;
+                     
+                     while (attempts > 0 && !moved) {
+                         int dir = GetRandomValue(0, 3); // 0:R, 1:L, 2:U, 3:D
+                         int dx = 0, dy = 0;
+                         if (dir == 0) dx = 1;
+                         else if (dir == 1) dx = -1;
+                         else if (dir == 2) dy = -1;
+                         else if (dir == 3) dy = 1;
+                         
+                         if (can_enemy_move(m, p, e, e->x + dx, e->y + dy)) {
+                             e->x += dx;
+                             e->y += dy;
+                             e->direction = dir;
+                             moved = 1;
+                         }
+                         attempts--;
+                     }
+                 }
+            }
+        }
     }
 }

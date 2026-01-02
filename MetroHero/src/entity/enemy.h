@@ -45,6 +45,11 @@ typedef struct {
     float attackInterval;
     float moveCooldown;
     float attackCooldown;
+    
+    // ★ Random Idle Move
+    int allowRandomMove;
+    float randomMoveInterval;
+    float randomMoveTimer;
 
 	// 대사
 	const char** dialogues; // 문자열 배열 포인터

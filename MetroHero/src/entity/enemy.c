@@ -39,6 +39,11 @@ void enemy_init(Enemy* e, const EnemyConfig* config, int x, int y) {
     e->isChasing = 0;
     e->isProvoked = 0; // ★ 초기화
     
+    // ★ Random Move Init
+    e->allowRandomMove = config->allowRandomMove;
+    e->randomMoveInterval = config->randomMoveInterval;
+    e->randomMoveTimer = 0.0f;
+    
     // Copy Multi-Tile & Sprite Sheet
     e->width = config->width > 0 ? config->width : 1;
     e->height = config->height > 0 ? config->height : 1;

@@ -136,7 +136,11 @@ static const EnemyConfig ENEMIES[] = {
         .dialogues = DIALOGUES_A,
         .dialogueCount = sizeof(DIALOGUES_A) / sizeof(DIALOGUES_A[0]),
         .dialogueColor = COLOR_BRIGHT_CYAN,
-        .expReward = 50 // 2 kills = Level Up
+        .expReward = 50, // 2 kills = Level Up
+        
+        // ★ Random Move
+        .allowRandomMove = 1,
+        .randomMoveInterval = 0.5f
     },
     {
         .tile = 'b', 
