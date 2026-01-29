@@ -20,8 +20,7 @@ int main(void) {
             game_run_new_session();
         } 
         else if (mode == GAME_LOAD) {
-            // TODO: Implement load logic
-            // game_run_load_session();
+            game_run_load_session();
         }
         else {
             // GAME_EXIT

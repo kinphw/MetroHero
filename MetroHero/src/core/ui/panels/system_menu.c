@@ -30,11 +30,12 @@ void ui_draw_system_menu(const GameState* state) {
 
     // 3. List Options
     const char* options[] = {
-        "INVENTORY",
-        "SAVE GAME",
-        "EXIT GAME"
+        "인벤토리",
+        "저장하기",
+        "불러오기",
+        "게임종료"
     };
-    int optionCount = 3;
+    int optionCount = 4;
 
     int startY = y + 2;
     for (int i = 0; i < optionCount; i++) {

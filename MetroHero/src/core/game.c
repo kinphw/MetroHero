@@ -10,6 +10,8 @@
 #include "../entity/player.h"
 #include "audio/audio.h" 
 #include "../stages/stage_01/stage_01.h" // Added
+#include "system/save.h" // Added for Load
+#include "../world/glyph.h" // Added for COLOR_RED
 
 // 게임 세션 시작 (새 게임)
 void game_run_new_session(void) {
@@ -79,5 +81,46 @@ void game_run_new_session(void) {
     ui_present();
 
     // 2. 메인 루프 실행
+    game_loop(&state);
+}
+
+// 게임 세션 불러오기 (이어하기)
+void game_run_load_session(void) {
+    // 1. 상태 초기화 (메모리 확보)
+    static GameState state; 
+    memset(&state, 0, sizeof(state));
+
+    event_init_registry(&state.eventRegistry);
+    state.currentStageData = &STAGE_01_DATA; // Default linkage
+
+    // ★ Fix 1: Initialize Player (Load basic stats/sprites) BEFORE loading save
+    // This ensures spriteSheet and animations are ready.
+    // load_game will then overwrite x, y, hp, etc.
+    player_init(&state.player);
+
+    // 2. Load Data
+    if (!load_game(&state)) {
+        // Failed
+        ui_add_log(COLOR_RED "세이브 파일을 불러올 수 없습니다." COLOR_RESET);
+        return;
+    }
+
+    // 3. Post-Load Setup
+    // Map is already initialized by load_game()
+    
+    // Sync logic handled within load_game()
+    // No extra steps needed here.
+    
+    state.isRunning = 1;
+    state.inDialogue = 0;
+    
+    // Resume BGM
+    audio_play_music("assets/bgm/gap_of_winter.mp3");
+
+    // Clear buffer
+    ui_clear_buffer();
+    game_render(&state);
+    
+    // Loop
     game_loop(&state);
 }

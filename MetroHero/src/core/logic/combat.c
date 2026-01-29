@@ -89,6 +89,7 @@ void combat_try_attack(GameState* state) {
 
             if (target->hp <= 0) {
                 target->isAlive = 0;
+                target->isDead = 1; // ★ Added for Save Persistance
                 snprintf(buf, sizeof(buf), "%s★ %s 처치!%s", COLOR_BRIGHT_GREEN, target->name, COLOR_RESET);
                 ui_add_combat_log(buf);
                 audio_play_sfx("explosion"); // SFX Added

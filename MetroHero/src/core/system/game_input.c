@@ -14,6 +14,7 @@
 #include "../../cinematic/cinematic.h"
 #include "../../world/glyph.h"
 #include "raylib.h"
+#include "save.h" // Added for Save Game
 
 // ★ 키 반복 입력을 위한 타이머 구조체
 typedef struct {
@@ -363,7 +364,7 @@ void game_process_input(GameState* state) {
         }
         else if (cmd == 's' || cmd == 'd') { // DOWN
             state->systemMenuCursor++;
-            if (state->systemMenuCursor > 2) state->systemMenuCursor = 2;
+            if (state->systemMenuCursor > 3) state->systemMenuCursor = 3;
         }
         else if (cmd == ' ') { // SELECT
             if (state->systemMenuCursor == 0) { // Inventory
@@ -372,10 +373,22 @@ void game_process_input(GameState* state) {
                 state->inventoryCursor = 0;
             }
             else if (state->systemMenuCursor == 1) { // Save
-                ui_add_log("게임을 저장했습니다. (가상)");
+                save_game(state);
                 state->inSystemMenu = 0;
             }
-            else if (state->systemMenuCursor == 2) { // Exit
+            else if (state->systemMenuCursor == 2) { // Load
+                 if (save_file_exists()) {
+                     if (load_game(state)) {
+                         ui_add_log(COLOR_BRIGHT_GREEN "게임을 불러왔습니다." COLOR_RESET);
+                         state->inSystemMenu = 0;
+                     } else {
+                         ui_add_log(COLOR_RED "불러오기 실패!" COLOR_RESET);
+                     }
+                 } else {
+                     ui_add_log(COLOR_RED "저장된 파일이 없습니다." COLOR_RESET);
+                 }
+            }
+            else if (state->systemMenuCursor == 3) { // Exit
                 state->isRunning = 0;
                 CloseWindow();
             }

@@ -9,7 +9,8 @@
 typedef struct {
 	char type;      // 종류 ('a': 고블린, 'b': 슬라임, ...)
 	int x, y;       // 위치
-	int isAlive;
+	int isAlive; // Pool Active State
+    int isDead;  // Gameplay Dead State (HP <= 0)
 
 	// 스탯
 	const char* name;

@@ -6,6 +6,7 @@
 #include "../ui/text/render.h"
 #include "../ui/text/glyph.h" // For display_width
 #include <stdio.h> // snprintf
+#include "save.h" // Added for save_file_exists
 
 // 타이틀 이미지 텍스처 (정적 캐싱)
 static Texture2D titleTexture = { 0 };
@@ -50,7 +51,10 @@ GameMode game_menu(void) {
         //if (IsKeyPressed(KEY_ENTER)) {
         if (IsKeyPressed(KEY_SPACE)) {
             if (selectedOption == 0) return GAME_NEW;
-            if (selectedOption == 1) return GAME_LOAD; // 아직 구현 안됨
+            if (selectedOption == 1) {
+                 if (save_file_exists()) return GAME_LOAD;
+                 else audio_play_sfx("error"); // Optional Error Sound
+            }
             if (selectedOption == 2) return GAME_EXIT;
         }
 
@@ -88,8 +92,17 @@ GameMode game_menu(void) {
             char buf[64];
             const char* color = "\033[90m"; // Default Gray
             
+            // Disable Load if no save (Gray out logic)
+            if (i == 1 && !save_file_exists()) {
+                 color = "\033[30m"; // Darker Gray (Disabled)
+            }
+            
             if (i == selectedOption) {
-                color = "\033[97m"; // Bright White (Selected)
+                if (i == 1 && !save_file_exists()) {
+                    color = "\033[31m"; // Red if trying to select disabled
+                } else {
+                    color = "\033[97m"; // Bright White (Selected)
+                }
                 snprintf(buf, sizeof(buf), "> %s", options[i]);
             } else {
                 snprintf(buf, sizeof(buf), "  %s", options[i]);

@@ -9,6 +9,7 @@ void enemy_init(Enemy* e, const EnemyConfig* config, int x, int y) {
     e->x = x;
     e->y = y;
     e->isAlive = 1;
+    e->isDead = 0; // ★ Initialize Dead State
 
     e->name = config->name;
     e->glyph = config->glyph;

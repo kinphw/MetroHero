@@ -177,6 +177,9 @@
     <ClCompile Include="src\core\ui\panels\quest_panel.c">
       <Filter>src\core\ui\panels</Filter>
     </ClCompile>
+    <ClCompile Include="src\core\system\save.c">
+      <Filter>src\core\system</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="src\core\game.h">
@@ -295,6 +298,9 @@
     </ClInclude>
     <ClInclude Include="src\core\ui\panels\quest_panel.h">
       <Filter>src\core\ui\panels</Filter>
+    </ClInclude>
+    <ClInclude Include="src\core\system\save.h">
+      <Filter>src\core\system</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>
